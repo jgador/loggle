@@ -14,6 +14,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{BC9F7E5D-B80
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{9B783609-9CB8-4937-8CE5-1F9EABF652F6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Loggle.Tests", "test\Loggle.Tests\Loggle.Tests.csproj", "{18873848-783F-46A5-8D88-AE4E32243FE6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,11 +26,16 @@ Global
 		{C7E1E102-2987-4B8A-A25D-E48483FFA2D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C7E1E102-2987-4B8A-A25D-E48483FFA2D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C7E1E102-2987-4B8A-A25D-E48483FFA2D7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{18873848-783F-46A5-8D88-AE4E32243FE6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{18873848-783F-46A5-8D88-AE4E32243FE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{18873848-783F-46A5-8D88-AE4E32243FE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{18873848-783F-46A5-8D88-AE4E32243FE6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{C7E1E102-2987-4B8A-A25D-E48483FFA2D7} = {BC9F7E5D-B80A-4FCD-AB3C-BC4FC2692B29}
+		{18873848-783F-46A5-8D88-AE4E32243FE6} = {9B783609-9CB8-4937-8CE5-1F9EABF652F6}
 	EndGlobalSection
 EndGlobal
