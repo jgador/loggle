@@ -1,4 +1,4 @@
-﻿namespace Loggle.Tests;
+namespace Loggle.Tests;
 
 public class KafkaTests: IClassFixture<KafkaFixture>
 {
