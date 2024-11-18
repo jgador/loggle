@@ -67,49 +67,13 @@ public sealed class KafkaFixture : IAsyncLifetime, IDisposable
         }
     }
 
-    private async Task<IList<ImagesListResponse>> GetKafkaImagesAsync(CancellationToken cancellationToken)
-    {
-        var images = await DockerClient
-            .Images
-            .ListImagesAsync(new ImagesListParameters
-            {
-                Filters = new Dictionary<string, IDictionary<string, bool>>
-                {
-                    ["reference"] = new Dictionary<string, bool>
-                    {
-                        [KafkaImage] = true
-                    }
-                }
-            },
-            cancellationToken).ConfigureAwait(false);
-
-        return images;
-    }
-
-    private async Task<IList<ContainerListResponse>> GetKafkaContainersAsync(CancellationToken cancellationToken)
-    {
-        var containers = await DockerClient
-            .Containers
-            .ListContainersAsync(new ContainersListParameters
-            {
-                Filters = new Dictionary<string, IDictionary<string, bool>>
-                {
-                    ["ancestor"] = new Dictionary<string, bool>
-                    {
-                        [Image.ID] = true
-                    }
-                }
-            }, cancellationToken).ConfigureAwait(false);
-
-        return containers;
-    }
-
     public void Dispose()
     {
         DockerClient?.Dispose();
         DockerClientConfiguration?.Dispose();
         Cts?.Dispose();
     }
+
     public async Task DisposeAsync()
     {
         var containers = await GetKafkaContainersAsync(Cts.Token).ConfigureAwait(false);
@@ -151,4 +115,41 @@ public sealed class KafkaFixture : IAsyncLifetime, IDisposable
             Console.WriteLine(message);
             Debug.WriteLine(message);
         });
+
+    private async Task<IList<ImagesListResponse>> GetKafkaImagesAsync(CancellationToken cancellationToken)
+    {
+        var images = await DockerClient
+            .Images
+            .ListImagesAsync(new ImagesListParameters
+            {
+                Filters = new Dictionary<string, IDictionary<string, bool>>
+                {
+                    ["reference"] = new Dictionary<string, bool>
+                    {
+                        [KafkaImage] = true
+                    }
+                }
+            },
+            cancellationToken).ConfigureAwait(false);
+
+        return images;
+    }
+
+    private async Task<IList<ContainerListResponse>> GetKafkaContainersAsync(CancellationToken cancellationToken)
+    {
+        var containers = await DockerClient
+            .Containers
+            .ListContainersAsync(new ContainersListParameters
+            {
+                Filters = new Dictionary<string, IDictionary<string, bool>>
+                {
+                    ["ancestor"] = new Dictionary<string, bool>
+                    {
+                        [Image.ID] = true
+                    }
+                }
+            }, cancellationToken).ConfigureAwait(false);
+
+        return containers;
+    }
 }
