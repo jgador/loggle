@@ -13,11 +13,6 @@ bin/kafka-storage.sh format -t $KAFKA_CLUSTER_ID -c config/kraft/server.properti
 bin/kafka-server-start.sh config/kraft/server.properties
 ```
 
-### Start ZooKeeper
-```
-bin/zookeeper-server-start.sh config/zookeeper.properties
-```
-
 ### Produce and consume some messages
 
 ```
