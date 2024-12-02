@@ -2,6 +2,7 @@
 using Confluent.Kafka.Admin;
 
 namespace Loggle.Tests;
+
 public class KafkaWslTests
 {
     private const string BootstrapServer = "localhost:9092";
