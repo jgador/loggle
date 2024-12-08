@@ -2,10 +2,20 @@
 using Microsoft.Extensions.Options;
 
 namespace Loggle.Egress;
-internal class ConfigureEgressOptions : NamedConfigureFromConfigurationOptions<EgressOptions>
+
+internal sealed class ConfigureEgressOptions : IConfigureOptions<EgressOptions>
 {
-    public ConfigureEgressOptions(string? name, IConfiguration config)
-        : base(name, config)
+    private readonly IConfiguration _configuration;
+
+    public ConfigureEgressOptions(IConfiguration configuration)
     {
+        ThrowHelper.ThrowIfNull(configuration);
+
+        _configuration = configuration;
+    }
+
+    public void Configure(EgressOptions options)
+    {
+        _configuration.Bind(EgressOptions.SectionKey, options);
     }
 }

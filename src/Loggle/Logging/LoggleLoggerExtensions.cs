@@ -11,8 +11,7 @@ public static class LoggleLoggerExtensions
     public static ILoggingBuilder AddLoggle(this ILoggingBuilder builder)
     {
         builder.Services.AddSingleton<ILoggerProvider, LoggleLoggerProvider>();
-        // builder.Services.TryAdd(ServiceDescriptor.Singleton<ILoggerProvider, LoggleLoggerProvider>());
-        builder.Services.TryAdd(ServiceDescriptor.Singleton<IConfigureNamedOptions<EgressOptions>, ConfigureEgressOptions>());
+        builder.Services.TryAddTransient<IConfigureOptions<EgressOptions>, ConfigureEgressOptions>();
 
         return builder;
     }

@@ -2,7 +2,7 @@
 
 public class EgressOptions
 {
-    public string Type { get; set; } = EgressProviderTypes.Kafka;
+    public const string SectionKey = "Logging:Loggle:Egress";
 
     public KafkaOptions? Kafka { get; set; }
 }

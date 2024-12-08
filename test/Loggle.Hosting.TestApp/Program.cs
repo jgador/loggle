@@ -1,18 +1,18 @@
-﻿using Loggle.Logging;
+﻿using Loggle.Egress;
+using Loggle.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Loggle.Hosting.TestApp;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
-        var builder = new HostBuilder()
-            .ConfigureDefaults(args)
-            .ConfigureLogging((_, factory) =>
+        var builder = Host.CreateDefaultBuilder(args)
+            .ConfigureLogging((context, factory) =>
             {
                 factory.AddLoggle();
             });
@@ -21,6 +21,9 @@ public class Program
 
         var config = host.Services.GetRequiredService<IConfiguration>();
 
-        var providers = host.Services.GetServices<ILoggerProvider>();
+        var egressOptions = host.Services.GetRequiredService<IOptionsMonitor<EgressOptions>>();
+        var egress = egressOptions.CurrentValue;
+
+        await host.RunAsync();
     }
 }
