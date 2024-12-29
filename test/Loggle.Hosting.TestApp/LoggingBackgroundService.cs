@@ -1,0 +1,28 @@
+﻿using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
+namespace Loggle.Hosting.TestApp;
+
+public class LoggingBackgroundService : BackgroundService
+{
+    private readonly ILogger<LoggingBackgroundService> _logger;
+    private readonly ILoggerFactory _loggerFactory;
+
+    public LoggingBackgroundService(ILoggerFactory loggerFactory, ILogger<LoggingBackgroundService> logger)
+    {
+        _logger = logger;
+        _loggerFactory = loggerFactory;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        int counter = 0;
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            counter++;
+            _logger.LogInformation("Background task log message #{counter}", counter);
+            await Task.Delay(1000, stoppingToken); // Log every second
+        }
+    }
+}

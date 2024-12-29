@@ -1,19 +1,24 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Threading.Channels;
+using Microsoft.Extensions.Logging;
 
 namespace Loggle.Logging;
 
 internal sealed class LoggleLogger : ILogger
 {
     private readonly string _name;
+    private readonly ChannelWriter<LogMessageEntry> _channelWriter;
 
     internal LoggleLogger(
         string name,
         IExternalScopeProvider? scopeProvider,
+        ChannelWriter<LogMessageEntry> channelWriter,
         LoggleLoggerOptions options)
     {
         ThrowHelper.ThrowIfNull(name);
+        ThrowHelper.ThrowIfNull(channelWriter);
 
         _name = name;
+        _channelWriter = channelWriter;
         ScopeProvider = scopeProvider;
         Options = options;
     }
@@ -21,8 +26,6 @@ internal sealed class LoggleLogger : ILogger
     internal IExternalScopeProvider? ScopeProvider { get; set; }
 
     internal LoggleLoggerOptions Options { get; set; }
-
-    public IDisposable? BeginScope<TState>(TState state) where TState : notnull => ScopeProvider?.Push(state);
 
     public bool IsEnabled(LogLevel logLevel) => logLevel != LogLevel.None;
 
@@ -42,13 +45,20 @@ internal sealed class LoggleLogger : ILogger
             return;
         }
 
-        message = $"{logLevel}: {message}";
-
         if (exception != null)
         {
             message += Environment.NewLine + Environment.NewLine + exception;
         }
 
-        // TODO: Push to kafka via the producer
+        var logMessageEntry = new LogMessageEntry()
+        {
+            Timestamp = DateTimeOffset.UtcNow,
+            Level = logLevel.ToString(),
+            Message = message
+        };
+
+        _channelWriter.TryWrite(logMessageEntry);
     }
+
+    public IDisposable BeginScope<TState>(TState state) where TState : notnull => ScopeProvider?.Push(state) ?? NullScope.Instance;
 }
