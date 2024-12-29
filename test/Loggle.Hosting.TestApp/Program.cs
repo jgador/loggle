@@ -45,7 +45,7 @@ public class Program
         TaskCreationOptions.LongRunning | TaskCreationOptions.PreferFairness,
         TaskScheduler.Default);
 
-        await Task.Delay(TimeSpan.FromMinutes(5));
+        await Task.Delay(TimeSpan.FromMinutes(1));
         Console.WriteLine("[Main] Cancelling...");
         cts.Cancel();
 

@@ -26,15 +26,8 @@ public class BufferedChannel<TEvent>
 
         var currentBatch = new List<TEvent>(MaxCapacity);
 
-        while (!cancellationToken.IsCancellationRequested)
+        while (await reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
         {
-            var success = await reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false);
-
-            if (!success)
-            {
-                break;
-            }
-
             if (reader.TryRead(out var item))
             {
                 currentBatch.Add(item);
