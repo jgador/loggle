@@ -20,13 +20,13 @@ public class BufferedChannel<TEvent>
             });
     }
 
-    public async Task ConsumeAsync(CancellationToken cancellationToken)
+    public async Task ConsumeAsync()
     {
         var reader = _channel.Reader;
 
         var currentBatch = new List<TEvent>(MaxCapacity);
 
-        while (await reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
+        while (await reader.WaitToReadAsync().ConfigureAwait(false))
         {
             if (reader.TryRead(out var item))
             {

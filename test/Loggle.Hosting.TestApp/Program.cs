@@ -14,9 +14,9 @@ public class Program
         var cts = new CancellationTokenSource();
         var writer = buffer.Writer;
 
-        var consumerTask = buffer.ConsumeAsync(cts.Token);
+        var consumerTask = buffer.ConsumeAsync();
 
-        var producerTask = Task.Factory.StartNew(async () =>
+        var producerTask = Task.Run(async () =>
         {
             int i = 0;
 
@@ -40,14 +40,16 @@ public class Program
                 // Simulate some irregular delay
                 await Task.Delay(500, cts.Token);
             }
-        },
-        cts.Token,
-        TaskCreationOptions.LongRunning | TaskCreationOptions.PreferFairness,
-        TaskScheduler.Default);
+        });
 
         await Task.Delay(TimeSpan.FromMinutes(1));
         Console.WriteLine("[Main] Cancelling...");
-        cts.Cancel();
+
+        var completed = writer.TryComplete();
+
+        // cts.Cancel();
+
+        Console.WriteLine($"Completed: {completed}");
 
         await Task.WhenAll(producerTask, consumerTask);
 

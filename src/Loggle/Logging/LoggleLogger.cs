@@ -27,7 +27,15 @@ internal sealed class LoggleLogger : ILogger
 
     internal LoggleLoggerOptions Options { get; set; }
 
-    public bool IsEnabled(LogLevel logLevel) => logLevel != LogLevel.None;
+    public bool IsEnabled(LogLevel logLevel)
+    {
+        return Options switch
+        {
+            { Enabled: false } => false,
+            { MinimumLevel: var configuredLevel } when configuredLevel >= logLevel => true,
+            _ => logLevel != LogLevel.None
+        };
+    }
 
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
     {
