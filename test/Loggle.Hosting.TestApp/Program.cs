@@ -8,21 +8,33 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
-        // await RunAsync(args).ConfigureAwait(false);
-
-        var buffer = new BufferedChannel<string>();
         var cts = new CancellationTokenSource();
+
+        Console.CancelKeyPress += (object? sender, ConsoleCancelEventArgs e) =>
+        {
+            cts.Cancel();
+            e.Cancel = true;
+        };
+
+        var options = new BufferedChannelOptions()
+        {
+            MaxSize = 10,
+            MaxLifetime = TimeSpan.FromSeconds(2)
+        };
+
+        var buffer = new BufferedChannel<string>(options, FlushBatchHandlerAsync);
+
         var writer = buffer.Writer;
 
         var consumerTask = buffer.ConsumeAsync();
 
         var producerTask = Task.Run(async () =>
         {
-            int i = 0;
+            int i = 1;
 
             while (!cts.Token.IsCancellationRequested)
             {
-                var item = $"Item-{i}-payload";
+                var item = $"{i}";
                 var success = writer.TryWrite(item);
 
                 if (success)
@@ -31,29 +43,43 @@ public class Program
                 }
                 else
                 {
-                    Console.WriteLine("[Producer] Writing: false");
+                    Console.WriteLine($"[Producer] Writing: {success}");
                 }
-                // await writer.WriteAsync(item, cts.Token);
 
                 i++;
 
-                // Simulate some irregular delay
-                await Task.Delay(500, cts.Token);
+                // Simulate delay
+                await Task.Delay(Random.Shared.Next(60, 200), cts.Token);
             }
         });
 
-        await Task.Delay(TimeSpan.FromMinutes(1));
-        Console.WriteLine("[Main] Cancelling...");
+        await Task.Delay(TimeSpan.FromSeconds(77));
 
         var completed = writer.TryComplete();
 
-        // cts.Cancel();
+        Console.WriteLine($"Completed: {completed}.");
 
-        Console.WriteLine($"Completed: {completed}");
-
-        await Task.WhenAll(producerTask, consumerTask);
+        await producerTask.ConfigureAwait(false);
+        await consumerTask.ConfigureAwait(false);
 
         Console.WriteLine("All done!");
+    }
+
+    private static ValueTask FlushBatchHandlerAsync(IReadOnlyList<string> batch)
+    {
+        if (batch.Count == 0)
+            return ValueTask.CompletedTask;
+
+        Console.WriteLine($"[Consumer] Flushing {batch.Count} items");
+
+        foreach (var item in batch)
+        {
+            Console.Write($" {item}");
+        }
+
+        Console.WriteLine();
+
+        return ValueTask.CompletedTask;
     }
 
     private static async Task RunAsync(string[] args)

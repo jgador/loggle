@@ -70,4 +70,36 @@ public class LoggleLoggerOptionsTests
         Assert.NotNull(options.CurrentValue);
         Assert.Equal(LogLevel.Debug, options.CurrentValue.MinimumLevel);
     }
+
+    [Fact]
+    public void CanReadBatchingOptions()
+    {
+        var dic = new Dictionary<string, string>
+        {
+            { "Logging:Loggle:Egress:Kafka:Batching:MaxSize", "100" },
+            { "Logging:Loggle:Egress:Kafka:Batching:MaxLifetime", "00:01:00"}
+        };
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(dic!)
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddOptions();
+        services.AddSingleton<IConfiguration>(configuration);
+
+        services.AddLogging(builder =>
+        {
+            builder.AddLoggle();
+        });
+
+        var sp = services.BuildServiceProvider();
+
+        var options = sp.GetRequiredService<IOptionsMonitor<LoggleLoggerOptions>>();
+
+        Assert.NotNull(options);
+        Assert.NotNull(options.CurrentValue);
+        Assert.Equal(100, options!.CurrentValue!.Egress.Kafka?.Batching?.MaxSize);
+        Assert.Equal(TimeSpan.FromMinutes(1), options!.CurrentValue!.Egress.Kafka?.Batching?.MaxLifetime);
+    }
 }
