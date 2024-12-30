@@ -19,11 +19,11 @@ public class Program
 
         var options = new BufferedChannelOptions()
         {
-            MaxSize = 100,
+            MaxSize = 15,
             MaxLifetime = TimeSpan.FromSeconds(2)
         };
 
-        var buffer = new BufferedChannel<string>(options, SendToKafkaAsync);
+        var buffer = new BufferedChannel<string>(options, FlushBatchHandlerAsync);
 
         var writer = buffer.Writer;
 
@@ -54,7 +54,7 @@ public class Program
             }
         });
 
-        await Task.Delay(TimeSpan.FromMinutes(2));
+        await Task.Delay(TimeSpan.FromMinutes(.5));
 
         var completed = writer.TryComplete();
 

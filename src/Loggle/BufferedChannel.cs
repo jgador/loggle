@@ -60,10 +60,6 @@ public class BufferedChannel<TEvent>
                 currentBatch.Clear();
                 startTime = DateTime.UtcNow;
             }
-            else
-            {
-                continue;
-            }
         }
     }
 
