@@ -1,4 +1,5 @@
-﻿using Loggle.Logging;
+﻿using Confluent.Kafka;
+using Loggle.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -18,11 +19,11 @@ public class Program
 
         var options = new BufferedChannelOptions()
         {
-            MaxSize = 10,
+            MaxSize = 100,
             MaxLifetime = TimeSpan.FromSeconds(2)
         };
 
-        var buffer = new BufferedChannel<string>(options, FlushBatchHandlerAsync);
+        var buffer = new BufferedChannel<string>(options, SendToKafkaAsync);
 
         var writer = buffer.Writer;
 
@@ -49,11 +50,11 @@ public class Program
                 i++;
 
                 // Simulate delay
-                await Task.Delay(Random.Shared.Next(60, 200), cts.Token);
+                await Task.Delay(Random.Shared.Next(60, 100), cts.Token);
             }
         });
 
-        await Task.Delay(TimeSpan.FromSeconds(77));
+        await Task.Delay(TimeSpan.FromMinutes(2));
 
         var completed = writer.TryComplete();
 
@@ -63,6 +64,44 @@ public class Program
         await consumerTask.ConfigureAwait(false);
 
         Console.WriteLine("All done!");
+    }
+
+    private static async ValueTask SendToKafkaAsync(IReadOnlyList<string> batch)
+    {
+        try
+        {
+            const string BootstrapServers = "localhost:9092";
+            const string TopicName = "wsl-demo-topic";
+
+            var config = new AdminClientConfig
+            {
+                BootstrapServers = BootstrapServers
+            };
+
+            var producerConfig = new ProducerConfig
+            {
+                BootstrapServers = BootstrapServers,
+                SecurityProtocol = SecurityProtocol.Plaintext,
+                SaslMechanism = SaslMechanism.Plain
+            };
+
+            using var producer = new ProducerBuilder<string, string>(producerConfig)
+               .Build();
+
+            foreach (var item in batch)
+            {
+                var result = await producer.ProduceAsync(TopicName, new Message<string, string>
+                {
+                    Key = item,
+                    Value = item
+                });
+
+                Console.WriteLine($"Message produced to {result.TopicPartitionOffset}");
+            }
+        }
+        catch (Exception ex)
+        {
+        }
     }
 
     private static ValueTask FlushBatchHandlerAsync(IReadOnlyList<string> batch)
