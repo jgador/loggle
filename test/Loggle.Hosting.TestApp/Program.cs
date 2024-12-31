@@ -23,11 +23,11 @@ public class Program
             MaxLifetime = TimeSpan.FromSeconds(2)
         };
 
-        var buffer = new BufferedChannel<string>(options, FlushBatchHandlerAsync);
+        var channel = new BufferedChannel<string>(options, FlushBatchHandlerAsync);
 
-        var writer = buffer.Writer;
+        var writer = channel.Writer;
 
-        var consumerTask = buffer.ConsumeAsync();
+        var consumerTask = channel.ConsumeAsync();
 
         var producerTask = Task.Run(async () =>
         {
@@ -50,11 +50,11 @@ public class Program
                 i++;
 
                 // Simulate delay
-                await Task.Delay(Random.Shared.Next(60, 100), cts.Token);
+                await Task.Delay(Random.Shared.Next(255, 500), cts.Token);
             }
         });
 
-        await Task.Delay(TimeSpan.FromMinutes(.5));
+        await Task.Delay(TimeSpan.FromSeconds(10));
 
         var completed = writer.TryComplete();
 
@@ -109,14 +109,7 @@ public class Program
         if (batch.Count == 0)
             return ValueTask.CompletedTask;
 
-        Console.WriteLine($"[Consumer] Flushing {batch.Count} items");
-
-        foreach (var item in batch)
-        {
-            Console.Write($" {item}");
-        }
-
-        Console.WriteLine();
+        Console.WriteLine($"[Consumer] Flushing {batch.Count} items: {string.Join(",", batch)}");
 
         return ValueTask.CompletedTask;
     }

@@ -1,4 +1,5 @@
-﻿using Confluent.Kafka;
+﻿using System.Threading.Channels;
+using Confluent.Kafka;
 using Confluent.Kafka.Admin;
 
 namespace Loggle.Tests;
@@ -29,5 +30,27 @@ public class KafkaWslTests
                 ReplicationFactor = 1
             }
         });
+    }
+
+    [Fact]
+    public void WaitToReadAsync_DataAvailableBefore_CompletesSynchronously()
+    {
+        Channel<int> c = Channel.CreateBounded<int>(1);
+        ValueTask write = c.Writer.WriteAsync(42);
+        ValueTask<bool> read = c.Reader.WaitToReadAsync();
+        Assert.True(read.IsCompletedSuccessfully);
+    }
+
+    [Fact]
+    public async Task WaitToReadAsync_DataAvailableBefore_CompletesAsynchronously()
+    {
+        Channel<int> c = Channel.CreateBounded<int>(1);
+        await c.Writer.WriteAsync(42).ConfigureAwait(false);
+        bool read = await c.Reader.WaitToReadAsync().ConfigureAwait(false);
+
+        c.Writer.Complete();
+
+        bool read2 = await c.Reader.WaitToReadAsync().ConfigureAwait(false);
+        Assert.True(read);
     }
 }
