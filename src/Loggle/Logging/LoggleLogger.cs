@@ -1,24 +1,23 @@
-﻿using System.Threading.Channels;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 
 namespace Loggle.Logging;
 
 internal sealed class LoggleLogger : ILogger
 {
     private readonly string _name;
-    private readonly ChannelWriter<LogMessageEntry> _channelWriter;
+    private readonly BufferedChannel<LogMessageEntry> _channel;
 
     internal LoggleLogger(
         string name,
         IExternalScopeProvider? scopeProvider,
-        ChannelWriter<LogMessageEntry> channelWriter,
+        BufferedChannel<LogMessageEntry> channel,
         LoggleLoggerOptions options)
     {
         ThrowHelper.ThrowIfNull(name);
-        ThrowHelper.ThrowIfNull(channelWriter);
+        ThrowHelper.ThrowIfNull(channel);
 
         _name = name;
-        _channelWriter = channelWriter;
+        _channel = channel;
         ScopeProvider = scopeProvider;
         Options = options;
     }
@@ -65,7 +64,7 @@ internal sealed class LoggleLogger : ILogger
             Message = message
         };
 
-        _channelWriter.TryWrite(logMessageEntry);
+        _channel.Writer.TryWrite(logMessageEntry);
     }
 
     public IDisposable BeginScope<TState>(TState state) where TState : notnull => ScopeProvider?.Push(state) ?? NullScope.Instance;

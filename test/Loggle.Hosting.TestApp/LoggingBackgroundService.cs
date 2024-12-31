@@ -22,7 +22,7 @@ public class LoggingBackgroundService : BackgroundService
         {
             counter++;
             _logger.LogInformation("Background task log message #{counter}", counter);
-            await Task.Delay(1000, stoppingToken); // Log every second
+            await Task.Delay(Random.Shared.Next(456, 789), stoppingToken);
         }
     }
 }

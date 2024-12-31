@@ -1,9 +1,8 @@
-﻿using System.Text.Encodings.Web;
+﻿using System.Diagnostics;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Channels;
 using Confluent.Kafka;
-using Loggle.Egress;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -13,10 +12,9 @@ namespace Loggle.Logging;
 public class LoggleLoggerProvider : ILoggerProvider, ISupportExternalScope
 {
     private IExternalScopeProvider _scopeProvider = NullExternalScopeProvider.Instance;
-    private Channel<LogMessageEntry> _channel;
+    private BufferedChannel<LogMessageEntry> _channel;
     private readonly IOptionsMonitor<LoggleLoggerOptions> _options;
-    private readonly IOptionsMonitor<EgressOptions> _egressOptions;
-    private readonly Task _backgroundTask;
+    private readonly Thread _outputThread;
 
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -24,70 +22,79 @@ public class LoggleLoggerProvider : ILoggerProvider, ISupportExternalScope
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
-    public LoggleLoggerProvider(IOptionsMonitor<LoggleLoggerOptions> options, IOptionsMonitor<EgressOptions> egressOptions)
+    public LoggleLoggerProvider(IOptionsMonitor<LoggleLoggerOptions> options)
     {
         _options = options;
-        _egressOptions = egressOptions;
-        _channel = Channel.CreateBounded<LogMessageEntry>(new BoundedChannelOptions(2)
-        {
-            FullMode = BoundedChannelFullMode.Wait
-        });
 
-        _backgroundTask = Task.Factory.StartNew(() =>
+        _channel = new BufferedChannel<LogMessageEntry>(
+            new BufferedChannelOptions
+            {
+                MaxSize = _options?.CurrentValue?.Egress?.Kafka?.Batching?.MaxSize ?? 1_000,
+                MaxLifetime = _options?.CurrentValue?.Egress?.Kafka?.Batching?.MaxLifetime ?? TimeSpan.FromSeconds(5)
+            }, SendToKafkaAsync);
+
+        _outputThread = new Thread(Flush)
         {
-            _ = ProcessChannelAsync(_channel.Reader, TimeSpan.FromSeconds(1), default);
-        });
+            IsBackground = true,
+            Name = "Loggle logger queue processing thread"
+        };
+
+        _outputThread.Start();
     }
 
-    public ILogger CreateLogger(string name) => new LoggleLogger(name, _scopeProvider, _channel.Writer, _options.CurrentValue);
+    private void Flush()
+    {
+        _channel.ConsumeAsync().GetAwaiter().GetResult();
+    }
+
+    public ILogger CreateLogger(string name) => new LoggleLogger(name, _scopeProvider, _channel, _options.CurrentValue);
 
     public void SetScopeProvider(IExternalScopeProvider scopeProvider) => _scopeProvider = scopeProvider;
 
-    private async Task ProcessChannelAsync(ChannelReader<LogMessageEntry> reader, TimeSpan flushInterval, CancellationToken cancellationToken)
+    private static ValueTask FlushBatchHandlerAsync(IReadOnlyList<LogMessageEntry> batch)
     {
-        var producerConfig = new ProducerConfig
-        {
-            BootstrapServers = _egressOptions.CurrentValue.Kafka.BootstrapServers,
-            SecurityProtocol = SecurityProtocol.SaslSsl,
-            SaslMechanism = SaslMechanism.Plain,
-            SaslUsername = "",
-            SaslPassword = "",
-            //ClientId = "ccloud-csharp-client-d3ca6def-bbcc-4924-8d99-ba206d1f6162"
-        };
+        if (batch.Count == 0)
+            return ValueTask.CompletedTask;
 
-        using var producer = new ProducerBuilder<string, string>(producerConfig)
-            .Build();
+        Debug.WriteLine($"[Consumer] Flushing {batch.Count} item(s): {string.Join(",", batch.Select(l => l.Message))}");
 
+        return ValueTask.CompletedTask;
+    }
+
+    private async ValueTask SendToKafkaAsync(IReadOnlyList<LogMessageEntry> batch)
+    {
         try
         {
-            var batch = new List<LogMessageEntry>();
+            var bootstrapServers = _options.CurrentValue.Egress.Kafka.BootstrapServers;
+            var topicName = _options.CurrentValue.Egress.Kafka.TopicName;
 
-            while (batch.Count < 100 && await reader.WaitToReadAsync(cancellationToken))
+            var producerConfig = new ProducerConfig
             {
-                while (reader.TryRead(out var logMessage) && batch.Count < 2)
-                {
-                    batch.Add(logMessage);
-                }
-            }
+                BootstrapServers = bootstrapServers,
+                SecurityProtocol = SecurityProtocol.Plaintext,
+                SaslMechanism = SaslMechanism.Plain
+            };
+
+            using var producer = new ProducerBuilder<string, string>(producerConfig)
+               .Build();
 
             foreach (var item in batch)
             {
-                await producer.ProduceAsync("demo-messages", new Message<string, string>()
+                var result = await producer.ProduceAsync(topicName, new Message<string, string>
                 {
                     Key = Guid.NewGuid().ToString(),
-                    Value = JsonSerializer.Serialize(item, SerializerOptions)
+                    Value = item.Message
                 });
+
+                Console.WriteLine($"Message produced to {result.TopicPartitionOffset}");
             }
         }
         catch (Exception ex)
         {
-
-            throw;
         }
     }
 
     public void Dispose()
     {
-        _channel.Writer.Complete();
     }
 }

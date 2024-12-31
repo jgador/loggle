@@ -9,6 +9,12 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
+        // await SimulateProducerConsumerAsync().ConfigureAwait(false);
+        await RunAsync(args).ConfigureAwait(false);
+    }
+
+    private static async Task SimulateProducerConsumerAsync()
+    {
         var cts = new CancellationTokenSource();
 
         Console.CancelKeyPress += (object? sender, ConsoleCancelEventArgs e) =>
@@ -50,7 +56,11 @@ public class Program
                 i++;
 
                 // Simulate delay
-                await Task.Delay(Random.Shared.Next(255, 500), cts.Token);
+                try
+                {
+                    await Task.Delay(Random.Shared.Next(56, 789), cts.Token);
+                }
+                catch { }
             }
         });
 
@@ -109,7 +119,7 @@ public class Program
         if (batch.Count == 0)
             return ValueTask.CompletedTask;
 
-        Console.WriteLine($"[Consumer] Flushing {batch.Count} items: {string.Join(",", batch)}");
+        Console.WriteLine($"[Consumer] Flushing {batch.Count} item(s): {string.Join(",", batch)}");
 
         return ValueTask.CompletedTask;
     }
