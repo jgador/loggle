@@ -21,8 +21,8 @@ public class LoggingBackgroundService : BackgroundService
         while (!stoppingToken.IsCancellationRequested)
         {
             counter++;
-            _logger.LogInformation("Background task log message #{counter}", counter);
-            await Task.Delay(Random.Shared.Next(456, 789), stoppingToken);
+            _logger.LogInformation("Background task log message # {Counter} - {Guid}", counter, Guid.NewGuid().ToString());
+            await Task.Delay(Random.Shared.Next(1, 50), stoppingToken);
         }
     }
 }
