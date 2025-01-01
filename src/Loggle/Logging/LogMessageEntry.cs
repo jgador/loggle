@@ -1,15 +1,17 @@
-﻿using System.Text.Json.Serialization;
+﻿using System;
+using System.Text.Json.Serialization;
 
-namespace Loggle.Logging;
-
-public class LogMessageEntry
+namespace Loggle.Logging
 {
-    [JsonPropertyName("timestamp")]
-    public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.UtcNow;
+    public class LogMessageEntry
+    {
+        [JsonPropertyName("timestamp")]
+        public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.UtcNow;
 
-    [JsonPropertyName("level")]
-    public string? Level { get; set; }
+        [JsonPropertyName("level")]
+        public string? Level { get; set; }
 
-    [JsonPropertyName("message")]
-    public string? Message { get; set; }
+        [JsonPropertyName("message")]
+        public string? Message { get; set; }
+    }
 }

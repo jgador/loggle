@@ -1,4 +1,5 @@
 ﻿using System.Threading.Channels;
+using System.Threading.Tasks;
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
 

@@ -1,5 +1,10 @@
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 
@@ -77,7 +82,7 @@ public sealed class KafkaFixture : IAsyncLifetime, IDisposable
     public async Task DisposeAsync()
     {
         var containers = await GetKafkaContainersAsync(Cts.Token).ConfigureAwait(false);
-        var images = await GetKafkaImagesAsync(Cts.Token).ConfigureAwait (false);
+        var images = await GetKafkaImagesAsync(Cts.Token).ConfigureAwait(false);
 
         foreach (var container in containers)
         {

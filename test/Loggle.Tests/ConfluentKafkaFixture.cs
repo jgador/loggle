@@ -1,4 +1,7 @@
-﻿using Confluent.Kafka;
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
+using Confluent.Kafka;
 using Confluent.Kafka.Admin;
 
 namespace Loggle.Tests;

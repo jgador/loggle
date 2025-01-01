@@ -1,6 +1,7 @@
-﻿namespace Loggle.Egress;
-
-public class EgressOptions
+﻿namespace Loggle.Egress
 {
-    public KafkaOptions? Kafka { get; set; }
+    public class EgressOptions
+    {
+        public KafkaOptions? Kafka { get; set; }
+    }
 }

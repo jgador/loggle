@@ -1,8 +1,10 @@
-﻿using Microsoft.Extensions.Logging.Abstractions;
+﻿using System.Threading.Tasks;
+using Microsoft.Extensions.Logging.Abstractions;
 
-namespace Loggle.Egress;
-
-public interface IEgress
+namespace Loggle.Egress
 {
-    ValueTask SendLogAsync<TState>(LogEntry<TState> logEntry);
+    public interface IEgress
+    {
+        ValueTask SendLogAsync<TState>(LogEntry<TState> logEntry);
+    }
 }

@@ -1,10 +1,12 @@
+using System.Threading.Tasks;
+
 namespace Loggle.Tests;
 
-public class KafkaTests: IClassFixture<KafkaFixture>
+public class KafkaTests : IClassFixture<KafkaFixture>
 {
     public KafkaTests(KafkaFixture fixture)
     {
-        
+
     }
 
     [Fact]

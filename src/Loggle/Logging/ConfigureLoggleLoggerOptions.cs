@@ -1,21 +1,22 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
-namespace Loggle.Logging;
-
-internal sealed class ConfigureLoggleLoggerOptions : IConfigureOptions<LoggleLoggerOptions>
+namespace Loggle.Logging
 {
-    private readonly IConfiguration _configuration;
-
-    public ConfigureLoggleLoggerOptions(IConfiguration configuration)
+    internal sealed class ConfigureLoggleLoggerOptions : IConfigureOptions<LoggleLoggerOptions>
     {
-        ThrowHelper.ThrowIfNull(configuration);
+        private readonly IConfiguration _configuration;
 
-        _configuration = configuration;
-    }
+        public ConfigureLoggleLoggerOptions(IConfiguration configuration)
+        {
+            ThrowHelper.ThrowIfNull(configuration);
 
-    public void Configure(LoggleLoggerOptions options)
-    {
-        _configuration.Bind(LoggleLoggerOptions.SectionKey, options);
+            _configuration = configuration;
+        }
+
+        public void Configure(LoggleLoggerOptions options)
+        {
+            _configuration.Bind(LoggleLoggerOptions.SectionKey, options);
+        }
     }
 }

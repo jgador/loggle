@@ -1,71 +1,73 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System;
+using Microsoft.Extensions.Logging;
 
-namespace Loggle.Logging;
-
-internal sealed class LoggleLogger : ILogger
+namespace Loggle.Logging
 {
-    private readonly string _name;
-    private readonly BufferedChannel<LogMessageEntry> _channel;
-
-    internal LoggleLogger(
-        string name,
-        IExternalScopeProvider? scopeProvider,
-        BufferedChannel<LogMessageEntry> channel,
-        LoggleLoggerOptions options)
+    internal sealed class LoggleLogger : ILogger
     {
-        ThrowHelper.ThrowIfNull(name);
-        ThrowHelper.ThrowIfNull(channel);
+        private readonly string _name;
+        private readonly BufferedChannel<LogMessageEntry> _channel;
 
-        _name = name;
-        _channel = channel;
-        ScopeProvider = scopeProvider;
-        Options = options;
-    }
-
-    internal IExternalScopeProvider? ScopeProvider { get; set; }
-
-    internal LoggleLoggerOptions Options { get; set; }
-
-    public bool IsEnabled(LogLevel logLevel)
-    {
-        return Options switch
+        internal LoggleLogger(
+            string name,
+            IExternalScopeProvider? scopeProvider,
+            BufferedChannel<LogMessageEntry> channel,
+            LoggleLoggerOptions options)
         {
-            { Enabled: false } => false,
-            { MinimumLevel: var configuredLevel } when configuredLevel >= logLevel => true,
-            _ => logLevel != LogLevel.None
-        };
-    }
+            ThrowHelper.ThrowIfNull(name);
+            ThrowHelper.ThrowIfNull(channel);
 
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
-    {
-        if (!IsEnabled(logLevel))
-        {
-            return;
+            _name = name;
+            _channel = channel;
+            ScopeProvider = scopeProvider;
+            Options = options;
         }
 
-        ThrowHelper.ThrowIfNull(formatter);
+        internal IExternalScopeProvider? ScopeProvider { get; set; }
 
-        var message = formatter(state, exception);
+        internal LoggleLoggerOptions Options { get; set; }
 
-        if (string.IsNullOrWhiteSpace(message))
+        public bool IsEnabled(LogLevel logLevel)
         {
-            return;
+            return Options switch
+            {
+                { Enabled: false } => false,
+                { MinimumLevel: var configuredLevel } when configuredLevel >= logLevel => true,
+                _ => logLevel != LogLevel.None
+            };
         }
 
-        if (exception != null)
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
-            message += Environment.NewLine + Environment.NewLine + exception;
+            if (!IsEnabled(logLevel))
+            {
+                return;
+            }
+
+            ThrowHelper.ThrowIfNull(formatter);
+
+            var message = formatter(state, exception);
+
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                return;
+            }
+
+            if (exception != null)
+            {
+                message += Environment.NewLine + Environment.NewLine + exception;
+            }
+
+            var logMessageEntry = new LogMessageEntry()
+            {
+                Timestamp = DateTimeOffset.UtcNow,
+                Level = logLevel.ToString(),
+                Message = message
+            };
+
+            _channel.Writer.TryWrite(logMessageEntry);
         }
 
-        var logMessageEntry = new LogMessageEntry()
-        {
-            Timestamp = DateTimeOffset.UtcNow,
-            Level = logLevel.ToString(),
-            Message = message
-        };
-
-        _channel.Writer.TryWrite(logMessageEntry);
+        public IDisposable BeginScope<TState>(TState state) where TState : notnull => ScopeProvider?.Push(state) ?? NullScope.Instance;
     }
-
-    public IDisposable BeginScope<TState>(TState state) where TState : notnull => ScopeProvider?.Push(state) ?? NullScope.Instance;
 }

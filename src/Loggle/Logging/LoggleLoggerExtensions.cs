@@ -2,15 +2,17 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Loggle.Logging;
-
-public static class LoggleLoggerExtensions
+namespace Loggle.Logging
 {
-    public static ILoggingBuilder AddLoggle(this ILoggingBuilder builder)
+    public static class LoggleLoggerExtensions
     {
-        builder.Services.AddSingleton<ILoggerProvider, LoggleLoggerProvider>();
-        builder.Services.AddTransient<IConfigureOptions<LoggleLoggerOptions>, ConfigureLoggleLoggerOptions>();
+        public static ILoggingBuilder AddLoggle(this ILoggingBuilder builder)
+        {
+            builder.Services.AddSingleton<ILoggerProvider, LoggleLoggerProvider>();
+            builder.Services.AddTransient<IConfigureOptions<LoggleLoggerOptions>, ConfigureLoggleLoggerOptions>();
 
-        return builder;
+            return builder;
+        }
     }
+
 }

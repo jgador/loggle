@@ -1,40 +1,42 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-namespace Loggle;
-
-internal static class ThrowHelper
+namespace Loggle
 {
-    internal static void ThrowIfNull(
-        [NotNull] object? argument,
-        [CallerArgumentExpression(nameof(argument))] string? paramName = null)
+    internal static class ThrowHelper
     {
-        if (argument is null)
+        internal static void ThrowIfNull(
+            [NotNull] object? argument,
+            [CallerArgumentExpression(nameof(argument))] string? paramName = null)
         {
-            Throw(paramName);
-        }
-    }
-
-    [return: NotNull]
-    public static string IfNullOrWhitespace(
-        [NotNull] string? argument,
-        [CallerArgumentExpression(nameof(argument))] string paramName = "")
-    {
-        if (string.IsNullOrWhiteSpace(argument))
-        {
-            if (argument == null)
+            if (argument is null)
             {
-                throw new ArgumentNullException(paramName);
-            }
-            else
-            {
-                throw new ArgumentException("Argument is whitespace", paramName);
+                Throw(paramName);
             }
         }
 
-        return argument;
-    }
+        [return: NotNull]
+        public static string IfNullOrWhitespace(
+            [NotNull] string? argument,
+            [CallerArgumentExpression(nameof(argument))] string paramName = "")
+        {
+            if (string.IsNullOrWhiteSpace(argument))
+            {
+                if (argument == null)
+                {
+                    throw new ArgumentNullException(paramName);
+                }
+                else
+                {
+                    throw new ArgumentException("Argument is whitespace", paramName);
+                }
+            }
 
-    [DoesNotReturn]
-    private static void Throw(string? paramName) => throw new ArgumentNullException(paramName);
+            return argument;
+        }
+
+        [DoesNotReturn]
+        private static void Throw(string? paramName) => throw new ArgumentNullException(paramName);
+    }
 }

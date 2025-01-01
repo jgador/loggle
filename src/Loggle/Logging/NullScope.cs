@@ -1,14 +1,18 @@
-﻿namespace Loggle.Logging;
+﻿using System;
 
-internal sealed class NullScope : IDisposable
+namespace Loggle.Logging
 {
-    public static NullScope Instance { get; } = new NullScope();
-
-    private NullScope()
+    internal sealed class NullScope : IDisposable
     {
+        public static NullScope Instance { get; } = new NullScope();
+
+        private NullScope()
+        {
+        }
+
+        public void Dispose()
+        {
+        }
     }
 
-    public void Dispose()
-    {
-    }
 }

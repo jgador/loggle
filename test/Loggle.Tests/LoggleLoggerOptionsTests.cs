@@ -1,4 +1,6 @@
-﻿using Loggle.Logging;
+﻿using System;
+using System.Collections.Generic;
+using Loggle.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

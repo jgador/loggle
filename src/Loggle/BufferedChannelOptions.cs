@@ -1,8 +1,11 @@
-﻿namespace Loggle;
+﻿using System;
 
-public class BufferedChannelOptions
+namespace Loggle
 {
-    public int MaxSize { get; set; } = 1_000;
+    public class BufferedChannelOptions
+    {
+        public int MaxSize { get; set; } = 1_000;
 
-    public TimeSpan MaxLifetime { get; set; } = TimeSpan.FromSeconds(5);
+        public TimeSpan MaxLifetime { get; set; } = TimeSpan.FromSeconds(5);
+    }
 }

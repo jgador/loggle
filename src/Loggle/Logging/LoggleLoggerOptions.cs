@@ -1,17 +1,19 @@
 ﻿using Loggle.Egress;
 using Microsoft.Extensions.Logging;
 
-namespace Loggle.Logging;
-
-public class LoggleLoggerOptions
+namespace Loggle.Logging
 {
-    public const string SectionKey = "Logging:Loggle";
+    public class LoggleLoggerOptions
+    {
+        public const string SectionKey = "Logging:Loggle";
 
-    public bool Enabled { get; set; } = true;
+        public bool Enabled { get; set; } = true;
 
-    public LogLevel? MinimumLevel { get; set; } = LogLevel.Information;
+        public LogLevel? MinimumLevel { get; set; } = LogLevel.Information;
 
-    public bool IncludeScopes { get; set; } = false;
+        public bool IncludeScopes { get; set; } = false;
 
-    public required EgressOptions Egress { get; set; }
+        public EgressOptions? Egress { get; set; }
+    }
+
 }

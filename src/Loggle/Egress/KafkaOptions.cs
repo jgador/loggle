@@ -1,10 +1,11 @@
-﻿namespace Loggle.Egress;
-
-public class KafkaOptions
+﻿namespace Loggle.Egress
 {
-    public string? BootstrapServers { get; set; }
+    public class KafkaOptions
+    {
+        public string? BootstrapServers { get; set; }
 
-    public string? TopicName { get; set; }
+        public string? TopicName { get; set; }
 
-    public BufferedChannelOptions? Batching { get; set; }
+        public BufferedChannelOptions? Batching { get; set; }
+    }
 }
