@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace Loggle
 {
-    public delegate ValueTask BufferedChannelFlushHandler<in TEvent>(IReadOnlyList<TEvent> batch);
+    public delegate Task BufferedChannelFlushHandler<in TEvent>(IReadOnlyList<TEvent> batch, CancellationToken cancellationToken);
 
     public class BufferedChannel<TEvent>
     where TEvent : notnull
@@ -28,12 +29,11 @@ namespace Loggle
 
             _options = options;
 
-            _channel = Channel.CreateBounded<TEvent>(
-                new BoundedChannelOptions(_options!.MaxSize)
+            _channel = Channel.CreateUnbounded<TEvent>(
+                new UnboundedChannelOptions
                 {
                     SingleWriter = false,
-                    SingleReader = false,
-                    FullMode = BoundedChannelFullMode.Wait
+                    SingleReader = false
                 });
 
             _flushHandler = flushHandler;
@@ -78,7 +78,7 @@ namespace Loggle
                 async ValueTask FlushBufferAsync()
                 {
                     var batch = currentBatch.ToArray();
-                    await _flushHandler(batch).ConfigureAwait(false);
+                    await _flushHandler(batch, default).ConfigureAwait(false);
                     currentBatch.Clear();
                     startTime = DateTimeOffset.UtcNow;
 

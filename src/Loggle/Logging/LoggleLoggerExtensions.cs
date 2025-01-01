@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Loggle.Egress;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -10,6 +11,7 @@ namespace Loggle.Logging
         {
             builder.Services.AddSingleton<ILoggerProvider, LoggleLoggerProvider>();
             builder.Services.AddTransient<IConfigureOptions<LoggleLoggerOptions>, ConfigureLoggleLoggerOptions>();
+            builder.Services.AddSingleton<IEgressLoggerProcessor, KafkaEgressLoggerProcessor>(); // default for now
 
             return builder;
         }

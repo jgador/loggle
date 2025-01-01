@@ -5,19 +5,15 @@ namespace Loggle.Logging
 {
     internal sealed class LoggleLogger : ILogger
     {
-        private readonly string _name;
         private readonly BufferedChannel<LogMessageEntry> _channel;
 
         internal LoggleLogger(
-            string name,
             IExternalScopeProvider? scopeProvider,
             BufferedChannel<LogMessageEntry> channel,
             LoggleLoggerOptions options)
         {
-            ThrowHelper.ThrowIfNull(name);
             ThrowHelper.ThrowIfNull(channel);
 
-            _name = name;
             _channel = channel;
             ScopeProvider = scopeProvider;
             Options = options;

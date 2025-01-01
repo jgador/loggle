@@ -118,14 +118,14 @@ public class Program
         }
     }
 
-    private static ValueTask FlushBatchHandlerAsync(IReadOnlyList<string> batch)
+    private static Task FlushBatchHandlerAsync(IReadOnlyList<string> batch, CancellationToken cancellationToken)
     {
         if (batch.Count == 0)
-            return ValueTask.CompletedTask;
+            return Task.CompletedTask;
 
         Console.WriteLine($"[Consumer] Flushing {batch.Count} item(s): {string.Join(",", batch)}");
 
-        return ValueTask.CompletedTask;
+        return Task.CompletedTask;
     }
 
     private static async Task RunAsync(string[] args)
@@ -138,6 +138,7 @@ public class Program
             .ConfigureServices((context, services) =>
             {
                 services.AddHostedService<LoggingBackgroundService>();
+                services.AddHostedService<YetAnotherLoggingBackgroundService>();
             });
 
         using var host = builder.Build();
