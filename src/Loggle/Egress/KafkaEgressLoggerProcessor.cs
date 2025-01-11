@@ -35,7 +35,8 @@ namespace Loggle.Egress
                 SaslMechanism = SaslMechanism.Plain
             };
 
-            using var producer = new ProducerBuilder<string, LogMessageEntry>(producerConfig)
+            using var producer = new ProducerBuilder<Guid, LogMessageEntry>(producerConfig)
+                .SetKeySerializer(new SystemTextJsonSerializer<Guid>())
                 .SetValueSerializer(new SystemTextJsonSerializer<LogMessageEntry>())
                 .Build();
 
@@ -43,9 +44,9 @@ namespace Loggle.Egress
             {
                 await producer.ProduceAsync(
                     _options.TopicName,
-                    new Message<string, LogMessageEntry>
+                    new Message<Guid, LogMessageEntry>
                     {
-                        Key = Guid.NewGuid().ToString(),
+                        Key = Guid.NewGuid(),
                         Value = log
                     });
             });

@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Confluent.Kafka;
-using Loggle.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using OpenTelemetry.Logs;
 
 namespace Loggle.Hosting.TestApp;
 
@@ -131,9 +132,19 @@ public class Program
     private static async Task RunAsync(string[] args)
     {
         var builder = Host.CreateDefaultBuilder(args)
-            .ConfigureLogging((context, factory) =>
+            .ConfigureLogging((context, logging) =>
             {
-                factory.AddLoggle();
+                logging.AddOpenTelemetry(opt =>
+                {
+                    opt.IncludeFormattedMessage = true;
+                    opt.ParseStateValues = true;
+                    opt.AddOtlpExporter(exporterOptions =>
+                    {
+                        exporterOptions.Endpoint = new Uri("http://localhost:4317");
+                        exporterOptions.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
+                    });
+                });
+                // logging.AddLoggle();
             })
             .ConfigureServices((context, services) =>
             {
