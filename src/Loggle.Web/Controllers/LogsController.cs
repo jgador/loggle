@@ -1,20 +1,41 @@
-﻿using System.Net.Mime;
+﻿using System;
+using System.IO;
+using System.Net.Mime;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using OtlpLogs = OpenTelemetry.Proto.Logs.V1;
 
 namespace Loggle.Web.Controllers;
 
 [ApiController]
-public class LogsController
+[Route("")]
+public class LogsController : ControllerBase
 {
     [AllowAnonymous]
     [HttpPost]
     [Produces(MediaTypeNames.Application.Json)]
-    [Route("api/v1/logs/ingest")]
-    public async Task<IResult> IngestLogsAsync([FromBody] object log)
+    [Route("v1/logs")]
+    public async Task<IResult> IngestLogsAsync()
     {
-        return Results.Ok(log);
+        try
+        {
+            using var stream = new MemoryStream();
+            await Request.Body.CopyToAsync(stream);
+
+            if (stream.CanSeek)
+            {
+                stream.Seek(0, SeekOrigin.Begin);
+            }
+
+            var logsData = OtlpLogs.LogsData.Parser.ParseFrom(stream);
+
+            return Results.Ok();
+        }
+        catch (Exception ex)
+        {
+            return Results.InternalServerError(ex);
+        }
     }
 }

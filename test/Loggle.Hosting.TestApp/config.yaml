@@ -16,7 +16,10 @@ exporters:
   file:
     path: /exportlogs.log
   otlphttp:
-    endpoint: http://host.docker.internal:5176/api/v1/logs/ingest
+    endpoint: http://host.docker.internal:5176
+    headers:
+      Content-Type: application/json
+      X-Loggle-Key: abcdefg
     encoding: json
 
 service:
