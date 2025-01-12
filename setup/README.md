@@ -1,3 +1,34 @@
+# OpenTelemetry Collector Setup
+
+Run the OpenTelemetry Collector with Docker. Replace `<path_to_your_config.yaml>` and `<path_to_exportlogs.log>` with your local paths.
+
+```bash
+docker run --rm -it \
+ -p 4317:4317 \
+ -v <path_to_your_config.yaml>:/etc/otelcol-contrib/config.yaml \
+ --name otelcol \
+ otel/opentelemetry-collector-contrib:0.117.0
+```
+**Example (Windows)**
+
+For Windows, use paths like this:
+
+```bash
+docker run --rm -it `
+ -p 4317:4317 `
+ -v c/repo/GitHub/loggle/setup/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml `
+ --name otelcol `
+ otel/opentelemetry-collector-contrib:0.117.0
+```
+## Data Flow
+The setup sends logs to the collector, which exports them to an ASP.NET Core API:
+
++-------------------+       +--------------------------+       +------------------+
+| Application Logs  | ----> | OpenTelemetry Collector  | ----> | ASP.NET Core API |
++-------------------+       +--------------------------+       +------------------+
+                                   Logs Ingest                      Logs Export
+                                                          (Includes API Key in Header)
+
 # Kafka Setup via WSL
 
 ```

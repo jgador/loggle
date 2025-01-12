@@ -1,0 +1,24 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+exporters:
+  debug:
+    verbosity: detailed
+  otlphttp:
+    endpoint: http://host.docker.internal:5176
+    tls:
+      insecure: true
+    headers:
+      Content-Type: application/json
+      X-Loggle-Key: abcdefg
+    encoding: proto
+    compression: none
+
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      exporters: [debug, otlphttp]
