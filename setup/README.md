@@ -4,7 +4,7 @@ Run the OpenTelemetry Collector with Docker. Replace `<path_to_your_config.yaml>
 
 ```bash
 docker run --rm -it \
- -p 4317:4317 \
+ -p 4318:4318 \
  -v <path_to_your_config.yaml>:/etc/otelcol-contrib/config.yaml \
  --name otelcol \
  otel/opentelemetry-collector-contrib:0.117.0
@@ -15,7 +15,7 @@ For Windows, use paths like this:
 
 ```bash
 docker run --rm -it `
- -p 4317:4317 `
+ -p 4318:4318 `
  -v c/repo/GitHub/loggle/setup/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml `
  --name otelcol `
  otel/opentelemetry-collector-contrib:0.117.0

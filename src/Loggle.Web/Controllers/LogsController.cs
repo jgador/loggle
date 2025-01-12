@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using OtlpLogs = OpenTelemetry.Proto.Logs.V1;
@@ -12,7 +11,7 @@ namespace Loggle.Web.Controllers;
 [Route("")]
 public class LogsController : ControllerBase
 {
-    [AllowAnonymous]
+    // [AllowAnonymous]
     [HttpPost]
     [Route("v1/logs")]
     public async Task<IResult> IngestLogsAsync()

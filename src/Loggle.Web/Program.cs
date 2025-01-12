@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Loggle.Web.Authentication.ApiKey;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -22,10 +23,14 @@ public class Program
                 opt.ParseStateValues = true;
                 opt.AddOtlpExporter(exporterOptions =>
                 {
-                    exporterOptions.Endpoint = new Uri("http://localhost:4317");
-                    exporterOptions.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
+                    //exporterOptions.Endpoint = new Uri("http://localhost:4317");
+                    //exporterOptions.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
+                    exporterOptions.Endpoint = new Uri("http://localhost:4318/v1/logs");
+                    exporterOptions.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
                 });
             });
+
+        builder.Services.AddApiKey();
 
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();
@@ -37,6 +42,8 @@ public class Program
         {
             app.MapOpenApi();
         }
+
+        app.UseAuthentication();
 
         app.UseAuthorization();
 

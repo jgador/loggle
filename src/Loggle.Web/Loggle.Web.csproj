@@ -22,4 +22,8 @@
     </Protobuf>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Loggle\Loggle.csproj" />
+  </ItemGroup>
+
 </Project>
