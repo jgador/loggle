@@ -1,0 +1,5 @@
+<Project>
+  <PropertyGroup>
+    <RepoRoot>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)))</RepoRoot>
+  </PropertyGroup>
+</Project>

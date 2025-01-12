@@ -15,9 +15,12 @@ exporters:
     verbosity: detailed
   file:
     path: /exportlogs.log
+  otlphttp:
+    endpoint: http://host.docker.internal:5176/api/v1/logs/ingest
+    encoding: json
 
 service:
   pipelines:
     logs:
       receivers: [otlp]
-      exporters: [debug, file]
+      exporters: [debug, file,otlphttp]
