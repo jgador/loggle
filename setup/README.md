@@ -23,10 +23,11 @@ docker run --rm -it `
 ## Data Flow
 The setup sends logs to the collector, which exports them to an ASP.NET Core API:
 
+```
 +------------------+
 | Application Logs | --->
 +------------------+
-
+```
 
 # Kafka Setup via WSL
 
