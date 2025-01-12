@@ -23,11 +23,10 @@ docker run --rm -it `
 ## Data Flow
 The setup sends logs to the collector, which exports them to an ASP.NET Core API:
 
-+-------------------+       +--------------------------+       +------------------+
-| Application Logs  | ----> | OpenTelemetry Collector  | ----> | ASP.NET Core API |
-+-------------------+       +--------------------------+       +------------------+
-                                   Logs Ingest                      Logs Export
-                                                          (Includes API Key in Header)
++------------------+
+| Application Logs | --->
++------------------+
+
 
 # Kafka Setup via WSL
 
