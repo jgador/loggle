@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Net.Mime;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -15,7 +14,6 @@ public class LogsController : ControllerBase
 {
     [AllowAnonymous]
     [HttpPost]
-    [Produces(MediaTypeNames.Application.Json)]
     [Route("v1/logs")]
     public async Task<IResult> IngestLogsAsync()
     {

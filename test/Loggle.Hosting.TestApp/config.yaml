@@ -17,13 +17,16 @@ exporters:
     path: /exportlogs.log
   otlphttp:
     endpoint: http://host.docker.internal:5176
+    tls:
+      insecure: true
     headers:
       Content-Type: application/json
       X-Loggle-Key: abcdefg
-    encoding: json
+    encoding: proto
+    compression: none
 
 service:
   pipelines:
     logs:
       receivers: [otlp]
-      exporters: [debug, file,otlphttp]
+      exporters: [debug, file, otlphttp]
