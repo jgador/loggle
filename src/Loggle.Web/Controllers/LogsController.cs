@@ -26,6 +26,7 @@ public class LogsController : ControllerBase
                 stream.Seek(0, SeekOrigin.Begin);
             }
 
+            // Will have errors during dotnet publish
             var logsData = OtlpLogs.LogsData.Parser.ParseFrom(stream);
 
             return Results.Ok();

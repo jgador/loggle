@@ -8,7 +8,7 @@ exporters:
   debug:
     verbosity: detailed
   otlphttp:
-    endpoint: http://host.docker.internal:5176
+    endpoint: http://host.docker.internal:8080
     tls:
       insecure: true
     headers:
