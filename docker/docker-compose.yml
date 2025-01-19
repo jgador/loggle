@@ -15,7 +15,7 @@ services:
     networks:
       - loggle
     ports:
-      - "4318:4318" # http
+      - "4318:4318" # otlphttp
     volumes:
       - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
 
