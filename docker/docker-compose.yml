@@ -1,0 +1,24 @@
+services:
+  loggle-web:
+    image: loggle:latest
+    container_name: loggle-web
+    networks:
+      - loggle
+    ports:
+      - "8080:8080"
+    depends_on:
+      - otelcol
+
+  otelcol:
+    image: otel/opentelemetry-collector-contrib:0.117.0
+    container_name: otelcol
+    networks:
+      - loggle
+    ports:
+      - "4318:4318" # http
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
+
+networks:
+  loggle:
+    driver: bridge
