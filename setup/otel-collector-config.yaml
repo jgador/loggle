@@ -12,7 +12,7 @@ exporters:
     tls:
       insecure: true
     headers:
-      Content-Type: application/json
+      Content-Type: application/x-protobuf
       Authorization: ApiKey L0gg|3K3y
       X-Loggle-Key: L0gg|3K3y
     encoding: proto

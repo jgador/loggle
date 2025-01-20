@@ -142,7 +142,8 @@ public class Program
                     {
                         exporterOptions.Endpoint = new Uri("http://localhost:4317");
                         exporterOptions.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
-                    });
+                    })
+                    .AddConsoleExporter();
                 });
                 // logging.AddLoggle();
             })

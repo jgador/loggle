@@ -7,17 +7,19 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.29.3" />
+    <PackageReference Include="Grpc" Version="2.46.6" />
     <PackageReference Include="Grpc.Tools" Version="2.69.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.0" />
-    <PackageReference Include="OpenTelemetry" Version="1.10.0" />
-    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.10.0" />
+    <PackageReference Include="OpenTelemetry" Version="1.11.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.11.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="$(RepoRoot)\src\Shared\Proto\**\*.proto" Link="Proto\%(RecursiveDir)%(Filename)%(Extension)" Access="internal">
+    <Protobuf Include="$(RepoRoot)\src\Shared\Proto\**\*.proto" Link="Proto\%(RecursiveDir)%(Filename)%(Extension)" Access="public">
       <ProtoRoot>$(RepoRoot)\src\Shared\Proto</ProtoRoot>
     </Protobuf>
   </ItemGroup>
