@@ -23,8 +23,10 @@ public class Program
                 opt.ParseStateValues = true;
                 opt.AddOtlpExporter(exporterOptions =>
                 {
-                    exporterOptions.Endpoint = new Uri("http://localhost:4317");
-                    exporterOptions.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
+                    // exporterOptions.Endpoint = new Uri("http://localhost:4317");
+                    // exporterOptions.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
+
+                    exporterOptions.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
                     exporterOptions.Endpoint = new Uri("http://localhost:4318/v1/logs");
 
                     // When in docker
