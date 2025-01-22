@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Loggle.Web.Authentication.ApiKey;
+using Loggle.Web.Elasticsearch;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -37,6 +38,7 @@ public class Program
             });
 
         builder.Services.AddApiKey();
+        builder.Services.AddElasticsearch();
 
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();

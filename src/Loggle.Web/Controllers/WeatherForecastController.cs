@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Loggle.Web.Elasticsearch;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -16,17 +19,24 @@ public class WeatherForecastController : ControllerBase
     };
 
     private readonly ILogger<WeatherForecastController> _logger;
+    private readonly ElasticsearchSetupManager _elasticsearchSetupManager;
 
-    public WeatherForecastController(ILogger<WeatherForecastController> logger)
+    public WeatherForecastController(
+        ILogger<WeatherForecastController> logger,
+        ElasticsearchSetupManager elasticsearchSetupManager)
     {
         _logger = logger;
+        _elasticsearchSetupManager = elasticsearchSetupManager;
     }
 
     [AllowAnonymous]
     [HttpGet]
     [Route("api/v1/weatherforecast")]
-    public IEnumerable<WeatherForecast> Get()
+    public async Task<IEnumerable<WeatherForecast>> GetAsync(CancellationToken cancellationToken)
     {
+        // Test bootstrap
+        await _elasticsearchSetupManager.BootstrapElasticsearchAsync(cancellationToken).ConfigureAwait(false);
+
         var result = Enumerable.Range(1, 5).Select(index => new WeatherForecast
         {
             Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
