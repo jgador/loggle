@@ -1,27 +1,33 @@
-﻿using System.Threading;
+﻿using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Clients.Elasticsearch;
-using Elastic.Clients.Elasticsearch.Cluster;
-using Elastic.Clients.Elasticsearch.IndexLifecycleManagement;
-using Elastic.Clients.Elasticsearch.IndexManagement;
 using Elastic.Transport;
+using Loggle.Web.Model;
+using Nest;
+using PutComponentTemplateResponse = Elastic.Clients.Elasticsearch.Cluster.PutComponentTemplateResponse;
+using PutIndexTemplateResponse = Elastic.Clients.Elasticsearch.IndexManagement.PutIndexTemplateResponse;
+using PutLifecycleResponse = Elastic.Clients.Elasticsearch.IndexLifecycleManagement.PutLifecycleResponse;
 
 namespace Loggle.Web.Elasticsearch;
 
 public sealed class ElasticsearchSetupManager
 {
     private readonly ElasticsearchClient _elasticsearchClient;
+    private readonly ElasticClient _elasticClientV7;
 
-    public ElasticsearchSetupManager(ElasticsearchClient elasticsearchClient)
+    public ElasticsearchSetupManager(ElasticsearchClient elasticsearchClient, ElasticClient elasticClientV7)
     {
         ThrowHelper.ThrowIfNull(elasticsearchClient);
+        ThrowHelper.ThrowIfNull(elasticClientV7);
 
         _elasticsearchClient = elasticsearchClient;
+        _elasticClientV7 = elasticClientV7;
     }
 
     public async Task BootstrapElasticsearchAsync(CancellationToken cancellationToken)
     {
-        var indexTemplate = GetDefaultIndexTeamplate();
+        var indexTemplate = GetDefaultIndexTemplate();
         var ilm = GetDefaultIlmComponentTemplate();
         var mapping = GetDefaultComponentMappings();
 
@@ -38,6 +44,23 @@ public sealed class ElasticsearchSetupManager
 
         // Default index template
         _ = await PutIndexTemplateAsync(indexTemplate.Name, indexTemplate.JsonBody, cancellationToken).ConfigureAwait(false);
+
+        // Default data stream
+        _ = await PutDataStreamAsync(indexTemplate.Name, cancellationToken).ConfigureAwait(false);
+
+        await CreateMappingAsync(indexTemplate.Name);
+    }
+
+    private async Task<bool> CreateMappingAsync(string dataStreamName)
+    {
+        var response = await _elasticClientV7
+            .MapAsync<OtlpLogEntry>(m => m
+                .RequestConfiguration(c => c.DisableDirectStreaming(disable: true))
+                .Index(dataStreamName)
+                .AutoMap()
+            ).ConfigureAwait(false);
+
+        return response.ApiCall.Success;
     }
 
     private async Task<bool> PutIlmPolicyAsync(CancellationToken cancellation = default)
@@ -64,6 +87,26 @@ public sealed class ElasticsearchSetupManager
             .ExistsIndexTemplateAsync(name, cancellationToken).ConfigureAwait(false);
 
         return response.Exists;
+    }
+
+    private async Task<bool> PutDataStreamAsync(string name, CancellationToken cancellationToken = default)
+    {
+        var getResponse = await _elasticsearchClient
+            .Indices
+            .GetDataStreamAsync(name, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (getResponse.ApiCallDetails is { HasSuccessfulStatusCode: true, HttpStatusCode: (int)HttpStatusCode.NotFound })
+        {
+            var response = await _elasticsearchClient
+                .Indices
+                .CreateDataStreamAsync(name, cancellationToken)
+                .ConfigureAwait(false);
+
+            return response.ApiCallDetails.HasSuccessfulStatusCode;
+        }
+
+        return true;
     }
 
     private async Task<bool> PutIndexTemplateAsync(string name, string body, CancellationToken cancellationToken = default)
@@ -98,7 +141,7 @@ public sealed class ElasticsearchSetupManager
         return request.ApiCallDetails.HasSuccessfulStatusCode;
     }
 
-    private (string Name, string JsonBody) GetDefaultIndexTeamplate()
+    private (string Name, string JsonBody) GetDefaultIndexTemplate()
     {
         const string Name = "logs-loggle-default"; // convention: type-dataset-namespace
         var ilm = GetDefaultIlmComponentTemplate();

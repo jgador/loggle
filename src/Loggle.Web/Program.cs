@@ -39,6 +39,7 @@ public class Program
 
         builder.Services.AddApiKey();
         builder.Services.AddElasticsearch();
+        builder.Services.AddElasticsearchV7();
 
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();

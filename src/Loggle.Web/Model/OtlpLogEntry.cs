@@ -1,28 +1,74 @@
 ﻿using System;
 using System.Collections.Generic;
-using Microsoft.Extensions.Logging;
+using System.Linq;
+using Nest;
 using OpenTelemetry.Proto.Logs.V1;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Loggle.Web.Model;
 
 public class OtlpLogEntry
 {
-    public KeyValuePair<string, string>[] Attributes { get; }
+    [Nested(
+        Name = "attributes",
+        Enabled = true)]
+    public List<NameValue> Attributes { get; }
 
+    [Date(
+        Name = "timestamp",
+        Index = true,
+        Format = "strict_date_optional_time_nanos",
+        DocValues = true)]
     public DateTime TimeStamp { get; }
 
+    [Number(
+        NumberType.Integer,
+        Name = "flags",
+        Index = true,
+        DocValues = true,
+        IgnoreMalformed = true)]
     public uint Flags { get; }
 
+    [Keyword(
+        Name = "logLevel",
+        Index = true,
+        DocValues = true,
+        IgnoreAbove = 256,
+        Norms = false)]
     public LogLevel Severity { get; }
 
+    [Text(
+        Name = "message",
+        Index = true,
+        Norms = false)]
     public string Message { get; }
 
+    [Keyword(
+        Name = "spanId",
+        Index = true,
+        DocValues = true,
+        Norms = false)]
     public string SpanId { get; }
 
+    [Keyword(
+        Name = "traceId",
+        Index = true,
+        DocValues = true,
+        Norms = false)]
     public string TraceId { get; }
 
+    [Keyword(
+        Name = "parentId",
+        Index = true,
+        DocValues = true,
+        Norms = false)]
     public string ParentId { get; }
 
+    [Keyword(
+        Name = "originalFormat",
+        Index = true,
+        DocValues = true,
+        Norms = false)]
     public string? OriginalFormat { get; }
 
     public OtlpLogEntry(LogRecord record, OtlpContext context)
@@ -32,7 +78,7 @@ public class OtlpLogEntry
         string? originalFormat = null;
         string? parentId = null;
 
-        Attributes = record.Attributes.ToKeyValuePairs(context, filter: attribute =>
+        var attributes = record.Attributes.ToKeyValuePairs(context, filter: attribute =>
         {
             switch (attribute.Key)
             {
@@ -50,6 +96,10 @@ public class OtlpLogEntry
                     return true;
             }
         });
+
+        Attributes = attributes
+            ?.Select(a => new NameValue { Name = a.Key, Value = a.Value })
+            ?.ToList() ?? [];
 
         Flags = record.Flags;
         Severity = MapSeverity(record.SeverityNumber);
