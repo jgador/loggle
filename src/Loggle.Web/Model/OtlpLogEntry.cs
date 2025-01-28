@@ -15,7 +15,7 @@ public class OtlpLogEntry
     public List<NameValue> Attributes { get; }
 
     [Date(
-        Name = "timestamp",
+        Name = "@timestamp",
         Index = true,
         Format = "strict_date_optional_time_nanos",
         DocValues = true)]

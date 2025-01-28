@@ -33,13 +33,15 @@ public class Program
                     // When in docker
                     // exporterOptions.Endpoint = new Uri("http://host.docker.internal:4318/v1/logs");
 
-                    exporterOptions.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+                    // exporterOptions.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
                 });
             });
 
         builder.Services.AddApiKey();
         builder.Services.AddElasticsearch();
         builder.Services.AddElasticsearchV7();
+
+        builder.Services.AddTransient<LogIngestionService>();
 
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();

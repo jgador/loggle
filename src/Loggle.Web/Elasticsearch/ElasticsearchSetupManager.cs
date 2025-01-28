@@ -14,15 +14,15 @@ namespace Loggle.Web.Elasticsearch;
 public sealed class ElasticsearchSetupManager
 {
     private readonly ElasticsearchClient _elasticsearchClient;
-    private readonly ElasticClient _elasticClientV7;
+    private readonly ElasticClient _nestClient;
 
-    public ElasticsearchSetupManager(ElasticsearchClient elasticsearchClient, ElasticClient elasticClientV7)
+    public ElasticsearchSetupManager(ElasticsearchClient elasticsearchClient, ElasticClient nestClient)
     {
         ThrowHelper.ThrowIfNull(elasticsearchClient);
-        ThrowHelper.ThrowIfNull(elasticClientV7);
+        ThrowHelper.ThrowIfNull(nestClient);
 
         _elasticsearchClient = elasticsearchClient;
-        _elasticClientV7 = elasticClientV7;
+        _nestClient = nestClient;
     }
 
     public async Task BootstrapElasticsearchAsync(CancellationToken cancellationToken)
@@ -51,9 +51,21 @@ public sealed class ElasticsearchSetupManager
         await CreateMappingAsync(indexTemplate.Name);
     }
 
+    public async Task<bool> DataStreamExistsAsync(string dataStreamName, CancellationToken cancellationToken)
+    {
+        var response = await _elasticsearchClient
+            .Indices
+            .GetDataStreamAsync(dataStreamName, cancellationToken)
+            .ConfigureAwait(false);
+
+        return response.ApiCallDetails is { HasSuccessfulStatusCode: true, HttpStatusCode: (int)HttpStatusCode.OK };
+    }
+
+    public string GetDefaultDataStreamName() => GetDefaultIndexTemplate().Name;
+
     private async Task<bool> CreateMappingAsync(string dataStreamName)
     {
-        var response = await _elasticClientV7
+        var response = await _nestClient
             .MapAsync<OtlpLogEntry>(m => m
                 .RequestConfiguration(c => c.DisableDirectStreaming(disable: true))
                 .Index(dataStreamName)

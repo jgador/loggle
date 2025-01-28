@@ -15,7 +15,9 @@ public static class ElasticsearchServicesExtensions
 
         // from docker compose
         const string hostName = "http://localhost:9200";
-        var settings = new ElasticsearchClientSettings(new Uri(hostName));
+        var settings = new ElasticsearchClientSettings(new Uri(hostName))
+            .DisableDirectStreaming();
+
         var client = new ElasticsearchClient(settings);
 
         services.AddSingleton(client);

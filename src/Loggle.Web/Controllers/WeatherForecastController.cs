@@ -35,7 +35,7 @@ public class WeatherForecastController : ControllerBase
     public async Task<IEnumerable<WeatherForecast>> GetAsync(CancellationToken cancellationToken)
     {
         // Test bootstrap
-        await _elasticsearchSetupManager.BootstrapElasticsearchAsync(cancellationToken).ConfigureAwait(false);
+        // await _elasticsearchSetupManager.BootstrapElasticsearchAsync(cancellationToken).ConfigureAwait(false);
 
         var result = Enumerable.Range(1, 5).Select(index => new WeatherForecast
         {
