@@ -71,13 +71,24 @@ resource "azurerm_network_security_group" "nsg" {
     destination_address_prefix = "*"
   }
   security_rule {
-    name                       = "Kibana"
+    name                       = "HTTPS"
     priority                   = 120
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "*"
     source_port_range          = "*"
-    destination_port_range     = "5601"
+    destination_port_range     = "443"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+  security_rule {
+    name                       = "HTTP"
+    priority                   = 130
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "80"
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
@@ -150,9 +161,9 @@ resource "azurerm_virtual_machine" "vm" {
       "sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin",
       "echo 'vm.max_map_count=262144' | sudo tee -a /etc/sysctl.conf",
       "sudo sysctl -p",
-      "curl -L -o /tmp/docker-compose.yml https://gist.githubusercontent.com/jgador/41cd0ef3057fc750ba52c056431ef27f/raw/5e35e26d9f1f8b868006b518181eb912d0929c70/loggle-docker-compose.yml",
+      "curl -L -o /tmp/docker-compose.yml https://gist.githubusercontent.com/jgador/41cd0ef3057fc750ba52c056431ef27f/raw/714660ed77994540dd8478481c64d52c00a48ac8/loggle-docker-compose.yml",
       "curl -L -o /tmp/otel-collector-config.yaml https://gist.githubusercontent.com/jgador/15f0a311fd00ebca431263494da8d993/raw/912aa6c23d8d60b5ad53d4b6907ea22ecdf04432/loggle-otel-collector-config.yaml",
-      "sudo docker compose -f /tmp/docker-compose.yml --project-name loggle up"
+      "sudo docker compose -f /tmp/docker-compose.yml --project-name loggle up -d"
     ]
   }
 }
