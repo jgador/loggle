@@ -1,6 +1,6 @@
 services:
   loggle-web:
-    image: loggle:latest
+    image: jessegador/loggle-web:latest
     container_name: loggle-web
     networks:
       - loggle
