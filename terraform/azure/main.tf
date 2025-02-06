@@ -15,6 +15,9 @@ provider "azurerm" {
 resource "azurerm_resource_group" "rg" {
   name     = "rg-loggle"
   location = "Southeast Asia"
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # Virtual Network
@@ -23,6 +26,9 @@ resource "azurerm_virtual_network" "vnet" {
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   address_space       = ["10.0.0.0/16"]
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # Subnet for VM
@@ -31,6 +37,9 @@ resource "azurerm_subnet" "subnet" {
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.1.0/24"]
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # Static Public IP
@@ -40,6 +49,9 @@ resource "azurerm_public_ip" "public_ip" {
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Static"
   sku                 = "Basic"
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # Network Security Group
@@ -103,6 +115,9 @@ resource "azurerm_network_security_group" "nsg" {
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # Network Interface with NSG
@@ -117,11 +132,17 @@ resource "azurerm_network_interface" "nic" {
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.public_ip.id # Associate static public IP
   }
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "azurerm_network_interface_security_group_association" "nsg_assoc" {
   network_interface_id      = azurerm_network_interface.nic.id
   network_security_group_id = azurerm_network_security_group.nsg.id
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # Virtual Machine
@@ -161,15 +182,15 @@ resource "azurerm_virtual_machine" "vm" {
     host     = azurerm_public_ip.public_ip.ip_address
   }
   provisioner "file" {
-    source = "../../docker/docker-compose.yml"
+    source      = "../../docker/docker-compose.yml"
     destination = "/tmp/docker-compose.yml"
   }
   provisioner "file" {
-    source = "../../docker/otel-collector-config.yaml"
+    source      = "../../docker/otel-collector-config.yaml"
     destination = "/tmp/otel-collector-config.yaml"
   }
   provisioner "file" {
-    source = "../../setup.sh"
+    source      = "../../setup.sh"
     destination = "/tmp/setup.sh"
   }
   provisioner "remote-exec" {
