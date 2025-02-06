@@ -168,26 +168,20 @@ resource "azurerm_virtual_machine" "vm" {
     source = "../../docker/otel-collector-config.yaml"
     destination = "/tmp/otel-collector-config.yaml"
   }
+  provisioner "file" {
+    source = "../../setup.sh"
+    destination = "/tmp/setup.sh"
+  }
   provisioner "remote-exec" {
     inline = [
-      "sudo apt update",
-      "sudo apt install -y ca-certificates curl",
-      "sudo install -m 0755 -d /etc/apt/keyrings",
-      "sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc",
-      "sudo chmod a+r /etc/apt/keyrings/docker.asc",
-      "sudo echo \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo \"$${UBUNTU_CODENAME:-$VERSION_CODENAME}\") stable\" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null",
-      "sudo apt update",
-      "sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin",
-      "echo 'vm.max_map_count=262144' | sudo tee -a /etc/sysctl.conf",
-      "sudo sysctl -p",
       "sudo mkdir -p /etc/loggle",
-      "sudo mv /tmp/docker-compose.yml /etc/loggle/docker-compose.yml",
-      "sudo mv /tmp/otel-collector-config.yaml /etc/loggle/otel-collector-config.yaml",
-      "sudo docker compose -f /etc/loggle/docker-compose.yml --project-name loggle up -d",
-      "sudo tee /etc/systemd/system/loggle-docker-compose.service > /dev/null <<'EOF'\n[Unit]\nDescription=Start Docker Compose for Loggle\nAfter=docker.service\nRequires=docker.service\n\n[Service]\nType=oneshot\nExecStart=/usr/bin/docker compose -f /etc/loggle/docker-compose.yml --project-name loggle up -d\nRemainAfterExit=yes\n\n[Install]\nWantedBy=multi-user.target\nEOF",
-      "sudo systemctl daemon-reload",
-      "sudo systemctl enable loggle-docker-compose.service"
+      "sudo mv /tmp/setup.sh /etc/loggle/setup.sh",
+      "sudo chmod +x /etc/loggle/setup.sh",
+      "sudo /etc/loggle/setup.sh"
     ]
+  }
+  lifecycle {
+    prevent_destroy = false
   }
 }
 
