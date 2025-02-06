@@ -183,7 +183,10 @@ resource "azurerm_virtual_machine" "vm" {
       "sudo mkdir -p /etc/loggle",
       "sudo mv /tmp/docker-compose.yml /etc/loggle/docker-compose.yml",
       "sudo mv /tmp/otel-collector-config.yaml /etc/loggle/otel-collector-config.yaml",
-      "sudo docker compose -f /etc/loggle/docker-compose.yml --project-name loggle up -d"
+      "sudo docker compose -f /etc/loggle/docker-compose.yml --project-name loggle up -d",
+      "sudo tee /etc/systemd/system/loggle-docker-compose.service > /dev/null <<'EOF'\n[Unit]\nDescription=Start Docker Compose for Loggle\nAfter=docker.service\nRequires=docker.service\n\n[Service]\nType=oneshot\nExecStart=/usr/bin/docker compose -f /etc/loggle/docker-compose.yml --project-name loggle up -d\nRemainAfterExit=yes\n\n[Install]\nWantedBy=multi-user.target\nEOF",
+      "sudo systemctl daemon-reload",
+      "sudo systemctl enable loggle-docker-compose.service"
     ]
   }
 }
