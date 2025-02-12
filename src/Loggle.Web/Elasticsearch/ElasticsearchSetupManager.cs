@@ -61,6 +61,11 @@ public sealed class ElasticsearchSetupManager
         return response.ApiCallDetails is { HasSuccessfulStatusCode: true, HttpStatusCode: (int)HttpStatusCode.OK };
     }
 
+    public async Task<bool> UpdateMappingAsync(string dataStreamName)
+    {
+        return await CreateMappingAsync(dataStreamName).ConfigureAwait(false);
+    }
+
     public string GetDefaultDataStreamName() => GetDefaultIndexTemplate().Name;
 
     private async Task<bool> CreateMappingAsync(string dataStreamName)

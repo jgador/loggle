@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Serialization;
 using Nest;
 using OpenTelemetry.Proto.Logs.V1;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
@@ -12,13 +13,15 @@ public class OtlpLogEntry
     [Nested(
         Name = "attributes",
         Enabled = true)]
+    [JsonPropertyName("attributes")]
     public List<NameValue> Attributes { get; }
 
     [Date(
         Name = "@timestamp",
         Index = true,
-        Format = "strict_date_optional_time_nanos",
+        // Format = "strict_date_optional_time_nanos",
         DocValues = true)]
+    [JsonPropertyName("@timestamp")]
     public DateTime TimeStamp { get; }
 
     [Number(
@@ -27,6 +30,7 @@ public class OtlpLogEntry
         Index = true,
         DocValues = true,
         IgnoreMalformed = true)]
+    [JsonPropertyName("flags")]
     public uint Flags { get; }
 
     [Keyword(
@@ -35,12 +39,14 @@ public class OtlpLogEntry
         DocValues = true,
         IgnoreAbove = 256,
         Norms = false)]
+    [JsonPropertyName("logLevel")]
     public LogLevel Severity { get; }
 
     [Text(
         Name = "message",
         Index = true,
         Norms = false)]
+    [JsonPropertyName("message")]
     public string Message { get; }
 
     [Keyword(
@@ -48,6 +54,7 @@ public class OtlpLogEntry
         Index = true,
         DocValues = true,
         Norms = false)]
+    [JsonPropertyName("spanId")]
     public string SpanId { get; }
 
     [Keyword(
@@ -55,6 +62,7 @@ public class OtlpLogEntry
         Index = true,
         DocValues = true,
         Norms = false)]
+    [JsonPropertyName("traceId")]
     public string TraceId { get; }
 
     [Keyword(
@@ -62,6 +70,7 @@ public class OtlpLogEntry
         Index = true,
         DocValues = true,
         Norms = false)]
+    [JsonPropertyName("parentId")]
     public string ParentId { get; }
 
     [Keyword(
@@ -69,6 +78,7 @@ public class OtlpLogEntry
         Index = true,
         DocValues = true,
         Norms = false)]
+    [JsonPropertyName("originalFormat")]
     public string? OriginalFormat { get; }
 
     public OtlpLogEntry(LogRecord record, OtlpContext context)

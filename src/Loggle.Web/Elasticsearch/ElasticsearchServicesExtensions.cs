@@ -14,14 +14,16 @@ public static class ElasticsearchServicesExtensions
         ThrowHelper.ThrowIfNull(services);
 
         // from docker compose
-        const string hostName = "http://localhost:9200";
+        const string hostName = "http://52.230.2.122:9200";
         var settings = new ElasticsearchClientSettings(new Uri(hostName))
             .DisableDirectStreaming();
+
+        var serializer = settings.SourceSerializer;
 
         var client = new ElasticsearchClient(settings);
 
         services.AddSingleton(client);
-        services.AddTransient<ElasticsearchSetupManager>();
+        // services.AddTransient<ElasticsearchSetupManager>();
 
         return services;
     }

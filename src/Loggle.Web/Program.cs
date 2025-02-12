@@ -29,6 +29,7 @@ public class Program
 
                     exporterOptions.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
                     exporterOptions.Endpoint = new Uri("http://localhost:4318/v1/logs");
+                    // exporterOptions.Endpoint = new Uri("http://52.230.2.122:4318/v1/logs");
 
                     // When in docker
                     // exporterOptions.Endpoint = new Uri("http://host.docker.internal:4318/v1/logs");
@@ -39,7 +40,7 @@ public class Program
 
         builder.Services.AddApiKey();
         builder.Services.AddElasticsearch();
-        builder.Services.AddElasticsearchV7();
+        // builder.Services.AddElasticsearchV7();
 
         builder.Services.AddTransient<LogIngestionService>();
 

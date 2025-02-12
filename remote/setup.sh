@@ -15,25 +15,9 @@ sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin d
 echo 'vm.max_map_count=262144' | sudo tee -a /etc/sysctl.conf
 sudo sysctl -p
 
-sudo mv /tmp/docker-compose.yml /etc/loggle/docker-compose.yml
-sudo mv /tmp/otel-collector-config.yaml /etc/loggle/otel-collector-config.yaml
-
 sudo docker compose -f /etc/loggle/docker-compose.yml --project-name loggle up -d
 
-sudo tee /etc/systemd/system/loggle-docker-compose.service > /dev/null << 'EOF'
-[Unit]
-Description=Start Docker Compose for Loggle
-After=docker.service
-Requires=docker.service
+/etc/loggle/wait-es.sh
 
-[Service]
-Type=oneshot
-ExecStart=/usr/bin/docker compose -f /etc/loggle/docker-compose.yml --project-name loggle up -d
-RemainAfterExit=yes
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-sudo systemctl daemon-reload
-sudo systemctl enable loggle-docker-compose.service
+# sudo systemctl daemon-reload
+sudo systemctl enable loggle.service

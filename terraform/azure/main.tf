@@ -182,22 +182,16 @@ resource "azurerm_virtual_machine" "vm" {
     host     = azurerm_public_ip.public_ip.ip_address
   }
   provisioner "file" {
-    source      = "../../docker/docker-compose.yml"
-    destination = "/tmp/docker-compose.yml"
-  }
-  provisioner "file" {
-    source      = "../../docker/otel-collector-config.yaml"
-    destination = "/tmp/otel-collector-config.yaml"
-  }
-  provisioner "file" {
-    source      = "../../setup.sh"
-    destination = "/tmp/setup.sh"
+    source      = "../../remote/"
+    destination = "/tmp"
   }
   provisioner "remote-exec" {
     inline = [
       "sudo mkdir -p /etc/loggle",
-      "sudo mv /tmp/setup.sh /etc/loggle/setup.sh",
-      "sudo chmod +x /etc/loggle/setup.sh",
+      "sudo mv /tmp/docker-compose.yml /tmp/otel-collector-config.yaml /tmp/wait-es.sh /tmp/setup.sh /etc/loggle/",
+      "sudo mv /tmp/loggle.service /etc/systemd/system/",
+      "sudo mv /tmp/es-init /etc/loggle/",
+      "sudo chmod +x /etc/loggle/setup.sh /etc/loggle/wait-es.sh",
       "sudo /etc/loggle/setup.sh"
     ]
   }

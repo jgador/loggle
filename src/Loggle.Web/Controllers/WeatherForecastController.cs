@@ -22,11 +22,10 @@ public class WeatherForecastController : ControllerBase
     private readonly ElasticsearchSetupManager _elasticsearchSetupManager;
 
     public WeatherForecastController(
-        ILogger<WeatherForecastController> logger,
-        ElasticsearchSetupManager elasticsearchSetupManager)
+        ILogger<WeatherForecastController> logger)
     {
         _logger = logger;
-        _elasticsearchSetupManager = elasticsearchSetupManager;
+        // _elasticsearchSetupManager = elasticsearchSetupManager;
     }
 
     [AllowAnonymous]

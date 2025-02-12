@@ -9,8 +9,6 @@ exporters:
     verbosity: detailed
   otlphttp:
     endpoint: http://loggle-web:8080
-    # local testing
-    # endpoint: http://host.docker.internal:8081
     tls:
       insecure: true
     headers:

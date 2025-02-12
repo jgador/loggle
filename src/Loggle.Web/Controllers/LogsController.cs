@@ -22,12 +22,12 @@ public class LogsController : ControllerBase
     // TODO: Remove this from here. The sole purpose why this is here is to test ingestion to elasticsearch faster
     private readonly ElasticsearchSetupManager _elasticsearchSetupManager;
 
-    public LogsController(LogIngestionService logIngestionService, ElasticsearchSetupManager elasticsearchSetupManager)
+    public LogsController(LogIngestionService logIngestionService /*, ElasticsearchSetupManager elasticsearchSetupManager*/)
     {
         ThrowHelper.ThrowIfNull(logIngestionService);
 
         _logIngestionService = logIngestionService;
-        _elasticsearchSetupManager = elasticsearchSetupManager;
+        // _elasticsearchSetupManager = elasticsearchSetupManager;
     }
 
     [HttpPost]
@@ -37,7 +37,7 @@ public class LogsController : ControllerBase
         // Receives the protobuf
         try
         {
-            var dataStreamName = _elasticsearchSetupManager.GetDefaultDataStreamName();
+            var dataStreamName = "logs-loggle-default";//_elasticsearchSetupManager.GetDefaultDataStreamName();
             using var stream = new MemoryStream();
             await Request.Body.CopyToAsync(stream);
 
@@ -60,16 +60,19 @@ public class LogsController : ControllerBase
             var logEntry = new OtlpLogEntry(logRecord, otlpContext);
             var logs = (IEnumerable<OtlpLogEntry>)[logEntry];
 
-            var dataStreamExists = await _elasticsearchSetupManager
-                .DataStreamExistsAsync(dataStreamName, cancellationToken).ConfigureAwait(false);
+            //var dataStreamExists = await _elasticsearchSetupManager
+            //    .DataStreamExistsAsync(dataStreamName, cancellationToken).ConfigureAwait(false);
 
-            if (!dataStreamExists)
-            {
-                await _elasticsearchSetupManager
-                    .BootstrapElasticsearchAsync(cancellationToken).ConfigureAwait(false);
+            //if (!dataStreamExists)
+            //{
+            //    await _elasticsearchSetupManager
+            //        .BootstrapElasticsearchAsync(cancellationToken).ConfigureAwait(false);
 
-                return Results.Ok();
-            }
+            //    return Results.Ok();
+            //}
+
+            //var mappingResponse = await _elasticsearchSetupManager
+            //    .UpdateMappingAsync(dataStreamName).ConfigureAwait(false);
 
             var response = await _logIngestionService
                 .IngestAsync(
