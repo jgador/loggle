@@ -1,7 +1,9 @@
 {
   "template": {
     "settings": {
-      "index.lifecycle.name": "loggle_default_7d"
+      "index.lifecycle.name": "loggle_default_7d",
+      "number_of_shards": 1,
+      "number_of_replicas": 0
     }
   }
 }

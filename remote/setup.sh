@@ -19,5 +19,14 @@ sudo docker compose -f /etc/loggle/docker-compose.yml --project-name loggle up -
 
 /etc/loggle/wait-es.sh
 
+sudo apt update
+sudo apt install -y wget
+wget https://github.com/PowerShell/PowerShell/releases/download/v7.5.0/powershell_7.5.0-1.deb_amd64.deb
+sudo dpkg -i powershell_7.5.0-1.deb_amd64.deb
+sudo apt install -f
+sudo rm powershell_7.5.0-1.deb_amd64.deb
+
+pwsh /etc/loggle/es-init/batch-indexmanagement.ps1
+
 # sudo systemctl daemon-reload
 sudo systemctl enable loggle.service
