@@ -24,9 +24,9 @@ docker run --rm -it `
 The setup sends logs to the collector, which exports them to an ASP.NET Core API:
 
 ```
-+------------------+      +-------------------------+      +--------------+
-| Application Logs | ---> | OpenTelemetry Collector | ---> | ASP.NET Core |
-+------------------+      +-------------------------+      +--------------+
++------------------+      +-------------------------+      +--------------+      +---------------+
+| Application Logs | ---> | OpenTelemetry Collector | ---> | ASP.NET Core | ---> | Elasticsearch |
++------------------+      +-------------------------+      +--------------+      +---------------+
 ```
 
 # Kafka Setup via WSL
