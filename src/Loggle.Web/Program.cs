@@ -28,13 +28,14 @@ public class Program
                     // exporterOptions.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
 
                     exporterOptions.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
-                    exporterOptions.Endpoint = new Uri("http://localhost:4318/v1/logs");
+                    // exporterOptions.Endpoint = new Uri("http://localhost:4318/v1/logs");
                     // exporterOptions.Endpoint = new Uri("http://52.230.2.122:4318/v1/logs");
+
+                    // When in deployed
+                    exporterOptions.Endpoint = new Uri("http://otelcol:4318/v1/logs");
 
                     // When in docker
                     // exporterOptions.Endpoint = new Uri("http://host.docker.internal:4318/v1/logs");
-
-                    // exporterOptions.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
                 });
             });
 

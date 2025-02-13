@@ -45,13 +45,13 @@ $componentTemplateBaseUrl = [Uri]"http://localhost:9200/_component_template"
 $indexTemplateBaseUrl = [Uri]"http://localhost:9200/_index_template"
 
 ExecuteBatch -Folder "ilm-policy" -BaseUrl $ilmBaseUrl
-Write-Host "Default ILM policy: Done" -ForegroundColor Green
+Write-Output "Default ILM policy: Done"
 
 ExecuteBatch -Folder "component-template" -BaseUrl $componentTemplateBaseUrl
-Write-Host "Default ILM Component templates: Done" -ForegroundColor Green
+Write-Output "Default ILM Component templates: Done"
 
 ExecuteBatch -Folder "index-template" -BaseUrl $indexTemplateBaseUrl
-Write-Host "Default index template: Done" -ForegroundColor Green
+Write-Output "Default index template: Done"
 
 # Create default data stream
 $uri = "http://localhost:9200/_data_stream/logs-loggle-default"
@@ -60,10 +60,10 @@ $headers = @{
 }
 try {
   Invoke-RestMethod -Uri $uri -Method Get -Headers $headers | Out-Null
-  Write-Host "Data stream already exists, skipping creation." -ForegroundColor Yellow
+  Write-Output "Data stream already exists, skipping creation."
 } catch {
   Invoke-RestMethod -Uri $uri -Method Put -Headers $headers | Out-Null
-  Write-Host "Default data stream created." -ForegroundColor Green
+  Write-Output "Default data stream created."
 }
 
 # Remove the module
