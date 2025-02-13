@@ -26,7 +26,8 @@ sudo dpkg -i powershell_7.5.0-1.deb_amd64.deb
 sudo apt install -f
 sudo rm powershell_7.5.0-1.deb_amd64.deb
 
-pwsh /etc/loggle/es-init/batch-indexmanagement.ps1
+es_output=$(pwsh /etc/loggle/es-init/batch-indexmanagement.ps1)
+echo "$es_output"
 
 # sudo systemctl daemon-reload
 sudo systemctl enable loggle.service
