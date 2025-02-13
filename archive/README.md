@@ -21,7 +21,7 @@ docker run --rm -it `
  otel/opentelemetry-collector-contrib:0.117.0
 ```
 ## Data Flow
-The setup sends logs to the collector, which exports them to an ASP.NET Core API:
+The setup sends logs to the collector, which exports them to an ASP.NET Core API, which then ingests the data into Elasticsearch:
 
 ```
 +------------------+      +-------------------------+      +--------------+      +---------------+
