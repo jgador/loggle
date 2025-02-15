@@ -1,0 +1,9 @@
+server.port: 5601
+server.host: 0.0.0.0
+server.publicBaseUrl: "https://kibana.loggle.co:5601"
+server.ssl.enabled: true
+server.ssl.certificate: /tmp/fullchain.pem
+server.ssl.key: /tmp/privkey.pem
+server.shutdownTimeout: "5s"
+elasticsearch.hosts: [ "http://elasticsearch:9200" ]
+monitoring.ui.container.elasticsearch.enabled: true

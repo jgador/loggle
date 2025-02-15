@@ -57,6 +57,10 @@ services:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
     depends_on:
       - elasticsearch
+    volumes:
+      - /etc/loggle/kibana.yml:/tmp/kibana.yml
+      - /etc/letsencrypt/live/kibana.loggle.co/fullchain.pem:/tmp/fullchain.pem
+      - /etc/letsencrypt/live/kibana.loggle.co/privkey.pem:/tmp/privkey.pem
 
 networks:
   loggle:

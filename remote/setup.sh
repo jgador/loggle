@@ -15,6 +15,8 @@ sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin d
 echo 'vm.max_map_count=262144' | sudo tee -a /etc/sysctl.conf
 sudo sysctl -p
 
+/etc/loggle/install-certbot.sh
+
 sudo docker compose -f /etc/loggle/docker-compose.yml --project-name loggle up -d
 
 /etc/loggle/wait-es.sh
