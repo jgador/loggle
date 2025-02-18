@@ -167,6 +167,59 @@ resource "azurerm_virtual_machine" "vm" {
   }
 }
 
+# Virtual Machine (ES)
+resource "azurerm_virtual_machine" "vm-es" {
+  name                             = "vm-loggle"
+  location                         = azurerm_resource_group.rg.location
+  resource_group_name              = azurerm_resource_group.rg.name
+  network_interface_ids            = [azurerm_network_interface.nic.id]
+  vm_size                          = "Standard_D2s_v3"
+  delete_os_disk_on_termination    = true
+  delete_data_disks_on_termination = true
+
+  storage_image_reference {
+    publisher = "canonical"
+    offer     = "0001-com-ubuntu-minimal-jammy"
+    sku       = "minimal-22_04-lts-gen2"
+    version   = "latest"
+  }
+  storage_os_disk {
+    name              = "disk-loggle"
+    caching           = "ReadWrite"
+    create_option     = "FromImage"
+    managed_disk_type = "Standard_LRS"
+  }
+  os_profile {
+    computer_name  = "vm-loggle"
+    admin_username = "loggle"
+    admin_password = "L0gg|3K3y"
+  }
+  os_profile_linux_config {
+    disable_password_authentication = false
+  }
+  connection {
+    type     = "ssh"
+    user     = "loggle"
+    password = "L0gg|3K3y"
+    host     = azurerm_public_ip.public_ip.ip_address
+  }
+  provisioner "file" {
+    source      = "../../remote/"
+    destination = "/tmp"
+  }
+  provisioner "remote-exec" {
+    inline = [
+      "sudo mkdir -p /etc/loggle",
+      "sudo mv /tmp/setup.sh /etc/loggle/",      
+      "sudo chmod +x /etc/loggle/setup.sh",
+      "sudo /etc/loggle/setup.sh"
+    ]
+  }
+  lifecycle {
+    prevent_destroy = false
+  }
+}
+
 output "vm_public_ip" {
   value = azurerm_public_ip.public_ip.ip_address
 }
