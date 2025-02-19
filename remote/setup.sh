@@ -6,6 +6,7 @@ mv /tmp/docker-compose.yml /tmp/otel-collector-config.yaml /tmp/install-certbot.
 mv /tmp/loggle.service /etc/systemd/system/
 mv /tmp/es-init /etc/loggle/
 chmod +x /etc/loggle/wait-es.sh /etc/loggle/install-certbot.sh
+chmod -R a+rw /etc/loggle/elasticsearch-data
 
 export DEBIAN_FRONTEND=noninteractive
 export NEEDRESTART_MODE=a
@@ -80,6 +81,11 @@ apt-get update
 apt-get install -y kibana
 
 mv /tmp/kibana.yml /etc/kibana/kibana.yml
-# sudo mv /etc/letsencrypt/live/kibana.loggle.co/fullchain.pem /tmp/fullchain.pem
-# sudo mv /etc/letsencrypt/live/kibana.loggle.co/privkey.pem /tmp/privkey.pem
-# sudo /usr/share/kibana/bin/kibana --allow-root
+sudo addgroup sslcert
+sudo adduser kibana sslcert
+sudo adduser root sslcert
+sudo chgrp -R sslcert /etc/letsencrypt/live
+sudo chgrp -R sslcert /etc/letsencrypt/archive
+sudo chmod -R 750 /etc/letsencrypt/live
+sudo chmod -R 750 /etc/letsencrypt/archive
+sudo systemctl start kibana
