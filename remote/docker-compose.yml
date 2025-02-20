@@ -19,7 +19,6 @@ services:
       - "4318:4318" # otlphttp
     volumes:
       - /etc/loggle/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
-      #- ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
 
   elasticsearch:
     image: elasticsearch:8.17.0
@@ -49,21 +48,20 @@ services:
     volumes:
       - /etc/loggle/elasticsearch-data:/usr/share/elasticsearch/data
 
-  # kibana:
-  #   image: kibana:8.17.0
-  #   container_name: kibana
-  #   networks:
-  #     - loggle
-  #   ports:
-  #     - "5601:5601"
-  #   environment:
-  #     - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-  #   depends_on:
-  #     - elasticsearch
-  #   volumes:
-  #     - /etc/loggle/kibana.yml:/tmp/kibana.yml
-  #     - /etc/letsencrypt/live/kibana.loggle.co/fullchain.pem:/tmp/fullchain.pem
-  #     - /etc/letsencrypt/live/kibana.loggle.co/privkey.pem:/tmp/privkey.pem
+  kibana:
+    image: kibana:8.17.0
+    container_name: kibana
+    networks:
+      - loggle
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    volumes:
+      - /etc/loggle/kibana.yml:/usr/share/kibana/config/kibana.yml
+      - /etc/loggle/kibana-data:/usr/share/kibana/data
+      - /etc/letsencrypt/live/kibana.loggle.co/fullchain.pem:/usr/share/kibana/fullchain.pem
+      - /etc/letsencrypt/live/kibana.loggle.co/privkey.pem:/usr/share/kibana/privkey.pem
 
 networks:
   loggle:
