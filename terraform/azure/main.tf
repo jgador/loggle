@@ -155,10 +155,10 @@ resource "azurerm_virtual_machine" "vm" {
   provisioner "remote-exec" {
     inline = [
       "sudo mkdir -p /etc/loggle",
-      "sudo mv /tmp/docker-compose.yml /tmp/kibana.yml /tmp/otel-collector-config.yaml /tmp/install-certbot.sh /tmp/wait-es.sh /tmp/setup.sh /etc/loggle/",
-      "sudo mv /tmp/loggle.service /etc/systemd/system/",
-      "sudo mv /tmp/es-init /etc/loggle/",
-      "sudo chmod +x /etc/loggle/setup.sh /etc/loggle/wait-es.sh /etc/loggle/install-certbot.sh",
+      "sudo mkdir -p /etc/loggle/elasticsearch-data",
+      "sudo mkdir -p /etc/loggle/kibana-data",
+      "sudo mv /tmp/setup.sh /etc/loggle/",      
+      "sudo chmod +x /etc/loggle/setup.sh",
       "sudo /etc/loggle/setup.sh"
     ]
   }
