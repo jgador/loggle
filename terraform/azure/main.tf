@@ -118,7 +118,7 @@ resource "azurerm_virtual_machine" "vm" {
   location                         = azurerm_resource_group.rg.location
   resource_group_name              = azurerm_resource_group.rg.name
   network_interface_ids            = [azurerm_network_interface.nic.id]
-  vm_size                          = "Standard_D2s_v3"
+  vm_size                          = var.vm_size
   delete_os_disk_on_termination    = true
   delete_data_disks_on_termination = true
 
@@ -128,22 +128,21 @@ resource "azurerm_virtual_machine" "vm" {
     sku       = "minimal-22_04-lts-gen2"
     version   = "latest"
   }
+  os_profile {
+    computer_name  = "vm-loggle"
+    admin_username = "loggle"
+  }
   storage_os_disk {
     name              = "disk-loggle"
     caching           = "ReadWrite"
     create_option     = "FromImage"
     managed_disk_type = "Standard_LRS"
   }
-  os_profile {
-    computer_name  = "vm-loggle"
-    admin_username = "loggle"
-    admin_password = "L0gg|3K3y"
-  }
   os_profile_linux_config {
     disable_password_authentication = true
     ssh_keys {
-      path     = "/home/loggle/.ssh/authorized_keys"
-      key_data = file("~/.ssh/loggle.pub")
+      path     = var.ssh_key_path
+      key_data = file(var.ssh_key_data)
     }
   }
   connection {
