@@ -19,9 +19,9 @@ Loggle is a self-hosted log monitoring solution that stitches together the best 
 Your applications forward their logs to the OpenTelemetry Collector, which exports them to the Log Ingestion API. The Log Ingestion API processes the data and stores it in Elasticsearch, from where Kibana pulls the data for visualization.
 
 ```plaintext
-+------------------+      +-------------------------+      +------------------+      +---------------+      +--------+
-| Application Logs | ---> | OpenTelemetry Collector | ---> | Log Ingestion API   | ---> | Elasticsearch | ---> | Kibana |
-+------------------+      +-------------------------+      +------------------+      +---------------+      +--------+
++------------------+      +-------------------------+      +-------------------+      +---------------+      +--------+
+| Application Logs | ---> | OpenTelemetry Collector | ---> | Log Ingestion API | ---> | Elasticsearch | ---> | Kibana |
++------------------+      +-------------------------+      +-------------------+      +---------------+      +--------+
 ```
 
 ## Quick Start
