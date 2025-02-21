@@ -14,6 +14,15 @@ Loggle is a self-hosted log monitoring solution that stitches together the best 
   - Automatically obtain and renew SSL/TLS certificates using Certbot with Let's Encrypt.
 - **Simple Setup:** Provision your VM, send your logs, and access them in Kibana.
 
+## Data Flow
+
+Your applications forward their logs to the OpenTelemetry Collector, which exports them to the Log Ingestion API. The Log Ingestion API processes the data and stores it in Elasticsearch, from where Kibana pulls the data for visualization.
+
+```plaintext
++------------------+      +-------------------------+      +------------------+      +---------------+      +--------+
+| Application Logs | ---> | OpenTelemetry Collector | ---> | Log Ingestion API   | ---> | Elasticsearch | ---> | Kibana |
++------------------+      +-------------------------+      +------------------+      +---------------+      +--------+
+
 ## Quick Start
 > **Prerequisite:**  
 > Ensure you have Terraform with Azure CLI working. For more information, refer to [this guide](https://learn.microsoft.com/en-us/azure/developer/terraform/get-started-windows-bash).
