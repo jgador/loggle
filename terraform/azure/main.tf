@@ -140,13 +140,17 @@ resource "azurerm_virtual_machine" "vm" {
     admin_password = "L0gg|3K3y"
   }
   os_profile_linux_config {
-    disable_password_authentication = false
+    disable_password_authentication = true
+    ssh_keys {
+      path     = "/home/loggle/.ssh/authorized_keys"
+      key_data = file("~/.ssh/loggle.pub")
+    }
   }
   connection {
-    type     = "ssh"
-    user     = "loggle"
-    password = "L0gg|3K3y"
-    host     = azurerm_public_ip.public_ip.ip_address
+    type        = "ssh"
+    host        = azurerm_public_ip.public_ip.ip_address
+    user        = "loggle"
+    private_key = file("~/.ssh/loggle")
   }
   provisioner "file" {
     source      = "../../remote/"
@@ -157,7 +161,7 @@ resource "azurerm_virtual_machine" "vm" {
       "sudo mkdir -p /etc/loggle",
       "sudo mkdir -p /etc/loggle/elasticsearch-data",
       "sudo mkdir -p /etc/loggle/kibana-data",
-      "sudo mv /tmp/setup.sh /etc/loggle/",      
+      "sudo mv /tmp/setup.sh /etc/loggle/",
       "sudo chmod +x /etc/loggle/setup.sh",
       "sudo /etc/loggle/setup.sh"
     ]
