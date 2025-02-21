@@ -22,6 +22,7 @@ Your applications forward their logs to the OpenTelemetry Collector, which expor
 +------------------+      +-------------------------+      +------------------+      +---------------+      +--------+
 | Application Logs | ---> | OpenTelemetry Collector | ---> | Log Ingestion API   | ---> | Elasticsearch | ---> | Kibana |
 +------------------+      +-------------------------+      +------------------+      +---------------+      +--------+
+```
 
 ## Quick Start
 > **Prerequisite:**  
