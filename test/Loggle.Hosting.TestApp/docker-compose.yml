@@ -1,0 +1,52 @@
+services:
+  otelcol:
+    image: otel/opentelemetry-collector-contrib:0.117.0
+    container_name: otelcol
+    networks:
+      - loggle
+    ports:
+      - "4318:4318" # otlphttp
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
+
+  elasticsearch:
+    image: elasticsearch:8.17.0
+    container_name: elasticsearch
+    networks:
+      - loggle
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - node.name=elasticsearch
+      - discovery.seed_hosts=elasticsearch
+      - cluster.initial_master_nodes=elasticsearch
+      - cluster.name=elasticsearch
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
+      - xpack.monitoring.collection.enabled=true
+      - xpack.monitoring.exporters.my_local.type=local
+      - xpack.http.max_response_size=50MB
+      - xpack.security.enabled=false
+      - script.painless.regex.enabled=true
+      - network.host=0.0.0.0
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+  kibana:
+    image: kibana:8.17.0
+    container_name: kibana
+    networks:
+      - loggle
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    volumes:
+      - ./kibana.yml:/usr/share/kibana/config/kibana.yml
+
+networks:
+  loggle:
+    driver: bridge

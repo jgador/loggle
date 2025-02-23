@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using Loggle.Egress;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -52,7 +51,7 @@ public static class LoggleLoggerExtensions
                     {
                         var client = new HttpClient();
 
-                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", loggleExportOptions?.BearerToken);
+                        client.DefaultRequestHeaders.Authorization = new("Bearer", loggleExportOptions?.BearerToken);
 
                         return client;
                     };

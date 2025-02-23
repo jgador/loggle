@@ -1,0 +1,33 @@
+extensions:
+  bearertokenauth:
+    scheme: "Bearer"
+    token: "L0gg|3K3y"
+
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+        auth:
+          authenticator: bearertokenauth
+
+exporters:
+  debug:
+    verbosity: detailed
+  otlphttp:
+    endpoint: http://host.docker.internal:8080
+    tls:
+      insecure: true
+    headers:
+      Content-Type: application/x-protobuf
+      Authorization: ApiKey L0gg|3K3y
+      X-Loggle-Key: L0gg|3K3y
+    encoding: proto
+    compression: none
+
+service:
+  extensions: [bearertokenauth]
+  pipelines:
+    logs:
+      receivers: [otlp]
+      exporters: [debug,otlphttp]
