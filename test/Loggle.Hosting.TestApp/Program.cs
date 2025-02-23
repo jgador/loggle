@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Confluent.Kafka;
+using Loggle.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -14,8 +15,28 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
+        await SendToOpenTelemetryCollectorAsync(args).ConfigureAwait(false);
+
         // await SimulateProducerConsumerAsync().ConfigureAwait(false);
-        await RunAsync(args).ConfigureAwait(false);
+        // await RunAsync(args).ConfigureAwait(false);
+    }
+
+    private static async Task SendToOpenTelemetryCollectorAsync(string[] args)
+    {
+        var builder = Host.CreateDefaultBuilder(args)
+            .ConfigureLogging((context, builder) =>
+            {
+                builder.AddLoggleExporter(context.Configuration);
+            })
+            .ConfigureServices(services =>
+            {
+                services.AddHostedService<LoggingBackgroundService>();
+                services.AddHostedService<YetAnotherLoggingBackgroundService>();
+            });
+
+        var host = builder.Build();
+
+        await host.RunAsync();
     }
 
     private static async Task SimulateProducerConsumerAsync()

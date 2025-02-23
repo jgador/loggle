@@ -104,4 +104,36 @@ public class LoggleLoggerOptionsTests
         Assert.Equal(100, options!.CurrentValue!.Egress.Kafka?.Batching?.MaxSize);
         Assert.Equal(TimeSpan.FromMinutes(1), options!.CurrentValue!.Egress.Kafka?.Batching?.MaxLifetime);
     }
+
+    [Fact]
+    public void CanReadOtlpLoggleOptions()
+    {
+        var dic = new Dictionary<string, string>
+        {
+            { "Logging:Loggle:BearerToken", "L0gg|3K3y" },
+            { "Logging:Loggle:Endpoint", "http://localhost:4318/v1/logs"}
+        };
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(dic!)
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddOptions();
+        services.AddSingleton<IConfiguration>(configuration);
+
+        services.AddLogging(builder =>
+        {
+            builder.AddLoggleExporter(configuration);
+        });
+
+        var sp = services.BuildServiceProvider();
+
+        var options = sp.GetRequiredService<IOptionsMonitor<LoggleOtlpExporterOptions>>();
+
+        Assert.NotNull(options);
+        Assert.NotNull(options.CurrentValue);
+        Assert.Equal("L0gg|3K3y", options.CurrentValue.BearerToken);
+        Assert.Equal("http://localhost:4318/v1/logs", options.CurrentValue.Endpoint);
+    }
 }

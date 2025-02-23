@@ -1,12 +1,10 @@
-using System;
 using System.Threading.Tasks;
+using Loggle.Logging;
 using Loggle.Web.Authentication.ApiKey;
 using Loggle.Web.Elasticsearch;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using OpenTelemetry.Logs;
 
 namespace Loggle.Web;
 
@@ -18,30 +16,10 @@ public class Program
 
         builder
             .Logging
-            .AddOpenTelemetry(opt =>
-            {
-                opt.IncludeFormattedMessage = true;
-                opt.ParseStateValues = true;
-                opt.AddOtlpExporter(exporterOptions =>
-                {
-                    // exporterOptions.Endpoint = new Uri("http://localhost:4317");
-                    // exporterOptions.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
-
-                    exporterOptions.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
-                    // exporterOptions.Endpoint = new Uri("http://localhost:4318/v1/logs");
-                    // exporterOptions.Endpoint = new Uri("http://52.230.2.122:4318/v1/logs");
-
-                    // When in deployed
-                    exporterOptions.Endpoint = new Uri("http://otelcol:4318/v1/logs");
-
-                    // When in docker
-                    // exporterOptions.Endpoint = new Uri("http://host.docker.internal:4318/v1/logs");
-                });
-            });
+            .AddLoggleExporter(builder.Configuration);
 
         builder.Services.AddApiKey();
         builder.Services.AddElasticsearch();
-        // builder.Services.AddElasticsearchV7();
 
         builder.Services.AddTransient<LogIngestionService>();
 
