@@ -4,26 +4,29 @@ using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Core.Bulk;
+using Loggle.Web.Elasticsearch;
 using Loggle.Web.Model;
 
 namespace Loggle.Web;
 
 public sealed class LogIngestionService
 {
-    private readonly ElasticsearchClient _elasticsearchClient;
+    private readonly ElasticsearchFactory _elasticsearchFactory;
 
-    public LogIngestionService(ElasticsearchClient elasticsearchClient)
+    public LogIngestionService(ElasticsearchFactory elasticsearchFactory)
     {
-        ThrowHelper.ThrowIfNull(elasticsearchClient);
+        ThrowHelper.ThrowIfNull(elasticsearchFactory);
 
-        _elasticsearchClient = elasticsearchClient;
+        _elasticsearchFactory = elasticsearchFactory;
     }
 
     public async Task<BulkResponse> IngestAsync(IEnumerable<OtlpLogEntry> logs, string dataStreamName, CancellationToken cancellationToken)
     {
         var bulkRequest = CreateIndexBulkRequest(logs, dataStreamName);
 
-        return await _elasticsearchClient.BulkAsync(bulkRequest, cancellationToken).ConfigureAwait(false);
+        var client = _elasticsearchFactory.CreateClient();
+
+        return await client.BulkAsync(bulkRequest, cancellationToken).ConfigureAwait(false);
     }
 
     private static BulkRequest CreateIndexBulkRequest<T>(IEnumerable<T> logs, string dataStreamName) where T : class

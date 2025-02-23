@@ -19,7 +19,8 @@ public class Program
             .AddLoggleExporter(builder.Configuration);
 
         builder.Services.AddApiKey();
-        builder.Services.AddElasticsearch();
+        builder.Services.AddSingleton<ElasticsearchFactory>();
+        // builder.Services.AddElasticsearch();
 
         builder.Services.AddTransient<LogIngestionService>();
 

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Loggle.Web.Configuration;
@@ -42,25 +41,31 @@ public class LogsController : ControllerBase
             }
 
             var logsData = OtlpLogs.LogsData.Parser.ParseFrom(stream);
-            var logRecord = logsData
-                ?.ResourceLogs.FirstOrDefault()
-                ?.ScopeLogs.FirstOrDefault()
-                ?.LogRecords.FirstOrDefault();
 
             var otlpContext = new OtlpContext
             {
                 Options = new TelemetryLimitOptions { }
             };
 
-            var logEntry = new OtlpLogEntry(logRecord, otlpContext);
-            var logs = (IEnumerable<OtlpLogEntry>)[logEntry];
+            foreach (var rl in logsData.ResourceLogs)
+            {
+                foreach (var sl in rl.ScopeLogs)
+                {
+                    var logs = new List<OtlpLogEntry>(sl.LogRecords.Count);
+                    foreach (var record in sl.LogRecords)
+                    {
+                        var logEntry = new OtlpLogEntry(record, otlpContext);
+                        logs.Add(logEntry);
+                    }
 
-            var response = await _logIngestionService
-                .IngestAsync(
-                    logs,
-                    dataStreamName,
-                    cancellationToken
-                ).ConfigureAwait(false);
+                    var response = await _logIngestionService
+                        .IngestAsync(
+                            logs,
+                            dataStreamName,
+                            cancellationToken
+                        ).ConfigureAwait(false);
+                }
+            }
 
             return Results.Ok();
         }

@@ -22,6 +22,8 @@ public class LoggleOtlpExporterOptions
 
     public string ServiceVersion { get; set; } = "1.0.0";
 
+    public string? ElasticsearchIngestUrl { get; set; }
+
     private string GetDefaultServiceName()
     {
         var defaultServiceName = "unknown_service";

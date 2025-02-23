@@ -13,7 +13,6 @@ public static class ElasticsearchServicesExtensions
     {
         ThrowHelper.ThrowIfNull(services);
 
-        // from docker compose
         const string hostName = "http://52.230.2.122:9200";
         var settings = new ElasticsearchClientSettings(new Uri(hostName))
             .DisableDirectStreaming();
@@ -23,7 +22,6 @@ public static class ElasticsearchServicesExtensions
         var client = new ElasticsearchClient(settings);
 
         services.AddSingleton(client);
-        // services.AddTransient<ElasticsearchSetupManager>();
 
         return services;
     }
