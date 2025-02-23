@@ -2,7 +2,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0-noble AS build
 WORKDIR /app
 
-RUN apt update && apt upgrade -y
+RUN apt-get update && apt-get upgrade -y
 
 ENV \
     # Unset ASPNETCORE_HTTP_PORTS from base image
