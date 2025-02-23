@@ -62,4 +62,26 @@ public static class LoggleLoggerExtensions
 
         return builder;
     }
+
+    public static ILoggingBuilder AddAspireExporter(this ILoggingBuilder builder)
+    {
+        builder.Services.AddLogging(builder =>
+        {
+            builder.AddOpenTelemetry(o =>
+            {
+                o.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(
+                    serviceName: "Loggle.Hosting.TestApp",
+                    serviceVersion: "0.1.0"));
+
+                o.AddOtlpExporter((exporterOptions, processorOptions) =>
+                {
+                    processorOptions.ExportProcessorType = ExportProcessorType.Simple;
+                    exporterOptions.Protocol = OtlpExportProtocol.HttpProtobuf;
+                    exporterOptions.Endpoint = new Uri("http://localhost:15876/v1/logs");
+                });
+            });
+        });
+
+        return builder;
+    }
 }

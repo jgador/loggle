@@ -42,19 +42,21 @@ public class LogsController : ControllerBase
 
             var logsData = OtlpLogs.LogsData.Parser.ParseFrom(stream);
 
-            var otlpContext = new OtlpContext
+            var context = new OtlpContext
             {
                 Options = new TelemetryLimitOptions { }
             };
 
             foreach (var rl in logsData.ResourceLogs)
             {
+                var application = new OtlpApplication(context, rl.Resource);
+
                 foreach (var sl in rl.ScopeLogs)
                 {
                     var logs = new List<OtlpLogEntry>(sl.LogRecords.Count);
                     foreach (var record in sl.LogRecords)
                     {
-                        var logEntry = new OtlpLogEntry(record, otlpContext);
+                        var logEntry = new OtlpLogEntry(context, application, record);
                         logs.Add(logEntry);
                     }
 

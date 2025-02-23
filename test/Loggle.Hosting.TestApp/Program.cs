@@ -26,6 +26,7 @@ public class Program
         var builder = Host.CreateDefaultBuilder(args)
             .ConfigureLogging((context, builder) =>
             {
+                // builder.AddAspireExporter();
                 builder.AddLoggleExporter(context.Configuration);
             })
             .ConfigureServices(services =>

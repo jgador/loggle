@@ -21,6 +21,18 @@
           },
           "type": "nested"
         },
+        "applicationName": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "applicationInstanceId": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "applicationVersion": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
         "flags": {
           "type": "long"
         },

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
-using Nest;
 using OpenTelemetry.Proto.Logs.V1;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
@@ -10,78 +9,43 @@ namespace Loggle.Web.Model;
 
 public class OtlpLogEntry
 {
-    [Nested(
-        Name = "attributes",
-        Enabled = true)]
     [JsonPropertyName("attributes")]
     public List<NameValue> Attributes { get; }
 
-    [Date(
-        Name = "@timestamp",
-        Index = true,
-        // Format = "strict_date_optional_time_nanos",
-        DocValues = true)]
     [JsonPropertyName("@timestamp")]
     public DateTime TimeStamp { get; }
 
-    [Number(
-        NumberType.Integer,
-        Name = "flags",
-        Index = true,
-        DocValues = true,
-        IgnoreMalformed = true)]
+    [JsonPropertyName("applicationName")]
+    public string ApplicationName { get; set; }
+
+    [JsonPropertyName("applicationInstanceId")]
+    public string ApplicationInstanceId { get; set; }
+
+    [JsonPropertyName("applicationVersion")]
+    public string ApplicationVersion { get; set; }
+
     [JsonPropertyName("flags")]
     public uint Flags { get; }
 
-    [Keyword(
-        Name = "logLevel",
-        Index = true,
-        DocValues = true,
-        IgnoreAbove = 256,
-        Norms = false)]
     [JsonPropertyName("logLevel")]
     public LogLevel Severity { get; }
 
-    [Text(
-        Name = "message",
-        Index = true,
-        Norms = false)]
     [JsonPropertyName("message")]
     public string Message { get; }
 
-    [Keyword(
-        Name = "spanId",
-        Index = true,
-        DocValues = true,
-        Norms = false)]
     [JsonPropertyName("spanId")]
     public string SpanId { get; }
 
-    [Keyword(
-        Name = "traceId",
-        Index = true,
-        DocValues = true,
-        Norms = false)]
     [JsonPropertyName("traceId")]
     public string TraceId { get; }
 
-    [Keyword(
-        Name = "parentId",
-        Index = true,
-        DocValues = true,
-        Norms = false)]
     [JsonPropertyName("parentId")]
     public string ParentId { get; }
 
-    [Keyword(
-        Name = "originalFormat",
-        Index = true,
-        DocValues = true,
-        Norms = false)]
     [JsonPropertyName("originalFormat")]
     public string? OriginalFormat { get; }
 
-    public OtlpLogEntry(LogRecord record, OtlpContext context)
+    public OtlpLogEntry(OtlpContext context, OtlpApplication application, LogRecord record)
     {
         TimeStamp = ResolveTimeStamp(record);
 
@@ -106,6 +70,10 @@ public class OtlpLogEntry
                     return true;
             }
         });
+
+        ApplicationName = application.ApplicationName;
+        ApplicationVersion = application.VersionNumber;
+        ApplicationInstanceId = application.InstanceId;
 
         Attributes = attributes
             ?.Select(a => new NameValue { Name = a.Key, Value = a.Value })
