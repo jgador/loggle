@@ -6,18 +6,18 @@ namespace Loggle.Web.Model;
 
 public class OtlpApplication
 {
-    public const string ServiceName = "service.name";
-    public const string ServiceVersion = "service.version";
-    public const string ServiceInstanceId = "service.instance.id";
+    public const string ServiceNameKey = "service.name";
+    public const string ServiceVersionKey = "service.version";
+    public const string ServiceInstanceIdKey = "service.instance.id";
 
-    public string ApplicationName =>
-        _serviceProperties.FirstOrDefault(p => p.Key == ServiceName).Value ?? string.Empty;
+    public string ServiceName =>
+        _serviceProperties.FirstOrDefault(p => p.Key == ServiceNameKey).Value ?? string.Empty;
 
-    public string InstanceId =>
-        _serviceProperties.FirstOrDefault(p => p.Key == ServiceInstanceId).Value ?? string.Empty;
+    public string ServiceInstanceId =>
+        _serviceProperties.FirstOrDefault(p => p.Key == ServiceInstanceIdKey).Value ?? string.Empty;
 
-    public string VersionNumber =>
-        _serviceProperties.FirstOrDefault(p => p.Key == ServiceVersion).Value ?? string.Empty;
+    public string ServiceVersionNumber =>
+        _serviceProperties.FirstOrDefault(p => p.Key == ServiceVersionKey).Value ?? string.Empty;
 
     private readonly KeyValuePair<string, string>[] _serviceProperties;
 
@@ -27,9 +27,9 @@ public class OtlpApplication
         {
             switch (attribute.Key)
             {
-                case ServiceName:
-                case ServiceVersion:
-                case ServiceInstanceId:
+                case ServiceNameKey:
+                case ServiceVersionKey:
+                case ServiceInstanceIdKey:
                     return true;
 
                 default:
@@ -37,6 +37,6 @@ public class OtlpApplication
             }
         });
 
-        _serviceProperties = serviceProperties;
+        _serviceProperties = serviceProperties ?? [];
     }
 }

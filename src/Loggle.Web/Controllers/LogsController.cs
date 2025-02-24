@@ -31,7 +31,6 @@ public class LogsController : ControllerBase
         // Receives the protobuf
         try
         {
-            var dataStreamName = "logs-loggle-default";
             using var stream = new MemoryStream();
             await Request.Body.CopyToAsync(stream);
 
@@ -63,7 +62,6 @@ public class LogsController : ControllerBase
                     var response = await _logIngestionService
                         .IngestAsync(
                             logs,
-                            dataStreamName,
                             cancellationToken
                         ).ConfigureAwait(false);
                 }

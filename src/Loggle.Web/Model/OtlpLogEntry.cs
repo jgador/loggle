@@ -2,27 +2,27 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Logging;
 using OpenTelemetry.Proto.Logs.V1;
-using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Loggle.Web.Model;
 
 public class OtlpLogEntry
 {
-    [JsonPropertyName("attributes")]
-    public List<NameValue> Attributes { get; }
-
     [JsonPropertyName("@timestamp")]
     public DateTime TimeStamp { get; }
 
-    [JsonPropertyName("applicationName")]
-    public string ApplicationName { get; set; }
+    [JsonPropertyName("attributes")]
+    public List<NameValue> Attributes { get; }
 
-    [JsonPropertyName("applicationInstanceId")]
-    public string ApplicationInstanceId { get; set; }
+    [JsonPropertyName("serviceName")]
+    public string ServiceName { get; set; }
 
-    [JsonPropertyName("applicationVersion")]
-    public string ApplicationVersion { get; set; }
+    [JsonPropertyName("serviceInstanceId")]
+    public string ServiceInstanceId { get; set; }
+
+    [JsonPropertyName("serviceVersion")]
+    public string ServiceVersion { get; set; }
 
     [JsonPropertyName("flags")]
     public uint Flags { get; }
@@ -71,9 +71,9 @@ public class OtlpLogEntry
             }
         });
 
-        ApplicationName = application.ApplicationName;
-        ApplicationVersion = application.VersionNumber;
-        ApplicationInstanceId = application.InstanceId;
+        ServiceName = application.ServiceName;
+        ServiceVersion = application.ServiceVersionNumber;
+        ServiceInstanceId = application.ServiceInstanceId;
 
         Attributes = attributes
             ?.Select(a => new NameValue { Name = a.Key, Value = a.Value })

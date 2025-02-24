@@ -1,20 +1,12 @@
-﻿using Nest;
+﻿using System.Text.Json.Serialization;
 
 namespace Loggle.Web.Model;
 
 public class NameValue
 {
-    [Keyword(
-        Name = "name",
-        Index = true,
-        DocValues = true,
-        Norms = false)]
+    [JsonPropertyName("name")]
     public string? Name { get; set; }
 
-    [Keyword(
-        Name = "value",
-        Index = true,
-        DocValues = true,
-        Norms = false)]
+    [JsonPropertyName("value")]
     public string? Value { get; set; }
 }

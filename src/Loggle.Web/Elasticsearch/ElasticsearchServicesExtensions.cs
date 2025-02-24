@@ -9,6 +9,7 @@ namespace Loggle.Web.Elasticsearch;
 
 public static class ElasticsearchServicesExtensions
 {
+    [Obsolete("Use ElasticsearchFactory", true)]
     public static IServiceCollection AddElasticsearch(this IServiceCollection services)
     {
         ThrowHelper.ThrowIfNull(services);
@@ -26,6 +27,7 @@ public static class ElasticsearchServicesExtensions
         return services;
     }
 
+    [Obsolete("Use ElasticsearchFactory", true)]
     public static IServiceCollection AddElasticsearchV7(this IServiceCollection services)
     {
         ThrowHelper.ThrowIfNull(services);

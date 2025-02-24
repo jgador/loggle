@@ -1,26 +1,28 @@
 ﻿using System;
 using Elastic.Clients.Elasticsearch;
+using Loggle.Web.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace Loggle.Web.Elasticsearch;
 
 public class ElasticsearchFactory
 {
-    private IOptionsMonitor<LoggleOtlpExporterOptions> _loggleOtlpExporterOptions;
+    private IOptionsMonitor<ElasticsearchIngestOptions> _ingestOptions;
 
-    public ElasticsearchFactory(IOptionsMonitor<LoggleOtlpExporterOptions> loggleOtlpExporterOptions)
+    public ElasticsearchFactory(IOptionsMonitor<ElasticsearchIngestOptions> ingestOptions)
     {
-        ThrowHelper.ThrowIfNull(loggleOtlpExporterOptions);
+        ThrowHelper.ThrowIfNull(ingestOptions?.CurrentValue?.ElasticsearchIngestUrl);
 
-        _loggleOtlpExporterOptions = loggleOtlpExporterOptions;
+        _ingestOptions = ingestOptions;
     }
 
     public ElasticsearchClient CreateClient()
     {
-        var settings = new ElasticsearchClientSettings(new Uri(_loggleOtlpExporterOptions.CurrentValue.ElasticsearchIngestUrl))
+        var settings = new ElasticsearchClientSettings(new Uri(_ingestOptions!.CurrentValue!.ElasticsearchIngestUrl!))
+            .DisablePing()
+            .DisableAuditTrail()
             .DisableDirectStreaming();
 
-        // TODO: cache the client
         var client = new ElasticsearchClient(settings);
 
         return client;

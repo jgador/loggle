@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Clients.Elasticsearch;
@@ -11,6 +12,7 @@ using PutLifecycleResponse = Elastic.Clients.Elasticsearch.IndexLifecycleManagem
 
 namespace Loggle.Web.Elasticsearch;
 
+[Obsolete("Provisioning of ILM policies, Index templates, mapping, etc are done via script", true)]
 public sealed class ElasticsearchSetupManager
 {
     private readonly ElasticsearchClient _elasticsearchClient;

@@ -24,7 +24,7 @@ public static class LoggleLoggerExtensions
         return builder;
     }
 
-    // TODO: Use something like the IConfigureOptions
+    // TODO: Use builder pattern
     public static ILoggingBuilder AddLoggleExporter(this ILoggingBuilder builder, IConfiguration configuration)
     {
         var loggleConfig = configuration
