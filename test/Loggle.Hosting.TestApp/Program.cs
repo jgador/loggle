@@ -15,9 +15,9 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
-        // await SendToOpenTelemetryCollectorNewAsync(args).ConfigureAwait(false);
+        await SendToOpenTelemetryCollectorNewAsync(args).ConfigureAwait(false);
 
-        await SendToOpenTelemetryCollectorAsync(args).ConfigureAwait(false);
+        // await SendToOpenTelemetryCollectorAsync(args).ConfigureAwait(false);
         // await SimulateProducerConsumerAsync().ConfigureAwait(false);
         // await RunAsync(args).ConfigureAwait(false);
     }
@@ -25,19 +25,12 @@ public class Program
     private static async Task SendToOpenTelemetryCollectorNewAsync(string[] args)
     {
         var builder = Host.CreateDefaultBuilder(args)
-            .ConfigureLogging((context, builder) =>
+            .ConfigureServices((hostContext, services) =>
             {
+                services.AddLoggleExporter();
+                services.AddHostedService<LoggingBackgroundService>();
+                services.AddHostedService<YetAnotherLoggingBackgroundService>();
             });
-
-        //.ConfigureLogging((context, builder) =>
-        //{
-        //    builder.AddLoggleExporter(context.Configuration);
-        //})
-        //.ConfigureServices(services =>
-        //{
-        //    services.AddHostedService<LoggingBackgroundService>();
-        //    services.AddHostedService<YetAnotherLoggingBackgroundService>();
-        //});
 
         var host = builder.Build();
 
@@ -50,7 +43,7 @@ public class Program
             .ConfigureLogging((context, builder) =>
             {
                 // builder.AddAspireExporter();
-                builder.AddLoggleExporter(context.Configuration);
+                builder.AddLoggleExporter_v1(context.Configuration);
             })
             .ConfigureServices(services =>
             {

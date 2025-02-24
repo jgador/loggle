@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 
 namespace Loggle.Logging
 {
-    class ConfigureLoggleOtlpExporterOptions : IConfigureOptions<LoggleOtlpExporterOptions>
+    public class ConfigureLoggleOtlpExporterOptions : IConfigureOptions<LoggleOtlpExporterOptions>
     {
         private readonly IConfiguration _configuration;
 
@@ -15,6 +15,6 @@ namespace Loggle.Logging
         }
 
         public void Configure(LoggleOtlpExporterOptions options)
-            => _configuration.Bind(LoggleOtlpExporterOptions.SectionKey);
+            => _configuration.Bind(LoggleOtlpExporterOptions.SectionKey, options);
     }
 }

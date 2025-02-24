@@ -124,7 +124,7 @@ public class LoggleLoggerOptionsTests
 
         services.AddLogging(builder =>
         {
-            builder.AddLoggleExporter(configuration);
+            builder.AddLoggleExporter_v1(configuration);
         });
 
         var sp = services.BuildServiceProvider();
