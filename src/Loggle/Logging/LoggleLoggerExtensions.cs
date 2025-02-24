@@ -46,13 +46,13 @@ public static class LoggleLoggerExtensions
                 {
                     processorOptions.ExportProcessorType = ExportProcessorType.Batch;
                     exporterOptions.Protocol = OtlpExportProtocol.HttpProtobuf;
-                    exporterOptions.Endpoint = new Uri(loggleExportOptions.Endpoint!);
+                    exporterOptions.Endpoint = new Uri(loggleExportOptions?.OtelCollector!.LogsReceiverEndpoint!);
 
                     exporterOptions.HttpClientFactory = () =>
                     {
                         var client = new HttpClient();
 
-                        client.DefaultRequestHeaders.Authorization = new("Bearer", loggleExportOptions?.BearerToken);
+                        client.DefaultRequestHeaders.Authorization = new("Bearer", loggleExportOptions?.OtelCollector?.BearerToken!);
 
                         return client;
                     };

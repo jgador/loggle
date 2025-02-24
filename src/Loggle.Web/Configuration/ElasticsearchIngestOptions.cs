@@ -6,5 +6,5 @@ public class ElasticsearchIngestOptions
 
     public string? ElasticsearchIngestUrl { get; set; }
 
-    public string DataStreamName { get; set; } = "logs-loggle-default";
+    public string DataStreamName { get; set; } = string.Empty;
 }

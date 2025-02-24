@@ -110,8 +110,8 @@ public class LoggleLoggerOptionsTests
     {
         var dic = new Dictionary<string, string>
         {
-            { "Logging:Loggle:BearerToken", "L0gg|3K3y" },
-            { "Logging:Loggle:Endpoint", "http://localhost:4318/v1/logs"}
+            { "Logging:Loggle:OtelCollector:BearerToken", "L0gg|3K3y" },
+            { "Logging:Loggle:OtelCollector:LogsReceiverEndpoint", "http://localhost:4318/v1/logs"}
         };
 
         var configuration = new ConfigurationBuilder()
@@ -133,7 +133,7 @@ public class LoggleLoggerOptionsTests
 
         Assert.NotNull(options);
         Assert.NotNull(options.CurrentValue);
-        Assert.Equal("L0gg|3K3y", options.CurrentValue.BearerToken);
-        Assert.Equal("http://localhost:4318/v1/logs", options.CurrentValue.Endpoint);
+        Assert.Equal("L0gg|3K3y", options.CurrentValue?.OtelCollector?.BearerToken);
+        Assert.Equal("http://localhost:4318/v1/logs", options?.CurrentValue?.OtelCollector?.LogsReceiverEndpoint);
     }
 }

@@ -6,10 +6,6 @@ public class LoggleOtlpExporterOptions
 {
     public const string SectionKey = "Logging:Loggle";
 
-    public string? BearerToken { get; set; } = string.Empty;
-
-    public string? Endpoint { get; set; } = "http://localhost:4318/v1/logs";
-
     private string? _serviceName = null;
     public string ServiceName
     {
@@ -21,6 +17,8 @@ public class LoggleOtlpExporterOptions
     }
 
     public string ServiceVersion { get; set; } = "1.0.0";
+
+    public OtelCollectorOptions? OtelCollector { get; set; } = new();
 
     private string GetDefaultServiceName()
     {
