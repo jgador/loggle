@@ -24,7 +24,6 @@ public static class LoggleLoggerExtensions
         return builder;
     }
 
-    // TODO: Use builder pattern
     public static ILoggingBuilder AddLoggleExporter(this ILoggingBuilder builder, IConfiguration configuration)
     {
         var loggleConfig = configuration
@@ -34,15 +33,15 @@ public static class LoggleLoggerExtensions
 
         builder.Services.Configure<LoggleOtlpExporterOptions>(loggleConfig);
 
-        builder.Services.AddLogging(builder =>
-        {
-            builder.AddOpenTelemetry(o =>
-            {
-                o.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(
+        builder.Services.AddOpenTelemetry()
+            .ConfigureResource(r => r
+                .AddService(
                     serviceName: loggleExportOptions.ServiceName,
-                    serviceVersion: loggleExportOptions.ServiceVersion));
-
-                o.AddOtlpExporter((exporterOptions, processorOptions) =>
+                    serviceVersion: loggleExportOptions.ServiceVersion,
+                    serviceInstanceId: Environment.MachineName))
+            .WithLogging(builder =>
+            {
+                builder.AddOtlpExporter((exporterOptions, processorOptions) =>
                 {
                     processorOptions.ExportProcessorType = ExportProcessorType.Batch;
                     exporterOptions.Protocol = OtlpExportProtocol.HttpProtobuf;
@@ -58,7 +57,6 @@ public static class LoggleLoggerExtensions
                     };
                 });
             });
-        });
 
         return builder;
     }

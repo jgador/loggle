@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <PackageReference Include="Bogus" Version="35.6.2" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.11.1" />
   </ItemGroup>
 
