@@ -4,15 +4,9 @@ Loggle is a self-hosted log monitoring solution that stitches together the best 
 
 ## Video Tutorial
 
-Watch this short video on Loggle setup below:
-
-<video width="640" controls>
-  <source src="https://drive.google.com/file/d/1p_cI3Q0dsTYmsuPAi5Qvpzw309JvZR3R/view?usp=drive_link" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+Watch this short video on Google Drive for a walkthrough of setting up and using Loggle: [![Loggle Setup Video](https://drive.google.com/thumbnail?sz=w640&id=1uOmeeH3Hq63jPdic1IZwZl8jC4rPobLj)](https://drive.google.com/file/d/1uOmeeH3Hq63jPdic1IZwZl8jC4rPobLj/view?usp=drive_link)
 
 This video provides a concise overview of deploying Loggle, configuring log forwarding, and accessing Kibana for log visualization.
-
 
 ## What It Does
 
