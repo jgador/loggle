@@ -2,6 +2,18 @@
 
 Loggle is a self-hosted log monitoring solution that stitches together the best available tools for log management. If you're looking to take control of your logs without relying on third-party services, Loggle is for you. This is a fun project intended for experimentation and learning, and it is not recommended for production use.
 
+## Video Tutorial
+
+Watch this short video on Loggle setup below:
+
+<video width="640" controls>
+  <source src="https://drive.google.com/file/d/1p_cI3Q0dsTYmsuPAi5Qvpzw309JvZR3R/view?usp=drive_link" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
+This video provides a concise overview of deploying Loggle, configuring log forwarding, and accessing Kibana for log visualization.
+
+
 ## What It Does
 
 - **Self-Hosted Monitoring:** Manage your logs on your own server.

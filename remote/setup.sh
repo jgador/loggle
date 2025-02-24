@@ -14,6 +14,14 @@ chmod -R a+rw /etc/loggle/kibana-data
 apt-get update && apt-get upgrade -y
 apt-get install -y ca-certificates curl
 
+# Install PowerShell
+apt-get update
+apt-get install -y wget
+wget https://github.com/PowerShell/PowerShell/releases/download/v7.5.0/powershell_7.5.0-1.deb_amd64.deb
+dpkg -i powershell_7.5.0-1.deb_amd64.deb
+apt-get install -f
+rm powershell_7.5.0-1.deb_amd64.deb
+
 # Install Docker
 install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
@@ -38,9 +46,11 @@ certbot certonly --standalone -d kibana.loggle.co -m certbot@loggle.co --agree-t
 sudo chmod -R 750 /etc/letsencrypt/live
 sudo chmod -R 750 /etc/letsencrypt/archive
 
-systemctl daemon-reload
-systemctl enable loggle.service
-systemctl start loggle.service
+sudo docker compose -f /etc/loggle/docker-compose.yml pull
+
+sudo systemctl daemon-reload
+sudo systemctl enable loggle.service
+sudo systemctl start loggle.service
 
 es_ready=false
 for es_attempt in {1..50}; do
@@ -59,14 +69,6 @@ if [ "$es_ready" != true ]; then
 else
   echo "Elasticsearch is ready!"
 fi
-
-# Install PowerShell
-apt-get update
-apt-get install -y wget
-wget https://github.com/PowerShell/PowerShell/releases/download/v7.5.0/powershell_7.5.0-1.deb_amd64.deb
-dpkg -i powershell_7.5.0-1.deb_amd64.deb
-apt-get install -f
-rm powershell_7.5.0-1.deb_amd64.deb
 
 es_output=$(pwsh /etc/loggle/es-init/batch-indexmanagement.ps1)
 echo "$es_output"

@@ -15,18 +15,10 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
-        await SendToOpenTelemetryCollectorNewAsync(args).ConfigureAwait(false);
-
-        // await SendToOpenTelemetryCollectorAsync(args).ConfigureAwait(false);
-        // await SimulateProducerConsumerAsync().ConfigureAwait(false);
-        // await RunAsync(args).ConfigureAwait(false);
-    }
-
-    private static async Task SendToOpenTelemetryCollectorNewAsync(string[] args)
-    {
         var builder = Host.CreateDefaultBuilder(args)
             .ConfigureServices((hostContext, services) =>
             {
+                // Register the loggle exporter
                 services.AddLoggleExporter();
                 services.AddHostedService<LoggingBackgroundService>();
                 services.AddHostedService<YetAnotherLoggingBackgroundService>();

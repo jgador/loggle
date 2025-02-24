@@ -1,4 +1,15 @@
 services:
+  loggle-web:
+    image: jessegador/loggle-web:latest
+    container_name: loggle-web
+    networks:
+      - loggle
+    ports:
+      - "8080:8080"
+    depends_on:
+      - otelcol
+      - elasticsearch
+
   otelcol:
     image: otel/opentelemetry-collector-contrib:0.117.0
     container_name: otelcol
