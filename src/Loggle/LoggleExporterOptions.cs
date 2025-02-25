@@ -2,7 +2,7 @@
 
 namespace Loggle;
 
-public class LoggleOtlpExporterOptions
+public class LoggleExporterOptions
 {
     public const string SectionKey = "Logging:Loggle";
 
