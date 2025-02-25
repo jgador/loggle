@@ -8,6 +8,7 @@
     <!--MinVer-->
     <MinVerTagPrefix>v</MinVerTagPrefix>
     <MinVerIgnoreHeight>true</MinVerIgnoreHeight>
+    <MinVerAutoIncrement>false</MinVerAutoIncrement>
   </PropertyGroup>
 
   <ItemGroup>
