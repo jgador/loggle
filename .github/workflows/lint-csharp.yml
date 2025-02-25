@@ -1,6 +1,7 @@
 name: 'C# linting'
 on:
   push:
+    branches: ['**']
   pull_request:
     paths: ['src/**.cs']
     branches: [ 'release/*', 'master']
