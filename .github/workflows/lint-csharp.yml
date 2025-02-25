@@ -32,4 +32,4 @@ jobs:
         run: dotnet restore Loggle.sln
 
       - name: dotnet format
-        run: dotnet format OpenTelemetry.sln --no-restore --verify-no-changes
+        run: dotnet format Loggle.sln --no-restore --verify-no-changes
