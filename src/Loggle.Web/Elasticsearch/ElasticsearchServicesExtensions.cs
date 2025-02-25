@@ -4,6 +4,7 @@ using Elasticsearch.Net;
 using Microsoft.Extensions.DependencyInjection;
 using Nest;
 using Nest.JsonNetSerializer;
+using OpenTelemetry.Exporter.Loggle;
 
 namespace Loggle.Web.Elasticsearch;
 

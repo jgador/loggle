@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using OpenTelemetry.Exporter.Loggle;
 
 namespace Loggle.Web.Configuration;
 

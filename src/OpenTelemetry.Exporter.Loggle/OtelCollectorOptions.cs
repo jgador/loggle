@@ -1,4 +1,4 @@
-﻿namespace Loggle
+﻿namespace OpenTelemetry.Exporter.Loggle
 {
     public class OtelCollectorOptions
     {

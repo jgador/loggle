@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Loggle\Loggle.csproj" />
+    <ProjectReference Include="..\..\src\OpenTelemetry.Exporter.Loggle\OpenTelemetry.Exporter.Loggle.csproj" />
   </ItemGroup>
 
   <ItemGroup>

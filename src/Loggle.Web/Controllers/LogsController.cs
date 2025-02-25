@@ -7,6 +7,7 @@ using Loggle.Web.Configuration;
 using Loggle.Web.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using OpenTelemetry.Exporter.Loggle;
 using OtlpLogs = OpenTelemetry.Proto.Logs.V1;
 
 namespace Loggle.Web.Controllers;

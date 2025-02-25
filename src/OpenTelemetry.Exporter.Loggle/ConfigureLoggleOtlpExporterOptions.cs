@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
-namespace Loggle
+namespace OpenTelemetry.Exporter.Loggle
 {
     public class ConfigureLoggleOtlpExporterOptions : IConfigureOptions<LoggleExporterOptions>
     {

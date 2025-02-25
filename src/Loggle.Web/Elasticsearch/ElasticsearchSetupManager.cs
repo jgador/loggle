@@ -6,6 +6,7 @@ using Elastic.Clients.Elasticsearch;
 using Elastic.Transport;
 using Loggle.Web.Model;
 using Nest;
+using OpenTelemetry.Exporter.Loggle;
 using PutComponentTemplateResponse = Elastic.Clients.Elasticsearch.Cluster.PutComponentTemplateResponse;
 using PutIndexTemplateResponse = Elastic.Clients.Elasticsearch.IndexManagement.PutIndexTemplateResponse;
 using PutLifecycleResponse = Elastic.Clients.Elasticsearch.IndexLifecycleManagement.PutLifecycleResponse;
