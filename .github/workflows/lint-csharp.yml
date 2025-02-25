@@ -28,3 +28,8 @@ jobs:
       - name: Setup dotnet
         uses: actions/setup-dotnet@v4
 
+      - name: dotnet restore
+        run: dotnet restore Loggle.sln
+
+      - name: dotnet format
+        run: dotnet format OpenTelemetry.sln --no-restore --verify-no-changes
