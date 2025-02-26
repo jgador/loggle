@@ -8,7 +8,10 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{13D078EB-0F40-4CC7-8C75-6C2B6950E1C4}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		.gitignore = .gitignore
 		Directory.Build.props = Directory.Build.props
+		Directory.Packages.props = Directory.Packages.props
+		global.json = global.json
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{BC9F7E5D-B80A-4FCD-AB3C-BC4FC2692B29}"
@@ -52,5 +55,8 @@ Global
 		{18873848-783F-46A5-8D88-AE4E32243FE6} = {9B783609-9CB8-4937-8CE5-1F9EABF652F6}
 		{4AE66C49-3E67-4477-978E-8475E215AD8F} = {9B783609-9CB8-4937-8CE5-1F9EABF652F6}
 		{F3EA0323-C05F-40DB-AA0C-6EA0A51593DA} = {BC9F7E5D-B80A-4FCD-AB3C-BC4FC2692B29}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D8DB0493-7176-42F3-86B7-F84E2C931180}
 	EndGlobalSection
 EndGlobal
