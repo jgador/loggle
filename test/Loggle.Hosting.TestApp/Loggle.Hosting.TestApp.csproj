@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\OpenTelemetry.Exporter.Loggle\OpenTelemetry.Exporter.Loggle.csproj" />
+    <ProjectReference Include="..\..\src\Loggle\Loggle.csproj" />
   </ItemGroup>
 
   <ItemGroup>

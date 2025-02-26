@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace OpenTelemetry.Exporter.Loggle
+namespace Loggle
 {
     public class LoggleExporterOptions
     {

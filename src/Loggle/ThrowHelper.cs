@@ -2,7 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-namespace OpenTelemetry.Exporter.Loggle
+namespace Loggle
 {
     internal static class ThrowHelper
     {

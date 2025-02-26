@@ -8,7 +8,6 @@ using Loggle.Web.Configuration;
 using Loggle.Web.Elasticsearch;
 using Loggle.Web.Model;
 using Microsoft.Extensions.Options;
-using OpenTelemetry.Exporter.Loggle;
 
 namespace Loggle.Web;
 

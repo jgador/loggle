@@ -2,7 +2,6 @@
 using Elastic.Clients.Elasticsearch;
 using Loggle.Web.Configuration;
 using Microsoft.Extensions.Options;
-using OpenTelemetry.Exporter.Loggle;
 
 namespace Loggle.Web.Elasticsearch;
 
