@@ -10,9 +10,9 @@ permissions:
   pull-requests: read
 
 jobs:
-  lint-csharp:
+  build:
     if: contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association)
-    name: 'C# Linting'
+    name: Build
     runs-on: ubuntu-latest
 
     steps:
