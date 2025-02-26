@@ -9,7 +9,7 @@
     <MinVerTagPrefix>v</MinVerTagPrefix>
     <MinVerIgnoreHeight>true</MinVerIgnoreHeight>
     <MinVerAutoIncrement></MinVerAutoIncrement>
-    <MinVerVerbosity>detailed</MinVerVerbosity>
+    <MinVerVerbosity>normal</MinVerVerbosity>
     <MinVerSkip Condition="'$(Configuration)' == 'Debug'">true</MinVerSkip>
   </PropertyGroup>
 

@@ -1,4 +1,4 @@
-name: 'C# linting'
+name: Build
 on:
   push:
     branches: ['**']
@@ -38,4 +38,4 @@ jobs:
         run: dotnet format Loggle.sln --no-restore --verify-no-changes
 
       - name: dotnet pack
-        run: dotnet pack "src/Loggle/Loggle.csproj" --output nupkgs --configuration Release --no-restore --no-build --verbosity=detailed
+        run: dotnet pack "src/Loggle/Loggle.csproj" --output nupkgs --configuration Release --no-restore --no-build --verbosity=normal
