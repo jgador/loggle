@@ -37,4 +37,5 @@ jobs:
       - name: dotnet format
         run: dotnet format Loggle.sln --no-restore --verify-no-changes
 
-#  dotnet pack "src/OpenTelemetry.Exporter.Loggle/OpenTelemetry.Exporter.Loggle.csproj" --output nupkgs --configuration Release --no-restore --no-build -p:PackageVersion=0.99.0-rc.1 --verbosity=detailed
+      - name: dotnet pack
+        run: dotnet pack "src/OpenTelemetry.Exporter.Loggle/OpenTelemetry.Exporter.Loggle.csproj" --output nupkgs --configuration Release --no-restore --no-build --verbosity=detailed
