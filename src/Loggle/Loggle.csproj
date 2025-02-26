@@ -10,6 +10,7 @@
     <MinVerIgnoreHeight>true</MinVerIgnoreHeight>
     <MinVerAutoIncrement></MinVerAutoIncrement>
     <MinVerVerbosity>detailed</MinVerVerbosity>
+    <MinVerSkip Condition="'$(Configuration)' == 'Debug'">true</MinVerSkip>
   </PropertyGroup>
 
   <ItemGroup>
