@@ -29,7 +29,12 @@ jobs:
         uses: actions/setup-dotnet@v4
 
       - name: dotnet restore
-        run: dotnet restore Loggle.sln
+        run: dotnet restore Loggle.sln -p:RunningDotNetPack=true
+
+      - name: dotnet build
+        run: dotnet build Loggle.sln --configuration Release --no-restore -p:Deterministic=true -p:RunningDotNetPack=true
 
       - name: dotnet format
         run: dotnet format Loggle.sln --no-restore --verify-no-changes
+
+#  dotnet pack "src/OpenTelemetry.Exporter.Loggle/OpenTelemetry.Exporter.Loggle.csproj" --output nupkgs --configuration Release --no-restore --no-build -p:PackageVersion=0.99.0-rc.1 --verbosity=detailed
