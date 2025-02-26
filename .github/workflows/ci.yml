@@ -1,0 +1,41 @@
+name: Build
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    paths: ['src/**.cs']
+    branches: [ 'release/*', 'master']
+
+permissions:
+  pull-requests: read
+
+jobs:
+  build:
+    if: contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association)
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Note: By default GitHub only fetches 1 commit. MinVer needs to find
+          # the version tag which is typically NOT on the first commit so we
+          # retrieve them all.
+          fetch-depth: 0
+          token: ${{ secrets.CI_BUILD_TOKEN }}
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v4
+
+      - name: dotnet restore
+        run: dotnet restore Loggle.sln -p:RunningDotNetPack=true
+
+      - name: dotnet build
+        run: dotnet build Loggle.sln --configuration Release --no-restore -p:Deterministic=true -p:RunningDotNetPack=true
+
+      - name: dotnet format
+        run: dotnet format Loggle.sln --no-restore --verify-no-changes
+
+      - name: dotnet pack
+        run: dotnet pack "src/Loggle/Loggle.csproj" --output nupkgs --configuration Release --no-restore --no-build --verbosity=normal

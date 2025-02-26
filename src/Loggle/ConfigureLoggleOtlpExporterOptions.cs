@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
-namespace Loggle.Logging
+namespace Loggle
 {
-    public class ConfigureLoggleOtlpExporterOptions : IConfigureOptions<LoggleOtlpExporterOptions>
+    public class ConfigureLoggleOtlpExporterOptions : IConfigureOptions<LoggleExporterOptions>
     {
         private readonly IConfiguration _configuration;
 
@@ -14,7 +14,7 @@ namespace Loggle.Logging
             _configuration = configuration;
         }
 
-        public void Configure(LoggleOtlpExporterOptions options)
-            => _configuration.Bind(LoggleOtlpExporterOptions.SectionKey, options);
+        public void Configure(LoggleExporterOptions options)
+            => _configuration.Bind(LoggleExporterOptions.SectionKey, options);
     }
 }
