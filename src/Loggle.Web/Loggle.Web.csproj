@@ -8,10 +8,6 @@
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     
     <PackageReference Include="Elastic.Clients.Elasticsearch" />
-    <PackageReference Include="Elastic.Elasticsearch.Ephemeral" />
-    <PackageReference Include="NEST" />
-    <PackageReference Include="NEST.JsonNetSerializer" />
-
     <PackageReference Include="Google.Protobuf" />
     <PackageReference Include="Grpc" />
     <PackageReference Include="Grpc.Tools">
