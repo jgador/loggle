@@ -6,7 +6,7 @@ using Bogus;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace Loggle.Hosting.TestApp;
+namespace Examples.Loggle.Console;
 
 public class LoggingBackgroundService : BackgroundService
 {

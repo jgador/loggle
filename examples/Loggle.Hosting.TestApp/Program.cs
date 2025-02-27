@@ -1,8 +1,9 @@
 ﻿using System.Threading.Tasks;
+using Loggle;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace Loggle.Hosting.TestApp;
+namespace Examples.Loggle.Console;
 
 public class Program
 {
