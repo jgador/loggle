@@ -2,40 +2,73 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-namespace Loggle;
-
-internal static class ThrowHelper
+#if !NET
+namespace System.Runtime.CompilerServices
 {
-    internal static void ThrowIfNull(
-        [NotNull] object? argument,
-        [CallerArgumentExpression(nameof(argument))] string? paramName = null)
+    /// <summary>Allows capturing of the expressions passed to a method.</summary>
+    [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
+    internal sealed class CallerArgumentExpressionAttribute : Attribute
     {
-        if (argument is null)
+        public CallerArgumentExpressionAttribute(string? parameterName)
         {
-            Throw(paramName);
-        }
-    }
-
-    [return: NotNull]
-    public static string IfNullOrWhitespace(
-        [NotNull] string? argument,
-        [CallerArgumentExpression(nameof(argument))] string paramName = "")
-    {
-        if (string.IsNullOrWhiteSpace(argument))
-        {
-            if (argument == null)
-            {
-                throw new ArgumentNullException(paramName);
-            }
-            else
-            {
-                throw new ArgumentException("Argument is whitespace", paramName);
-            }
+            this.ParameterName = parameterName;
         }
 
-        return argument;
+        public string? ParameterName { get; }
+    }
+}
+#endif
+
+#if !NET && !NETSTANDARD2_1_OR_GREATER
+namespace System.Diagnostics.CodeAnalysis
+{
+    /// <summary>Specifies that an output is not <see langword="null"/> even if
+    /// the corresponding type allows it. Specifies that an input argument was
+    /// not <see langword="null"/> when the call returns.</summary>
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.ReturnValue, Inherited = false)]
+    internal sealed class NotNullAttribute : Attribute
+    {
     }
 
-    [DoesNotReturn]
-    private static void Throw(string? paramName) => throw new ArgumentNullException(paramName);
+    /// <summary>Applied to a method that will never return under any circumstance.</summary>
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    internal sealed class DoesNotReturnAttribute : Attribute { }
+}
+#endif
+
+#pragma warning disable IDE0161 // Convert to file-scoped namespace
+namespace Loggle
+{
+    internal static class ThrowHelper
+    {
+        internal static void ThrowIfNull(
+            [NotNull] object? argument,
+            [CallerArgumentExpression(nameof(argument))] string? paramName = null)
+        {
+            if (argument is null)
+            {
+                Throw(paramName);
+            }
+        }
+
+        public static void IfNullOrWhitespace(
+            string? argument,
+            [CallerArgumentExpression(nameof(argument))] string paramName = "")
+        {
+            if (string.IsNullOrWhiteSpace(argument))
+            {
+                if (argument == null)
+                {
+                    throw new ArgumentNullException(paramName);
+                }
+                else
+                {
+                    throw new ArgumentException("Argument is whitespace", paramName);
+                }
+            }
+        }
+
+        [DoesNotReturn]
+        private static void Throw(string? paramName) => throw new ArgumentNullException(paramName);
+    }
 }

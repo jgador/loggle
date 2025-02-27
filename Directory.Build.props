@@ -1,5 +1,6 @@
 <Project>
   <PropertyGroup>
+    <LangVersion>latest</LangVersion>
     <RepoRoot>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)))</RepoRoot>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
