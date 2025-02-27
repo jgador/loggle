@@ -31,7 +31,7 @@ public class LoggingBackgroundService : BackgroundService
                 _logger.LogInformation(fakePerson.ToString());
             }
 
-            await Task.Delay(Random.Shared.Next(500, 900), stoppingToken);
+            await Task.Delay(Random.Shared.Next(500, 900), stoppingToken).ConfigureAwait(false);
         }
     }
 }
@@ -63,7 +63,7 @@ public class YetAnotherLoggingBackgroundService : BackgroundService
                 _logger.Log(logLevel, fakeProduct.Description);
             }
 
-            await Task.Delay(Random.Shared.Next(500, 900), stoppingToken);
+            await Task.Delay(Random.Shared.Next(500, 900), stoppingToken).ConfigureAwait(false);
         }
     }
 }
