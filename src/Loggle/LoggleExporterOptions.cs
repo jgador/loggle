@@ -1,43 +1,42 @@
 ﻿using System.Diagnostics;
 
-namespace Loggle
+namespace Loggle;
+
+public class LoggleExporterOptions
 {
-    public class LoggleExporterOptions
+    public const string SectionKey = "Logging:Loggle";
+
+    private string? _serviceName = null;
+    public string ServiceName
     {
-        public const string SectionKey = "Logging:Loggle";
+        get => _serviceName ?? GetDefaultServiceName();
 
-        private string? _serviceName = null;
-        public string ServiceName
+        set => _serviceName = string.IsNullOrWhiteSpace(value)
+            ? GetDefaultServiceName()
+            : value;
+    }
+
+    public string ServiceVersion { get; set; } = "1.0.0";
+
+    public OtelCollectorOptions? OtelCollector { get; set; } = new();
+
+    private static string GetDefaultServiceName()
+    {
+        var defaultServiceName = "unknown_service";
+
+        try
         {
-            get => _serviceName ?? GetDefaultServiceName();
-
-            set => _serviceName = string.IsNullOrWhiteSpace(value)
-                ? GetDefaultServiceName()
-                : value;
+            var processName = Process.GetCurrentProcess().ProcessName;
+            if (!string.IsNullOrWhiteSpace(processName))
+            {
+                defaultServiceName = $"{defaultServiceName}:{processName}";
+            }
+        }
+        catch
+        {
+            // GetCurrentProcess can throw PlatformNotSupportedException
         }
 
-        public string ServiceVersion { get; set; } = "1.0.0";
-
-        public OtelCollectorOptions? OtelCollector { get; set; } = new();
-
-        private string GetDefaultServiceName()
-        {
-            var defaultServiceName = "unknown_service";
-
-            try
-            {
-                var processName = Process.GetCurrentProcess().ProcessName;
-                if (!string.IsNullOrWhiteSpace(processName))
-                {
-                    defaultServiceName = $"{defaultServiceName}:{processName}";
-                }
-            }
-            catch
-            {
-                // GetCurrentProcess can throw PlatformNotSupportedException
-            }
-
-            return defaultServiceName;
-        }
+        return defaultServiceName;
     }
 }

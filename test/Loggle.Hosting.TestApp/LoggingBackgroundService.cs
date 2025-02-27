@@ -79,5 +79,5 @@ internal class FakeUserInfo
 
 internal class FakeProduct
 {
-    public string Description { get; set; }
+    public string? Description { get; set; }
 }

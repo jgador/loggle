@@ -1,20 +1,19 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
-namespace Loggle
+namespace Loggle;
+
+public class ConfigureLoggleOtlpExporterOptions : IConfigureOptions<LoggleExporterOptions>
 {
-    public class ConfigureLoggleOtlpExporterOptions : IConfigureOptions<LoggleExporterOptions>
+    private readonly IConfiguration _configuration;
+
+    public ConfigureLoggleOtlpExporterOptions(IConfiguration configuration)
     {
-        private readonly IConfiguration _configuration;
+        ThrowHelper.ThrowIfNull(configuration);
 
-        public ConfigureLoggleOtlpExporterOptions(IConfiguration configuration)
-        {
-            ThrowHelper.ThrowIfNull(configuration);
-
-            _configuration = configuration;
-        }
-
-        public void Configure(LoggleExporterOptions options)
-            => _configuration.Bind(LoggleExporterOptions.SectionKey, options);
+        _configuration = configuration;
     }
+
+    public void Configure(LoggleExporterOptions options)
+        => _configuration.Bind(LoggleExporterOptions.SectionKey, options);
 }
