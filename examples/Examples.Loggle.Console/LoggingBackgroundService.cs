@@ -6,7 +6,7 @@ using Bogus;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace Loggle.Hosting.TestApp;
+namespace Examples.Loggle.Console;
 
 public class LoggingBackgroundService : BackgroundService
 {
@@ -31,7 +31,7 @@ public class LoggingBackgroundService : BackgroundService
                 _logger.LogInformation(fakePerson.ToString());
             }
 
-            await Task.Delay(Random.Shared.Next(500, 900), stoppingToken);
+            await Task.Delay(Random.Shared.Next(500, 900), stoppingToken).ConfigureAwait(false);
         }
     }
 }
@@ -63,7 +63,7 @@ public class YetAnotherLoggingBackgroundService : BackgroundService
                 _logger.Log(logLevel, fakeProduct.Description);
             }
 
-            await Task.Delay(Random.Shared.Next(500, 900), stoppingToken);
+            await Task.Delay(Random.Shared.Next(500, 900), stoppingToken).ConfigureAwait(false);
         }
     }
 }
@@ -79,5 +79,5 @@ internal class FakeUserInfo
 
 internal class FakeProduct
 {
-    public string Description { get; set; }
+    public string? Description { get; set; }
 }

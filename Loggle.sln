@@ -20,9 +20,16 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{9B783609-9
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Loggle.Tests", "test\Loggle.Tests\Loggle.Tests.csproj", "{18873848-783F-46A5-8D88-AE4E32243FE6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Loggle.Hosting.TestApp", "test\Loggle.Hosting.TestApp\Loggle.Hosting.TestApp.csproj", "{4AE66C49-3E67-4477-978E-8475E215AD8F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Examples.Loggle.Console", "examples\Examples.Loggle.Console\Examples.Loggle.Console.csproj", "{4AE66C49-3E67-4477-978E-8475E215AD8F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Loggle.Web", "src\Loggle.Web\Loggle.Web.csproj", "{F3EA0323-C05F-40DB-AA0C-6EA0A51593DA}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "examples", "examples", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{4B95B3F5-0F1F-4A31-A714-C576F7CD717E}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\ci.yml = .github\workflows\ci.yml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -53,7 +60,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{C7E1E102-2987-4B8A-A25D-E48483FFA2D7} = {BC9F7E5D-B80A-4FCD-AB3C-BC4FC2692B29}
 		{18873848-783F-46A5-8D88-AE4E32243FE6} = {9B783609-9CB8-4937-8CE5-1F9EABF652F6}
-		{4AE66C49-3E67-4477-978E-8475E215AD8F} = {9B783609-9CB8-4937-8CE5-1F9EABF652F6}
+		{4AE66C49-3E67-4477-978E-8475E215AD8F} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{F3EA0323-C05F-40DB-AA0C-6EA0A51593DA} = {BC9F7E5D-B80A-4FCD-AB3C-BC4FC2692B29}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution

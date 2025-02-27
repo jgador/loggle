@@ -32,7 +32,7 @@ public class LogsController : ControllerBase
         try
         {
             using var stream = new MemoryStream();
-            await Request.Body.CopyToAsync(stream);
+            await Request.Body.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
 
             if (stream.CanSeek)
             {

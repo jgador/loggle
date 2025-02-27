@@ -8,6 +8,6 @@ public class AlwaysApprovedApiKeyValidator : IApiKeyValidator
     public async Task<bool> IsValidAsync(string apiKey, CancellationToken cancellationToken = default)
     {
         // Always return true for testing purposes
-        return await Task.FromResult(true);
+        return await Task.FromResult(true).ConfigureAwait(false);
     }
 }

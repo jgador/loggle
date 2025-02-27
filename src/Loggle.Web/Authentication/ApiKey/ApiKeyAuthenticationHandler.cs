@@ -42,7 +42,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyOptions>
             return AuthenticateResult.Fail("API Key was not provided.");
         }
 
-        if (!await _apiKeyValidator.IsValidAsync(apiKey!))
+        if (!await _apiKeyValidator.IsValidAsync(apiKey!).ConfigureAwait(false))
         {
             return AuthenticateResult.Fail("Invalid API Key.");
         }
