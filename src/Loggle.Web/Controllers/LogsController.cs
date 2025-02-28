@@ -28,7 +28,7 @@ public class LogsController : ControllerBase
 
     [HttpPost]
     [Route("v1/logs")]
-    public async Task<IResult> IngestLogsAsyncv1(CancellationToken cancellationToken)
+    public async Task<IResult> IngestLogsAsync(CancellationToken cancellationToken)
     {
         try
         {
@@ -39,9 +39,9 @@ public class LogsController : ControllerBase
             }
 
             var request = await MapOtlpLogsAsync(Request).ConfigureAwait(false);
-            var response = await _logIngestionService.IngestAsync(request, cancellationToken).ConfigureAwait(false);
+            var ingestResult = await _logIngestionService.IngestAsync(request, cancellationToken).ConfigureAwait(false);
 
-            return Result.Response(response);
+            return Result.Response(ingestResult);
         }
         catch (Exception ex)
         {
@@ -110,7 +110,7 @@ public class LogsController : ControllerBase
 
     private sealed class Result
     {
-        public static Result<T> Response<T>(T response) where T : IMessage => new Result<T>(response);
+        public static Result<T> Response<T>(T response) where T : IMessage => new(response);
     }
 
     private sealed class Result<T> : IResult where T : IMessage

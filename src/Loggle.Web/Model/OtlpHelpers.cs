@@ -12,7 +12,7 @@ namespace Loggle.Web.Model;
 
 public static class OtlpHelpers
 {
-    private static readonly JsonSerializerOptions s_jsonSerializerOptions = new JsonSerializerOptions
+    private static readonly JsonSerializerOptions s_jsonSerializerOptions = new()
     {
         WriteIndented = true
     };
@@ -114,7 +114,7 @@ public static class OtlpHelpers
     {
         if (attributes.Count == 0)
         {
-            return Array.Empty<KeyValuePair<string, string>>();
+            return [];
         }
 
         var readLimit = Math.Min(attributes.Count, context.Options.MaxAttributeCount);

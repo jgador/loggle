@@ -1,81 +1,92 @@
 {
-  "template": {
-    "mappings": {
-      "_data_stream_timestamp": {
-        "enabled": true
-      },
-      "dynamic": false,
-      "numeric_detection": false,
-      "properties": {
-        "@timestamp": {
-          "type": "date"
-        },
-        "attributes": {
-          "properties": {
-            "name": {
-              "type": "keyword"
+    "template": {
+        "mappings": {
+            "_data_stream_timestamp": {
+                "enabled": true
             },
-            "value": {
-              "type": "keyword"
+            "dynamic": false,
+            "numeric_detection": false,
+            "properties": {
+                "@timestamp": {
+                    "type": "date"
+                },
+                "applicationInstanceId": {
+                    "ignore_above": 256,
+                    "type": "keyword"
+                },
+                "applicationName": {
+                    "ignore_above": 256,
+                    "type": "keyword"
+                },
+                "applicationVersion": {
+                    "ignore_above": 256,
+                    "type": "keyword"
+                },
+                "attributes": {
+                    "properties": {
+                        "name": {
+                            "type": "keyword"
+                        },
+                        "value": {
+                            "type": "keyword"
+                        }
+                    },
+                    "type": "nested"
+                },
+                "flags": {
+                    "type": "long"
+                },
+                "logLevel": {
+                    "ignore_above": 256,
+                    "type": "keyword"
+                },
+                "message": {
+                    "analyzer": "standard",
+                    "type": "text"
+                },
+                "originalFormat": {
+                    "type": "keyword"
+                },
+                "parentId": {
+                    "ignore_above": 256,
+                    "type": "keyword"
+                },
+                "serviceAttributes": {
+                    "properties": {
+                        "name": {
+                            "type": "keyword"
+                        },
+                        "value": {
+                            "type": "keyword"
+                        }
+                    },
+                    "type": "nested"
+                },
+                "spanId": {
+                    "ignore_above": 256,
+                    "type": "keyword"
+                },
+                "traceId": {
+                    "ignore_above": 256,
+                    "type": "keyword"
+                }
             }
-          },
-          "type": "nested"
         },
-        "applicationName": {
-          "type": "keyword",
-          "ignore_above": 256
-        },
-        "applicationInstanceId": {
-          "type": "keyword",
-          "ignore_above": 256
-        },
-        "applicationVersion": {
-          "type": "keyword",
-          "ignore_above": 256
-        },
-        "flags": {
-          "type": "long"
-        },
-        "logLevel": {
-          "ignore_above": 256,
-          "type": "keyword"
-        },
-        "message": {
-          "analyzer": "standard",
-          "type": "text"
-        },
-        "originalFormat": {
-          "type": "keyword"
-        },
-        "parentId": {
-          "ignore_above": 256,
-          "type": "keyword"
-        },
-        "spanId": {
-          "ignore_above": 256,
-          "type": "keyword"
-        },
-        "traceId": {
-          "ignore_above": 256,
-          "type": "keyword"
+        "settings": {
+            "index": {
+                "mapping": {
+                    "depth": {
+                        "limit": "15"
+                    },
+                    "total_fields": {
+                        "limit": "20000"
+                    }
+                },
+                "sort": {
+                    "field": "@timestamp",
+                    "order": "desc"
+                }
+            }
         }
-      }
-    },
-    "settings": {
-      "index": {
-        "mapping": {
-          "depth": {
-            "limit": "15"
-          },
-          "total_fields": {
-            "limit": "20000"
-          }
-        },
-        "sort": {
-          "field": "@timestamp",
-          "order": "desc"
-        }
-      }
     }
-  }
 }

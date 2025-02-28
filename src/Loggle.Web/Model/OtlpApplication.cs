@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System;
+using System.Collections.Generic;
 using OpenTelemetry.Proto.Resource.V1;
 
 namespace Loggle.Web.Model;
@@ -10,33 +10,29 @@ public class OtlpApplication
     public const string ServiceVersionKey = "service.version";
     public const string ServiceInstanceIdKey = "service.instance.id";
 
-    public string ServiceName =>
-        _serviceProperties.FirstOrDefault(p => p.Key == ServiceNameKey).Value ?? string.Empty;
+    public string ServiceName { get; private set; }
 
-    public string ServiceInstanceId =>
-        _serviceProperties.FirstOrDefault(p => p.Key == ServiceInstanceIdKey).Value ?? string.Empty;
+    public string ServiceVersionNumber { get; private set; }
 
-    public string ServiceVersionNumber =>
-        _serviceProperties.FirstOrDefault(p => p.Key == ServiceVersionKey).Value ?? string.Empty;
+    public string ServiceInstanceId { get; private set; }
 
-    private readonly KeyValuePair<string, string>[] _serviceProperties;
+    public readonly List<KeyValuePair<string, string>> Properties;
 
     public OtlpApplication(OtlpContext context, Resource resource)
     {
-        var serviceProperties = resource.Attributes.ToKeyValuePairs(context, filter: attribute =>
+        Properties = [];
+
+        foreach (var attribute in resource.Attributes)
         {
-            switch (attribute.Key)
+            Action assign = attribute.Key switch
             {
-                case ServiceNameKey:
-                case ServiceVersionKey:
-                case ServiceInstanceIdKey:
-                    return true;
+                ServiceNameKey => () => ServiceName = attribute.Value.GetString(),
+                ServiceVersionKey => () => ServiceVersionNumber = attribute.Value.GetString(),
+                ServiceInstanceIdKey => () => ServiceInstanceId = attribute.Value.GetString(),
+                _ => () => Properties.Add(new KeyValuePair<string, string>(attribute.Key, attribute.Value.GetString()))
+            };
 
-                default:
-                    return false;
-            }
-        });
-
-        _serviceProperties = serviceProperties ?? [];
+            assign.Invoke();
+        }
     }
 }

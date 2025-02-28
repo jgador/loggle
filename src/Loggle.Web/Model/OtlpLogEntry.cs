@@ -12,6 +12,9 @@ public class OtlpLogEntry
     [JsonPropertyName("@timestamp")]
     public DateTime TimeStamp { get; }
 
+    [JsonPropertyName("serviceAttributes")]
+    public List<NameValue> ServiceAttributes { get; set; }
+
     [JsonPropertyName("attributes")]
     public List<NameValue> Attributes { get; }
 
@@ -77,6 +80,11 @@ public class OtlpLogEntry
 
         Attributes = attributes
             ?.Select(a => new NameValue { Name = a.Key, Value = a.Value })
+            ?.ToList() ?? [];
+
+        ServiceAttributes = application
+            ?.Properties
+            ?.Select(p => new NameValue { Name = p.Key, Value = p.Value })
             ?.ToList() ?? [];
 
         Flags = record.Flags;
