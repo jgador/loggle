@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using Loggle.Web.Configuration;
 using Loggle.Web.Elasticsearch;
 using Loggle.Web.Model;
 using Microsoft.Extensions.Options;
+using OpenTelemetry.Proto.Collector.Logs.V1;
 
 namespace Loggle.Web;
 
@@ -28,13 +30,45 @@ public sealed class LogIngestionService
         _elasticsearchIngestOptions = elasticsearchIngestOptions.CurrentValue;
     }
 
-    public async Task<BulkResponse> IngestAsync(IEnumerable<OtlpLogEntry> logs, CancellationToken cancellationToken)
+    public async Task<ExportLogsServiceResponse> IngestAsync(ExportLogsServiceRequest request, CancellationToken cancellationToken)
     {
-        var bulkRequest = CreateIndexBulkRequest(logs, _elasticsearchIngestOptions.DataStreamName);
+        int failureCount = 0;
 
-        var client = _elasticsearchFactory.CreateClient();
+        var context = new OtlpContext
+        {
+            Options = new TelemetryLimitOptions { }
+        };
 
-        return await client.BulkAsync(bulkRequest, cancellationToken).ConfigureAwait(false);
+        Debug.Assert(request.ResourceLogs.Count < 2, "Batched logs from the collector usually contain a single resource log per application; multiple entries are unexpected.");
+
+        foreach (var rl in request.ResourceLogs)
+        {
+            var application = new OtlpApplication(context, rl.Resource);
+
+            foreach (var sl in rl.ScopeLogs)
+            {
+                var logs = new List<OtlpLogEntry>(sl.LogRecords.Count);
+                foreach (var record in sl.LogRecords)
+                {
+                    var logEntry = new OtlpLogEntry(context, application, record);
+                    logs.Add(logEntry);
+                }
+
+                var bulkRequest = CreateIndexBulkRequest(logs, _elasticsearchIngestOptions.DataStreamName);
+                var client = _elasticsearchFactory.CreateClient();
+                var response = await client.BulkAsync(bulkRequest, cancellationToken).ConfigureAwait(false);
+
+                failureCount += logs.Count - (response?.Items?.Count ?? 0);
+            }
+        }
+
+        return new ExportLogsServiceResponse
+        {
+            PartialSuccess = new ExportLogsPartialSuccess
+            {
+                RejectedLogRecords = failureCount
+            }
+        };
     }
 
     private static BulkRequest CreateIndexBulkRequest<T>(IEnumerable<T> logs, string dataStreamName) where T : class

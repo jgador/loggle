@@ -7,11 +7,8 @@
 
   <ItemGroup>
     <PackageReference Include="Bogus" />
+    <PackageReference Include="Loggle" />
     <PackageReference Include="OpenTelemetry.Exporter.Console" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\Loggle\Loggle.csproj" />
   </ItemGroup>
 
   <ItemGroup>

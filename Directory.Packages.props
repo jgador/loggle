@@ -20,7 +20,8 @@
     <PackageVersion Include="Google.Protobuf" Version="3.29.3" />
     <PackageVersion Include="Grpc" Version="2.46.6" />
     <PackageVersion Include="Grpc.Tools" Version="2.70.0" />
-    
+
+    <PackageVersion Include="Loggle" Version="0.99.5-rc.7" />
     <PackageVersion Include="Elastic.Clients.Elasticsearch" Version="8.17.1" />
     <PackageVersion Include="Bogus" Version="35.6.2" />
     <PackageVersion Include="MinVer" Version="6.0.0" />

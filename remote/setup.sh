@@ -5,11 +5,12 @@ export DEBIAN_FRONTEND=noninteractive
 export NEEDRESTART_MODE=a
 
 # Move configuration and setup files (copied from the repo via Terraform) from /tmp to /etc/loggle
-mv /tmp/docker-compose.yml /tmp/otel-collector-config.yaml /tmp/kibana.yml /etc/loggle/
+mv /tmp/docker-compose.yml /tmp/otel-collector-config.yaml /tmp/kibana.yml /tmp/import-cert.ps1 /tmp/export-cert.ps1 /etc/loggle/
 mv /tmp/loggle.service /etc/systemd/system/
 mv /tmp/es-init /etc/loggle/
 chmod -R a+rw /etc/loggle/elasticsearch-data
 chmod -R a+rw /etc/loggle/kibana-data
+chmod -R a+rw /etc/loggle/certs
 
 apt-get update && apt-get upgrade -y
 apt-get install -y ca-certificates curl
@@ -45,6 +46,10 @@ certbot certonly --standalone -d kibana.loggle.co -m certbot@loggle.co --agree-t
 
 sudo chmod -R 750 /etc/letsencrypt/live
 sudo chmod -R 750 /etc/letsencrypt/archive
+
+# Import cert to key vault
+kv_import=$(pwsh /etc/loggle/import-cert.ps1)
+echo "$kv_import"
 
 sudo docker compose -f /etc/loggle/docker-compose.yml pull
 
