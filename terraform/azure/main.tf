@@ -2,13 +2,21 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "=3.0.0"
+      version = "3.117.1"
     }
   }
 }
 
+# data "azurerm_subscription" "sub" {}
+data "azurerm_client_config" "client" {}
+
 provider "azurerm" {
-  features {}
+  features {
+    key_vault {
+      purge_soft_delete_on_destroy    = true
+      recover_soft_deleted_key_vaults = false
+    }
+  }
 }
 
 # Resource Group
@@ -18,6 +26,43 @@ resource "azurerm_resource_group" "rg" {
   lifecycle {
     prevent_destroy = true
   }
+}
+
+# Managed Identity
+resource "azurerm_user_assigned_identity" "auth_id" {
+  name                = "id-loggle"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+}
+
+# Key Vault
+resource "azurerm_key_vault" "kv" {
+  name                       = "kv-loggle"
+  resource_group_name        = azurerm_resource_group.rg.name
+  location                   = azurerm_resource_group.rg.location
+  tenant_id                  = data.azurerm_client_config.client.tenant_id
+  soft_delete_retention_days = 7
+  purge_protection_enabled   = false
+  sku_name                   = "standard"
+  enable_rbac_authorization  = true
+  lifecycle {
+    prevent_destroy = false
+  }
+}
+
+# Set RBAC for Key Vault
+resource "azurerm_role_assignment" "auth_kv" {
+  scope                = azurerm_key_vault.kv.id
+  role_definition_name = "Key Vault Certificates Officer"
+  principal_id         = azurerm_user_assigned_identity.auth_id.principal_id
+}
+
+# Set RBAC for VM
+resource "azurerm_role_assignment" "auth_vm" {
+  scope                = azurerm_virtual_machine.vm.id
+  role_definition_name = "Virtual Machine Contributor"
+  principal_id         = azurerm_user_assigned_identity.auth_id.principal_id
+  depends_on = [ azurerm_virtual_machine.vm ]
 }
 
 # Virtual Network
@@ -121,6 +166,11 @@ resource "azurerm_virtual_machine" "vm" {
   vm_size                          = var.vm_size
   delete_os_disk_on_termination    = true
   delete_data_disks_on_termination = true
+
+  identity{
+    type = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.auth_id.id]
+  }
 
   storage_image_reference {
     publisher = "canonical"
