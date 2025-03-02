@@ -7,7 +7,6 @@ terraform {
   }
 }
 
-# data "azurerm_subscription" "sub" {}
 data "azurerm_client_config" "client" {}
 
 provider "azurerm" {
@@ -51,18 +50,15 @@ resource "azurerm_key_vault" "kv" {
 }
 
 # Set RBAC for Key Vault
-resource "azurerm_role_assignment" "auth_kv" {
+resource "azurerm_role_assignment" "auth_kv_cert" {
   scope                = azurerm_key_vault.kv.id
   role_definition_name = "Key Vault Certificates Officer"
   principal_id         = azurerm_user_assigned_identity.auth_id.principal_id
 }
-
-# Set RBAC for VM
-resource "azurerm_role_assignment" "auth_vm" {
-  scope                = azurerm_virtual_machine.vm.id
-  role_definition_name = "Virtual Machine Contributor"
+resource "azurerm_role_assignment" "auth_kv_secret" {
+  scope                = azurerm_key_vault.kv.id
+  role_definition_name = "Key Vault Secrets User"
   principal_id         = azurerm_user_assigned_identity.auth_id.principal_id
-  depends_on = [ azurerm_virtual_machine.vm ]
 }
 
 # Virtual Network
@@ -167,11 +163,10 @@ resource "azurerm_virtual_machine" "vm" {
   delete_os_disk_on_termination    = true
   delete_data_disks_on_termination = true
 
-  identity{
-    type = "UserAssigned"
+  identity {
+    type         = "UserAssigned"
     identity_ids = [azurerm_user_assigned_identity.auth_id.id]
   }
-
   storage_image_reference {
     publisher = "canonical"
     offer     = "0001-com-ubuntu-minimal-jammy"
@@ -208,6 +203,7 @@ resource "azurerm_virtual_machine" "vm" {
   provisioner "remote-exec" {
     inline = [
       "sudo mkdir -p /etc/loggle",
+      "sudo mkdir -p /etc/loggle/certs",
       "sudo mkdir -p /etc/loggle/elasticsearch-data",
       "sudo mkdir -p /etc/loggle/kibana-data",
       "sudo mv /tmp/setup.sh /etc/loggle/",
@@ -215,6 +211,7 @@ resource "azurerm_virtual_machine" "vm" {
       "sudo /etc/loggle/setup.sh"
     ]
   }
+  depends_on = [azurerm_user_assigned_identity.auth_id,azurerm_key_vault.kv]
   lifecycle {
     prevent_destroy = false
   }
