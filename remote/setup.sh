@@ -5,7 +5,7 @@ export DEBIAN_FRONTEND=noninteractive
 export NEEDRESTART_MODE=a
 
 # Move configuration and setup files (copied from the repo via Terraform) from /tmp to /etc/loggle
-mv /tmp/docker-compose.yml /tmp/otel-collector-config.yaml /tmp/kibana.yml /tmp/import-cert.ps1 /tmp/export-cert.ps1 /etc/loggle/
+mv /tmp/docker-compose.yml /tmp/otel-collector-config.yaml /tmp/kibana.yml /tmp/import-cert.ps1 /tmp/reload-cert.ps1 /etc/loggle/
 mv /tmp/loggle.service /etc/systemd/system/
 mv /tmp/es-init /etc/loggle/
 chmod -R a+rw /etc/loggle/elasticsearch-data
@@ -51,7 +51,15 @@ sudo chmod -R 750 /etc/letsencrypt/archive
 kv_import=$(pwsh /etc/loggle/import-cert.ps1)
 echo "$kv_import"
 
+# Certbot renewal hook: Export updated certificate from Key Vault and reload Kibana.
+sudo tee /etc/letsencrypt/renewal-hooks/post/reload-cert.sh << 'EOF'
+#!/bin/bash
+pwsh /etc/loggle/reload-cert.ps1
+EOF
+
+sudo chmod +x /etc/letsencrypt/renewal-hooks/post/reload-cert.sh
 sudo docker compose -f /etc/loggle/docker-compose.yml pull
+sudo /etc/letsencrypt/renewal-hooks/post/reload-cert.sh
 
 sudo systemctl daemon-reload
 sudo systemctl enable loggle.service

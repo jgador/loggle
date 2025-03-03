@@ -60,8 +60,8 @@ services:
     volumes:
       - /etc/loggle/kibana.yml:/usr/share/kibana/config/kibana.yml
       - /etc/loggle/kibana-data:/usr/share/kibana/data
-      - /etc/letsencrypt/live/kibana.loggle.co/fullchain.pem:/usr/share/kibana/fullchain.pem
-      - /etc/letsencrypt/live/kibana.loggle.co/privkey.pem:/usr/share/kibana/privkey.pem
+      - /etc/loggle/certs/fullchain.pem:/usr/share/kibana/fullchain.pem
+      - /etc/loggle/certs/privkey.pem:/usr/share/kibana/privkey.pem
 
 networks:
   loggle:
