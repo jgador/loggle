@@ -17,8 +17,5 @@ openssl pkcs12 `
   -out /etc/loggle/certs/privkey.pem `
   -passin pass:
 
-# Restart kibana to apply the new certificate
-docker compose -f /etc/loggle/docker-compose.yml restart kibana
-
 chmod 750 /etc/loggle/certs/fullchain.pem
 chmod 750 /etc/loggle/certs/privkey.pem
