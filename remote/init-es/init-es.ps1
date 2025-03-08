@@ -36,7 +36,7 @@ function ExecuteBatch{
 }
 
 # Get the path of the module
-$modulePath = Join-Path -Path $PSScriptRoot -ChildPath 'ps-modules\indexmanagement.psm1'
+$modulePath = Join-Path -Path $PSScriptRoot -ChildPath 'ps-modules\es-manage.psm1'
 $DebugPreference = 'Continue'
 Import-Module $modulePath
 
