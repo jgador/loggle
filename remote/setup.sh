@@ -35,6 +35,10 @@ apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin do
 echo 'vm.max_map_count=262144' | sudo tee -a /etc/sysctl.conf
 sysctl -p
 
+# Try exporting cert from Key Vault
+kv_export=$(pwsh /etc/loggle/export-cert.ps1)
+echo "$kv_export"
+
 # Install Certbot
 apt-get update
 apt-get install -y python3 python3-venv libaugeas0
@@ -42,23 +46,34 @@ python3 -m venv /opt/certbot/
 /opt/certbot/bin/pip install --upgrade pip
 /opt/certbot/bin/pip install certbot
 ln -s /opt/certbot/bin/certbot /usr/bin/certbot
-certbot certonly --standalone -d kibana.loggle.co -m certbot@loggle.co --agree-tos --no-eff-email --preferred-challenges=http-01 --staging
 
-sudo chmod -R 750 /etc/letsencrypt/live
-sudo chmod -R 750 /etc/letsencrypt/archive
+if [ ! -f "/etc/loggle/certs/fullchain.pem" ] || [ ! -f "/etc/loggle/certs/privkey.pem" ]; then
+  echo "One or both certificate files are missing, running certbot..."
+  certbot certonly --standalone -d kibana.loggle.co -m certbot@loggle.co --agree-tos --no-eff-email --preferred-challenges=http-01 --staging
+else
+  cert_exit_code=$(sudo openssl x509 -checkend 0 -noout -in /etc/loggle/certs/fullchain.pem >/dev/null 2>&1
+  echo $?
+  )
 
-# Import cert to key vault
+  if [ "$cert_exit_code" -eq 1 ]; then
+    echo "Certificate is expired, running certbot..."
+    certbot certonly --standalone -d kibana.loggle.co -m certbot@loggle.co --agree-tos --no-eff-email --preferred-challenges=http-01 --staging
+  fi
+fi
+
+if [ - d "/etc/letsencrypt/live" ]; then
+  sudo chmod -R 750 /etc/letsencrypt/live
+fi
+
+if [ - d "/etc/letsencrypt/archive" ]; then
+  sudo chmod -R 750 /etc/letsencrypt/archive
+fi
+
 kv_import=$(pwsh /etc/loggle/import-cert.ps1)
 echo "$kv_import"
 
-# Certbot renewal hook: Export updated certificate from Key Vault and reload Kibana.
-sudo tee /etc/letsencrypt/renewal-hooks/post/export-cert.sh << 'EOF'
-#!/bin/bash
-pwsh /etc/loggle/export-cert.ps1
-EOF
-
-sudo chmod +x /etc/letsencrypt/renewal-hooks/post/export-cert.sh
-sudo /etc/letsencrypt/renewal-hooks/post/export-cert.sh
+# sudo chmod +x /etc/letsencrypt/renewal-hooks/post/export-cert.sh
+# sudo /etc/letsencrypt/renewal-hooks/post/export-cert.sh
 
 sudo systemctl daemon-reload
 sudo systemctl enable loggle.service
