@@ -45,12 +45,12 @@ if ($action -eq "stop") {
   # Wait for Elasticsearch to be ready.
   Wait-ForElasticsearch
 
-  # Provision defaults by calling batch-indexmanagement.ps1 if it exists.
-  $batchScript = "..\..\remote\es-init\batch-indexmanagement.ps1"
+  # Provision defaults by calling init-es if it exists.
+  $batchScript = "..\..\remote\init-es\init-es.ps1"
   if (Test-Path $batchScript) {
-      Write-Host "Provisioning defaults with batch-indexmanagement.ps1..."
+      Write-Host "Provisioning defaults with init-es.ps1..."
       & $batchScript
   } else {
-      Write-Host "Warning: batch-indexmanagement.ps1 not found."
+      Write-Host "Warning: init-es.ps1 not found."
   }
 }
