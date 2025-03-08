@@ -211,7 +211,7 @@ resource "azurerm_virtual_machine" "vm" {
       "sudo /etc/loggle/setup.sh"
     ]
   }
-  depends_on = [azurerm_user_assigned_identity.auth_id,azurerm_key_vault.kv]
+  depends_on = [azurerm_user_assigned_identity.auth_id, azurerm_key_vault.kv]
   lifecycle {
     prevent_destroy = false
   }

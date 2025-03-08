@@ -5,7 +5,7 @@ export DEBIAN_FRONTEND=noninteractive
 export NEEDRESTART_MODE=a
 
 # Move configuration and setup files (copied from the repo via Terraform) from /tmp to /etc/loggle
-mv /tmp/docker-compose.yml /tmp/otel-collector-config.yaml /tmp/kibana.yml /tmp/import-cert.ps1 /tmp/reload-cert.ps1 /etc/loggle/
+mv /tmp/docker-compose.yml /tmp/otel-collector-config.yaml /tmp/kibana.yml /tmp/import-cert.ps1 /tmp/export-cert.ps1 /etc/loggle/
 mv /tmp/loggle.service /etc/systemd/system/
 mv /tmp/es-init /etc/loggle/
 chmod -R a+rw /etc/loggle/elasticsearch-data
@@ -42,24 +42,44 @@ python3 -m venv /opt/certbot/
 /opt/certbot/bin/pip install --upgrade pip
 /opt/certbot/bin/pip install certbot
 ln -s /opt/certbot/bin/certbot /usr/bin/certbot
-certbot certonly --standalone -d kibana.loggle.co -m certbot@loggle.co --agree-tos --no-eff-email --preferred-challenges=http-01 --staging
 
-sudo chmod -R 750 /etc/letsencrypt/live
-sudo chmod -R 750 /etc/letsencrypt/archive
+# Try exporting cert from Key Vault
+kv_export=$(sudo pwsh /etc/loggle/export-cert.ps1)
+echo "$kv_export"
 
-# Import cert to key vault
-kv_import=$(pwsh /etc/loggle/import-cert.ps1)
+# TODO:
+# Since running of certbot is now optional (if the certificate exists in key vault and is not expired),
+# we need to add make sure that certbot is run when cert is expiring
+if [ ! -f "/etc/loggle/certs/fullchain.pem" ] || [ ! -f "/etc/loggle/certs/privkey.pem" ]; then
+  echo "One or both certificate files are missing, running certbot..."
+  certbot certonly --standalone -d kibana.loggle.co -m certbot@loggle.co --agree-tos --no-eff-email --preferred-challenges=http-01
+else
+  cert_exit_code=$(sudo openssl x509 -checkend 0 -noout -in /etc/loggle/certs/fullchain.pem >/dev/null 2>&1
+  echo $?
+  )
+
+  if [ "$cert_exit_code" -eq 1 ]; then
+    echo "Certificate is expired, running certbot..."
+    certbot certonly --standalone -d kibana.loggle.co -m certbot@loggle.co --agree-tos --no-eff-email --preferred-challenges=http-01
+  fi
+fi
+
+if [ -d "/etc/letsencrypt/live" ]; then
+  sudo chmod -R 750 /etc/letsencrypt/live
+fi
+
+if [ -d "/etc/letsencrypt/archive" ]; then
+  sudo chmod -R 750 /etc/letsencrypt/archive
+fi
+
+kv_import=$(sudo pwsh /etc/loggle/import-cert.ps1)
 echo "$kv_import"
 
-# Certbot renewal hook: Export updated certificate from Key Vault and reload Kibana.
-sudo tee /etc/letsencrypt/renewal-hooks/post/reload-cert.sh << 'EOF'
-#!/bin/bash
-pwsh /etc/loggle/reload-cert.ps1
-EOF
-
-sudo chmod +x /etc/letsencrypt/renewal-hooks/post/reload-cert.sh
-sudo docker compose -f /etc/loggle/docker-compose.yml pull
-sudo /etc/letsencrypt/renewal-hooks/post/reload-cert.sh
+# TODO:
+# Add the import export powershell scripts to the post-renewal hooks
+#
+# sudo chmod +x /etc/letsencrypt/renewal-hooks/post/export-cert.sh
+# sudo /etc/letsencrypt/renewal-hooks/post/export-cert.sh
 
 sudo systemctl daemon-reload
 sudo systemctl enable loggle.service
