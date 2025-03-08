@@ -35,10 +35,6 @@ apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin do
 echo 'vm.max_map_count=262144' | sudo tee -a /etc/sysctl.conf
 sysctl -p
 
-# Try exporting cert from Key Vault
-kv_export=$(pwsh /etc/loggle/export-cert.ps1)
-echo "$kv_export"
-
 # Install Certbot
 apt-get update
 apt-get install -y python3 python3-venv libaugeas0
@@ -47,9 +43,16 @@ python3 -m venv /opt/certbot/
 /opt/certbot/bin/pip install certbot
 ln -s /opt/certbot/bin/certbot /usr/bin/certbot
 
+# Try exporting cert from Key Vault
+kv_export=$(sudo pwsh /etc/loggle/export-cert.ps1)
+echo "$kv_export"
+
+# TODO:
+# Since running of certbot is now optional (if the certificate exists in key vault and is not expired),
+# we need to add make sure that certbot is run when cert is expiring
 if [ ! -f "/etc/loggle/certs/fullchain.pem" ] || [ ! -f "/etc/loggle/certs/privkey.pem" ]; then
   echo "One or both certificate files are missing, running certbot..."
-  certbot certonly --standalone -d kibana.loggle.co -m certbot@loggle.co --agree-tos --no-eff-email --preferred-challenges=http-01 --staging
+  certbot certonly --standalone -d kibana.loggle.co -m certbot@loggle.co --agree-tos --no-eff-email --preferred-challenges=http-01
 else
   cert_exit_code=$(sudo openssl x509 -checkend 0 -noout -in /etc/loggle/certs/fullchain.pem >/dev/null 2>&1
   echo $?
@@ -57,21 +60,24 @@ else
 
   if [ "$cert_exit_code" -eq 1 ]; then
     echo "Certificate is expired, running certbot..."
-    certbot certonly --standalone -d kibana.loggle.co -m certbot@loggle.co --agree-tos --no-eff-email --preferred-challenges=http-01 --staging
+    certbot certonly --standalone -d kibana.loggle.co -m certbot@loggle.co --agree-tos --no-eff-email --preferred-challenges=http-01
   fi
 fi
 
-if [ - d "/etc/letsencrypt/live" ]; then
+if [ -d "/etc/letsencrypt/live" ]; then
   sudo chmod -R 750 /etc/letsencrypt/live
 fi
 
-if [ - d "/etc/letsencrypt/archive" ]; then
+if [ -d "/etc/letsencrypt/archive" ]; then
   sudo chmod -R 750 /etc/letsencrypt/archive
 fi
 
-kv_import=$(pwsh /etc/loggle/import-cert.ps1)
+kv_import=$(sudo pwsh /etc/loggle/import-cert.ps1)
 echo "$kv_import"
 
+# TODO:
+# Add the import export powershell scripts to the post-renewal hooks
+#
 # sudo chmod +x /etc/letsencrypt/renewal-hooks/post/export-cert.sh
 # sudo /etc/letsencrypt/renewal-hooks/post/export-cert.sh
 
