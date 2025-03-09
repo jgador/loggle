@@ -67,4 +67,4 @@ try {
 }
 
 # Remove the module
-Remove-Module -Name indexmanagement
+Remove-Module -Name es-manage

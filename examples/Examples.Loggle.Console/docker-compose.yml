@@ -59,6 +59,22 @@ services:
     volumes:
       - ./kibana.yml:/usr/share/kibana/config/kibana.yml
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    networks:
+      - loggle
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    post_start:
+      - command: ollama run tinyllama
+        user: root
+
 networks:
   loggle:
     driver: bridge
+
+volumes:
+  ollama:
