@@ -14,12 +14,8 @@ OLLAMA_BASE_URL = "http://localhost:11434"
 SIMILARITY_TOP_K = 3
 
 def get_example_queries():
-    """Get example queries based on conversations in the JSON file"""
-    current_dir = Path(__file__).parent.parent.parent
-    data_file = current_dir / "data" / "conversations.json"
-    
     return [
-        "Give me summary of water related issues"
+        "Based on the conversation, what are the key areas that need improvement in our current processes?"
     ]
 
 def run_queries():
@@ -27,7 +23,7 @@ def run_queries():
     llm = Ollama(
         model="tinyllama",
         base_url=OLLAMA_BASE_URL,
-        timeout=30
+        timeout=200
     )
     
     embed_model = OllamaEmbedding(
