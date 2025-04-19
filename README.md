@@ -19,6 +19,7 @@ Before diving into cloud deployment, try Loggle locally:
    - Elasticsearch
    - Kibana
    - OpenTelemetry Collector
+   - Loggle.Web
 
 3. **Run the Example App:**
    - Open `Loggle.sln` in Visual Studio
