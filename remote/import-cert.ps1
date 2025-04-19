@@ -39,10 +39,10 @@ function Initialize-AzureModules {
             
             if (-not $existingModule) {
                 Write-Output "Installing module $($module.Name) version $($module.RequiredVersion)..."
-                Install-Module -Name $module.Name -RequiredVersion $module.Version -AllowClobber -Scope AllUsers -Force
+                Install-Module -Name $module.Name -RequiredVersion $module.RequiredVersion -AllowClobber -Scope AllUsers -Force
             }
             else {
-                Write-Output "Module $($module.Name) version $($module.Version) is already installed."
+                Write-Output "Module $($module.Name) version $($module.RequiredVersion) is already installed."
             }
         }
         

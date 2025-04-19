@@ -2,6 +2,39 @@
 
 Loggle is a self-hosted log monitoring solution that stitches together the best available tools for log management. If you're looking to take control of your logs without relying on third-party services, Loggle is for you. This is a fun project intended for experimentation and learning, and it is not recommended for production use.
 
+## Quick Start - Local Development
+
+Before diving into cloud deployment, try Loggle locally:
+
+1. **Prerequisites:**
+   - Docker Desktop installed and running
+   - Visual Studio or VS Code with .NET SDK
+
+2. **Run with Docker:**
+   ```powershell
+   cd examples\Examples.Loggle.Console
+   .\dc.ps1 start   # Starts all required containers
+   ```
+   This will provision:
+   - Elasticsearch
+   - Kibana
+   - OpenTelemetry Collector
+   - Loggle.Web
+
+3. **Run the Example App:**
+   - Open `Loggle.sln` in Visual Studio
+   - Set `Examples.Loggle.Console` as startup project
+   - Run the application (F5)
+
+4. **View Your Logs:**
+   - Open [Kibana Log Explorer](http://localhost:5601/app/observability-logs-explorer/)
+   - Watch your logs flow in real-time
+
+5. **Cleanup:**
+   ```powershell
+   .\dc.ps1 stop    # Stops and removes all containers
+   ```
+
 ## Video Tutorial
 
 Watch this short video on Google Drive for a walkthrough of setting up and using Loggle:  
@@ -31,10 +64,11 @@ Your applications forward their logs to the OpenTelemetry Collector, which expor
 +------------------+      +-------------------------+      +-------------------+      +---------------+      +--------+
 ```
 
-## Quick Start
+## Cloud Deployment Guide
 > **Prerequisite:**  
 > Ensure you have Terraform with Azure CLI working. For more information, refer to [this guide](https://learn.microsoft.com/en-us/azure/developer/terraform/get-started-windows-bash).
 
+> **Important Note:** The SSL certificate generation is currently hardcoded to use "kibana.loggle.co". Since you'll be using your own domain, you'll need to manually update the deployment scripts to reflect that. This will be made configurable in future updates.
 
 1. **Generate an SSH Key:**  
    The SSH key will be used to authenticate your virtual machine.  
