@@ -99,23 +99,37 @@ Your applications forward their logs to the OpenTelemetry Collector, which expor
     ```
 
 6. **Send Your Logs:**  
-    Set up your applications to forward logs to your public IP address on port **4318**. For example, in a .NET application, you can add the following code to send logs using the OpenTelemetry Collector:  
-    ```csharp
-    var builder = WebApplication.CreateBuilder(args);
-
-    builder
-        .Logging
-        .AddOpenTelemetry(opt =>
-        {
-            opt.IncludeFormattedMessage = true;
-            opt.ParseStateValues = true;
-            opt.AddOtlpExporter(exporterOptions =>
-            {
-                exporterOptions.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
-                exporterOptions.Endpoint = new Uri("http://52.230.2.122:4318/v1/logs");
-            });
-        });
+    Configure your application to forward logs using the following steps:
+    1. Add configuration to `appsettings.json`:
+    ```json
+    {
+      "Logging": {
+        "OpenTelemetry": {
+          "IncludeFormattedMessage": true,
+          "IncludeScopes": true,
+          "ParseStateValues": true
+        },
+        "Loggle": {
+          "ServiceName": "Examples.Loggle.Console",
+          "ServiceVersion": "v0.99.5-rc.7",
+          "OtelCollector": {
+            "BearerToken": "L0gg|3K3y",
+            "LogsReceiverEndpoint": "http://your-domain-or-ip:4318/v1/logs"
+          }
+        }
+      }
+    }
     ```
+    2. Add the Loggle exporter in your `Program.cs`:
+    ```csharp
+    var builder = Host.CreateDefaultBuilder(args)
+      .ConfigureServices((hostContext, services) =>
+      {
+        // Register the loggle exporter
+        services.AddLoggleExporter();
+      });
+    ```
+
 
 7. **Access Kibana:**  
     Kibana is automatically set up as part of the deployment and listens on port **5601**. Open your browser and navigate to your DNS name (for example, `kibana.loggle.co:5601`) to view your logs. Remember: the OpenTelemetry Collector listens on port **4318** and Kibana on port **5601**.
