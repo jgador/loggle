@@ -66,7 +66,7 @@ Your applications forward their logs to the OpenTelemetry Collector, which expor
 ## Cloud Deployment Guide
 > **Prerequisite:**  
 > Ensure you have Terraform with Azure CLI working. For more information, refer to [this guide](https://learn.microsoft.com/en-us/azure/developer/terraform/get-started-windows-bash).
-> - **Important Note:** The SSL certificate generation is currently hardcoded to use "kibana.loggle.co". You'll need to manually modify this in the deployment scripts if you're using a different domain. This will be made configurable in future updates.
+> **Important Note:** The SSL certificate generation is currently hardcoded to use "kibana.loggle.co". You'll need to manually modify this in the deployment scripts if you're using a different domain. This will be made configurable in future updates.
 
 1. **Generate an SSH Key:**  
    The SSH key will be used to authenticate your virtual machine.  
