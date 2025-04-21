@@ -1,7 +1,7 @@
 extensions:
   bearertokenauth:
     scheme: "Bearer"
-    token: "L0gg|3K3y"
+    token: "REPLACE_WITH_YOUR_OWN_SECRET"
 
 receivers:
   otlp:
@@ -21,8 +21,8 @@ exporters:
       insecure: true
     headers:
       Content-Type: application/x-protobuf
-      Authorization: ApiKey L0gg|3K3y
-      X-Loggle-Key: L0gg|3K3y
+      Authorization: ApiKey REPLACE_WITH_YOUR_OWN_SECRET
+      X-Loggle-Key: REPLACE_WITH_YOUR_OWN_SECRET
     encoding: proto
     compression: none
 

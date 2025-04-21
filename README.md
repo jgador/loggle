@@ -113,7 +113,7 @@ Your applications forward their logs to the OpenTelemetry Collector, which expor
           "ServiceName": "Examples.Loggle.Console",
           "ServiceVersion": "v0.99.5-rc.7",
           "OtelCollector": {
-            "BearerToken": "L0gg|3K3y",
+            "BearerToken": "REPLACE_WITH_YOUR_OWN_SECRET",
             "LogsReceiverEndpoint": "http://your-domain-or-ip:4318/v1/logs"
           }
         }
