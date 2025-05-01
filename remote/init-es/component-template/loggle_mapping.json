@@ -10,15 +10,15 @@
                 "@timestamp": {
                     "type": "date"
                 },
-                "applicationInstanceId": {
+                "serviceInstanceId": {
                     "ignore_above": 256,
                     "type": "keyword"
                 },
-                "applicationName": {
+                "serviceName": {
                     "ignore_above": 256,
                     "type": "keyword"
                 },
-                "applicationVersion": {
+                "serviceVersion": {
                     "ignore_above": 256,
                     "type": "keyword"
                 },
