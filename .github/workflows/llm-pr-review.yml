@@ -52,12 +52,14 @@ jobs:
           thread=$(curl -s -X POST https://api.openai.com/v1/threads \
             -H "Authorization: Bearer $OPENAI_API_KEY" \
             -H "Content-Type: application/json" \
+            -H "OpenAI-Beta: assistants=v2" \
             -d '{}' | jq -r '.id')
 
           # Attach your file content as a message
           curl -s -X POST https://api.openai.com/v1/threads/$thread/messages \
             -H "Authorization: Bearer $OPENAI_API_KEY" \
             -H "Content-Type: application/json" \
+            -H "OpenAI-Beta: assistants=v2" \
             -d '{
               "role": "user",
               "content": "```csharp\n'$(cat files.txt)'\n```"
@@ -67,12 +69,14 @@ jobs:
           run_id=$(curl -s -X POST https://api.openai.com/v1/threads/$thread/runs \
             -H "Authorization: Bearer $OPENAI_API_KEY" \
             -H "Content-Type: application/json" \
+            -H "OpenAI-Beta: assistants=v2" \
             -d '{ "assistant_id": "'"$OPENAI_ASSISTANT_ID"'" }' | jq -r '.id')
 
           # Wait for the run to complete
           while true; do
             status=$(curl -s https://api.openai.com/v1/threads/$thread/runs/$run_id \
-              -H "Authorization: Bearer $OPENAI_API_KEY" | jq -r '.status')
+              -H "Authorization: Bearer $OPENAI_API_KEY" \
+              -H "OpenAI-Beta: assistants=v2" | jq -r '.status')
             echo "Status: $status"
             [[ "$status" == "completed" ]] && break
             sleep 2
@@ -80,4 +84,5 @@ jobs:
 
           # Get response
           curl -s https://api.openai.com/v1/threads/$thread/messages \
-            -H "Authorization: Bearer $OPENAI_API_KEY" > response.json
+            -H "Authorization: Bearer $OPENAI_API_KEY" \
+            -H "OpenAI-Beta: assistants=v2" > response.json
