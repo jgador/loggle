@@ -64,7 +64,7 @@ jobs:
           json_payload=$(cat <<EOF
           {
             "role": "user",
-            "content": "$(cat files.txt)"
+            "content": $(jq -Rs . < files.txt)
           }
           EOF
           )
