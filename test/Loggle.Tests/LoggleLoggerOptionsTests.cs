@@ -35,3 +35,5 @@ public class LoggleLoggerOptionsTests
         Assert.Equal("http://localhost:4318/v1/logs", options?.CurrentValue?.OtelCollector?.LogsReceiverEndpoint);
     }
 }
+
+// Test: Trigger GitHub Actions workflow for LLM PR review

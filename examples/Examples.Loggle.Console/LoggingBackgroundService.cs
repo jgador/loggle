@@ -81,3 +81,5 @@ internal class FakeProduct
 {
     public string? Description { get; set; }
 }
+
+// Test: Trigger GitHub Actions workflow for LLM PR review
