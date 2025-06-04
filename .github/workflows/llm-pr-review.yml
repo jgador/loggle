@@ -20,20 +20,24 @@ jobs:
       - name: Get changed C# files
         id: changed-files
         run: |
+          FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep '\.cs$' || true)
           echo "FILES<<EOF" >> $GITHUB_OUTPUT
-          git diff --name-only origin/master | grep '\.cs$' || true >> $GITHUB_OUTPUT
+          echo "$FILES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Read file contents
         id: read-files
         run: |
-          content=""
+          touch files.txt  # Create the file to avoid "file not found"
           for file in $(echo "${{ steps.changed-files.outputs.FILES }}"); do
-            echo "Reading $file"
-            echo "--- $file ---" >> files.txt
-            cat "$file" >> files.txt
-            echo "\n\n" >> files.txt
+            if [[ -f "$file" ]]; then
+              echo "Reading $file"
+              echo "--- $file ---" >> files.txt
+              cat "$file" >> files.txt
+              echo -e "\n\n" >> files.txt
+            fi
           done
+
           echo "CONTENT<<EOF" >> $GITHUB_OUTPUT
           cat files.txt >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
