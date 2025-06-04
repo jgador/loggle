@@ -1,0 +1,107 @@
+name: LLM PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths: ['**/*.cs']
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    if: contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Get changed C# files
+        id: changed-files
+        run: |
+          FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep '\.cs$' || true)
+          echo "FILES<<EOF" >> $GITHUB_OUTPUT
+          echo "$FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Concatenate changed file contents
+        id: concat-files
+        run: |
+          touch files.txt
+          for file in $(echo "${{ steps.changed-files.outputs.FILES }}"); do
+            if [[ -f "$file" ]]; then
+              echo "----- $file -----" >> files.txt
+              cat "$file" >> files.txt
+              echo -e "\n\n" >> files.txt
+            fi
+          done
+
+      - name: Create OpenAI thread and send files
+        id: openai-thread
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_ASSISTANT_ID: ${{ secrets.OPENAI_ASSISTANT_ID }}
+        run: |
+          thread=$(curl -s -X POST https://api.openai.com/v1/threads \
+            -H "Authorization: Bearer $OPENAI_API_KEY" \
+            -H "Content-Type: application/json" \
+            -H "OpenAI-Beta: assistants=v2" \
+            -d '{}' | jq -r '.id')
+
+          json_payload=$(cat <<EOF
+          {
+            "role": "user",
+            "content": $(jq -Rs . < files.txt)
+          }
+          EOF
+          )
+
+          curl -s -X POST https://api.openai.com/v1/threads/$thread/messages \
+            -H "Authorization: Bearer $OPENAI_API_KEY" \
+            -H "Content-Type: application/json" \
+            -H "OpenAI-Beta: assistants=v2" \
+            -d "$json_payload"
+
+          echo "thread_id=$thread" >> $GITHUB_OUTPUT
+
+      - name: Run OpenAI Assistant
+        id: openai-run
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_ASSISTANT_ID: ${{ secrets.OPENAI_ASSISTANT_ID }}
+        run: |
+          thread_id="${{ steps.openai-thread.outputs.thread_id }}"
+          run_id=$(curl -s -X POST https://api.openai.com/v1/threads/$thread_id/runs \
+            -H "Authorization: Bearer $OPENAI_API_KEY" \
+            -H "Content-Type: application/json" \
+            -H "OpenAI-Beta: assistants=v2" \
+            -d '{ "assistant_id": "'"$OPENAI_ASSISTANT_ID"'" }' | jq -r '.id')
+
+          while true; do
+            status=$(curl -s https://api.openai.com/v1/threads/$thread_id/runs/$run_id \
+              -H "Authorization: Bearer $OPENAI_API_KEY" \
+              -H "OpenAI-Beta: assistants=v2" | jq -r '.status')
+            echo "Status: $status"
+            [[ "$status" == "completed" ]] && break
+            sleep 2
+          done
+
+          echo "run_id=$run_id" >> $GITHUB_OUTPUT
+
+      - name: Print OpenAI Assistant Response
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          thread_id="${{ steps.openai-thread.outputs.thread_id }}"
+          curl -s https://api.openai.com/v1/threads/$thread_id/messages \
+            -H "Authorization: Bearer $OPENAI_API_KEY" \
+            -H "OpenAI-Beta: assistants=v2" > response.json
+
+          echo "===== OpenAI Assistant Response ====="
+          jq -r '.data[] | select(.role == "assistant") | .content[]?.text.value' response.json
+          echo "===== End of OpenAI Assistant Response ====="
