@@ -60,9 +60,7 @@ jobs:
           json_payload=$(cat <<EOF
           {
             "role": "user",
-            "content": "```csharp
-          $(cat files.txt)
-          ```"
+            "content": "$(cat files.txt)"
           }
           EOF
           )
