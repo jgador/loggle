@@ -3,7 +3,7 @@ name: LLM PR Review
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    paths: ['*.cs']
+    paths: ['**/*.cs']
 
 permissions:
   contents: read
