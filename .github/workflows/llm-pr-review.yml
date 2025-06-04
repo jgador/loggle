@@ -98,3 +98,7 @@ jobs:
           curl -s https://api.openai.com/v1/threads/$thread/messages \
             -H "Authorization: Bearer $OPENAI_API_KEY" \
             -H "OpenAI-Beta: assistants=v2" > response.json
+
+          echo "===== OpenAI Assistant Response ====="
+          jq -r '.data[] | select(.role == "assistant") | .content[]?.text.value' response.json
+          echo "===== End of OpenAI Assistant Response ====="
