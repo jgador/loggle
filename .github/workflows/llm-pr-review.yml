@@ -31,13 +31,12 @@ jobs:
       - name: Read file contents
         id: read-files
         run: |
-          touch files.txt  # Create the file to avoid "file not found"
+          touch files.txt
           for file in $(echo "${{ steps.changed-files.outputs.FILES }}"); do
             if [[ -f "$file" ]]; then
-              echo "Reading $file"
-              echo "--- $file ---" >> files.txt
-              cat "$file" >> files.txt
-              echo -e "\n\n" >> files.txt
+              echo "----- $file -----"
+              cat "$file"
+              echo -e "\n\n"
             fi
           done
 
