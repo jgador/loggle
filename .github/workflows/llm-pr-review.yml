@@ -34,9 +34,9 @@ jobs:
           touch files.txt
           for file in $(echo "${{ steps.changed-files.outputs.FILES }}"); do
             if [[ -f "$file" ]]; then
-              echo "----- $file -----"
-              cat "$file"
-              echo -e "\n\n"
+              echo "----- $file -----" | tee -a files.txt
+              cat "$file" | tee -a files.txt
+              echo -e "\n\n" | tee -a files.txt
             fi
           done
 

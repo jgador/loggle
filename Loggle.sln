@@ -29,6 +29,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{4B95B3F5-0F1F-4A31-A714-C576F7CD717E}"
 	ProjectSection(SolutionItems) = preProject
 		.github\workflows\ci.yml = .github\workflows\ci.yml
+		.github\workflows\llm-pr-review.yml = .github\workflows\llm-pr-review.yml
 	EndProjectSection
 EndProject
 Global
