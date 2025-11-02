@@ -16,7 +16,8 @@ param (
     [string]$CertPath = "/etc/loggle/certs",
     [string]$PfxPath = "$CertPath/kv-export-kibana.pfx",
     [string]$FullchainPath = "$CertPath/fullchain.pem",
-    [string]$PrivkeyPath = "$CertPath/privkey.pem"
+    [string]$PrivkeyPath = "$CertPath/privkey.pem",
+    [string]$ManagedIdentityClientId
 )
 
 Set-StrictMode -Version Latest
@@ -54,6 +55,31 @@ function Initialize-AzureModules {
     }
 }
 
+function Get-ManagedIdentityClientId {
+    try {
+        $headers = @{ Metadata = 'true' }
+        $metadataUri = 'http://169.254.169.254/metadata/instance?api-version=2021-02-01'
+        $response = Invoke-RestMethod -Method Get -Uri $metadataUri -Headers $headers -ErrorAction Stop
+
+        $userAssigned = $response.compute.identity.userAssignedIdentities
+        if ($null -ne $userAssigned) {
+            $firstIdentity = $userAssigned.PSObject.Properties | Select-Object -First 1
+            if ($null -ne $firstIdentity) {
+                return $firstIdentity.Value.clientId
+            }
+        }
+
+        if ($response.compute.identity.type -like '*SystemAssigned*' -and $null -ne $response.compute.identity.clientId) {
+            return $response.compute.identity.clientId
+        }
+    }
+    catch {
+        Write-Output "WARN: Unable to query Azure Instance Metadata Service for managed identity: $_"
+    }
+
+    return $null
+}
+
 function Export-CertificateFromKeyVault {
     [CmdletBinding()]
     param (
@@ -62,11 +88,20 @@ function Export-CertificateFromKeyVault {
         [Parameter(Mandatory)]
         [string]$CertName,
         [Parameter(Mandatory)]
-        [string]$OutputPath
+        [string]$OutputPath,
+        [string]$ManagedIdentityClientId
     )
     
     try {
-        Connect-AzAccount -Identity
+        if ($ManagedIdentityClientId) {
+            Write-Output "Connecting to Azure using managed identity $ManagedIdentityClientId."
+            Connect-AzAccount -Identity -AccountId $ManagedIdentityClientId
+        }
+        else {
+            Write-Output "Connecting to Azure using default managed identity context."
+            Connect-AzAccount -Identity
+        }
+
         $certBase64 = Get-AzKeyVaultSecret -VaultName $VaultName -Name $CertName -AsPlainText
 
         if ([string]::IsNullOrEmpty($certBase64)) {
@@ -124,7 +159,15 @@ function Convert-PfxToPem {
 try {
     Initialize-AzureModules
     
-    if (-not (Export-CertificateFromKeyVault -VaultName $KeyVaultName -CertName $CertificateName -OutputPath $PfxPath)) {
+    if (-not $ManagedIdentityClientId) {
+        $ManagedIdentityClientId = $env:LOGGLE_MANAGED_IDENTITY_CLIENT_ID
+    }
+
+    if (-not $ManagedIdentityClientId) {
+        $ManagedIdentityClientId = Get-ManagedIdentityClientId
+    }
+
+    if (-not (Export-CertificateFromKeyVault -VaultName $KeyVaultName -CertName $CertificateName -OutputPath $PfxPath -ManagedIdentityClientId $ManagedIdentityClientId)) {
         exit 1
     }
     

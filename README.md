@@ -83,6 +83,14 @@ Your applications forward their logs to the OpenTelemetry Collector, which expor
     cd terraform\azure
     ```
 
+   > **Multiple Azure subscriptions?**  
+   > List your available subscriptions and set the one Terraform should use:
+   > ```bash
+   > az account list -o table
+   > az account set --subscription "<subscription name or id>"
+   > ```
+   > Replace the placeholder with the subscription you want to target before running any Terraform commands.
+
 3. **Provision the Public IP:**  
     This will allocate a public IP for your VM.
     ```bash
@@ -97,6 +105,11 @@ Your applications forward their logs to the OpenTelemetry Collector, which expor
     ```bash
     terraform apply -auto-approve
     ```
+    > **Note:** If you rebuild the VM while reusing the same static public IP, clear the old SSH host fingerprint before reconnecting:
+    > ```powershell
+    > ssh-keygen -R 52.230.2.122
+    > ```
+    > Replace the IP if you change it. This prevents host key warnings when you SSH back in.
 
 6. **Send Your Logs:**  
     Configure your application to forward logs using the following steps:
@@ -133,3 +146,10 @@ Your applications forward their logs to the OpenTelemetry Collector, which expor
 
 7. **Access Kibana:**  
     Kibana is automatically set up as part of the deployment and listens on port **5601**. Open your browser and navigate to your DNS name (for example, `kibana.loggle.co:5601`) to view your logs. Remember: the OpenTelemetry Collector listens on port **4318** and Kibana on port **5601**.
+
+8. **Tear Down (Optional):**  
+    A helper script keeps the resource group and static public IP while destroying everything else:
+    ```powershell
+    pwsh .\destroy.ps1          # Add -AutoApprove to skip confirmation
+    ```
+    Run it from `terraform\azure`. The script enumerates the Terraform state, filters out the protected resources, and calls `terraform destroy` with the remaining targets. If you prefer the raw command, you can still run `terraform destroy` manually after removing the `prevent_destroy` blocks.

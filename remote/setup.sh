@@ -9,6 +9,7 @@ readonly DOMAIN="kibana.loggle.co"
 readonly EMAIL="certbot@loggle.co"
 readonly CERT_PATH="/etc/loggle/certs"
 readonly LOGGLE_PATH="/etc/loggle"
+readonly MANAGED_IDENTITY_CLIENT_ID="${LOGGLE_MANAGED_IDENTITY_CLIENT_ID:-}"
 
 # Function definitions
 setup_environment() {
@@ -105,7 +106,11 @@ main() {
     
     # Certificate management
     echo "Attempting to export certificate from Key Vault..."
-    sudo pwsh "$LOGGLE_PATH/export-cert.ps1"
+    if [[ -n "$MANAGED_IDENTITY_CLIENT_ID" ]]; then
+        pwsh "$LOGGLE_PATH/export-cert.ps1" -ManagedIdentityClientId "$MANAGED_IDENTITY_CLIENT_ID"
+    else
+        pwsh "$LOGGLE_PATH/export-cert.ps1"
+    fi
     
     if ! check_cert_status; then
         certbot certonly --standalone -d "$DOMAIN" -m "$EMAIL" --agree-tos --no-eff-email --preferred-challenges=http-01
@@ -117,7 +122,11 @@ main() {
     done
     
     echo "Importing certificate to Key Vault..."
-    sudo pwsh "$LOGGLE_PATH/import-cert.ps1"
+    if [[ -n "$MANAGED_IDENTITY_CLIENT_ID" ]]; then
+        pwsh "$LOGGLE_PATH/import-cert.ps1" -ManagedIdentityClientId "$MANAGED_IDENTITY_CLIENT_ID"
+    else
+        pwsh "$LOGGLE_PATH/import-cert.ps1"
+    fi
     
     # Start services
     systemctl daemon-reload
