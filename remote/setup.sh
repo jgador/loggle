@@ -15,6 +15,9 @@ readonly MANAGED_IDENTITY_CLIENT_ID="${LOGGLE_MANAGED_IDENTITY_CLIENT_ID:-}"
 setup_environment() {
     export DEBIAN_FRONTEND=noninteractive
     export NEEDRESTART_MODE=a
+    export PIP_DISABLE_PIP_VERSION_CHECK=1
+    export PIP_PROGRESS_BAR=off
+    export APT_OPTIONS="-o Dpkg::Progress-Fancy=0 -o Dpkg::Use-Pty=0 -o APT::Color=0"
 }
 
 move_config_files() {
@@ -26,6 +29,14 @@ move_config_files() {
     mv "/tmp/init-es" "$LOGGLE_PATH/"
 }
 
+ensure_directories() {
+    mkdir -p "$LOGGLE_PATH"
+    mkdir -p "$CERT_PATH"
+    mkdir -p "$LOGGLE_PATH/elasticsearch-data"
+    mkdir -p "$LOGGLE_PATH/kibana-data"
+    mkdir -p "$LOGGLE_PATH/certs"
+}
+
 set_permissions() {
     local dirs=("elasticsearch-data" "kibana-data" "certs")
     for dir in "${dirs[@]}"; do
@@ -33,11 +44,43 @@ set_permissions() {
     done
 }
 
+ensure_certificate_placeholders() {
+    for file in fullchain.pem privkey.pem; do
+        local path="$CERT_PATH/$file"
+        if [[ -d "$path" ]]; then
+            rm -rf "$path"
+        fi
+        if [[ ! -f "$path" ]]; then
+            touch "$path"
+        fi
+        chmod 644 "$path"
+    done
+}
+
+apt_get() {
+    apt-get $APT_OPTIONS "$@"
+}
+
+sync_certificates() {
+    local source_dir="/etc/letsencrypt/live/$DOMAIN"
+    if [[ -f "$source_dir/fullchain.pem" && -f "$source_dir/privkey.pem" ]]; then
+        if [[ -d "$CERT_PATH/fullchain.pem" ]]; then
+            rm -rf "$CERT_PATH/fullchain.pem"
+        fi
+        if [[ -d "$CERT_PATH/privkey.pem" ]]; then
+            rm -rf "$CERT_PATH/privkey.pem"
+        fi
+        cp "$source_dir/fullchain.pem" "$CERT_PATH/fullchain.pem"
+        cp "$source_dir/privkey.pem" "$CERT_PATH/privkey.pem"
+        chmod 644 "$CERT_PATH/fullchain.pem" "$CERT_PATH/privkey.pem"
+    fi
+}
+
 install_powershell() {
     local deb_file="powershell_${POWERSHELL_VERSION}-1.deb_amd64.deb"
-    wget "https://github.com/PowerShell/PowerShell/releases/download/v${POWERSHELL_VERSION}/${deb_file}"
+    wget -q "https://github.com/PowerShell/PowerShell/releases/download/v${POWERSHELL_VERSION}/${deb_file}"
     dpkg -i "$deb_file"
-    apt-get install -f
+    apt_get install -f -y
     rm "$deb_file"
 }
 
@@ -48,8 +91,8 @@ install_docker() {
     
     bash -c 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo \"${UBUNTU_CODENAME:-$VERSION_CODENAME}\") stable" > /etc/apt/sources.list.d/docker.list'
     
-    apt-get update
-    apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    apt_get update
+    apt_get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 }
 
 check_cert_status() {
@@ -87,11 +130,14 @@ wait_for_elasticsearch() {
 # Main script execution
 main() {
     setup_environment
+    ensure_directories
     move_config_files
     set_permissions
+    ensure_certificate_placeholders
     
-    apt-get update && apt-get upgrade -y
-    apt-get install -y ca-certificates curl wget python3 python3-venv libaugeas0
+    apt_get update
+    apt_get upgrade -y
+    apt_get install -y ca-certificates curl wget python3 python3-venv libaugeas0
     
     install_powershell
     install_docker
@@ -101,7 +147,7 @@ main() {
     
     # Install and configure Certbot
     python3 -m venv /opt/certbot/
-    /opt/certbot/bin/pip install --upgrade pip certbot
+    /opt/certbot/bin/pip install --no-cache-dir --disable-pip-version-check --upgrade pip certbot
     ln -sf /opt/certbot/bin/certbot /usr/bin/certbot
     
     # Certificate management
@@ -115,6 +161,9 @@ main() {
     if ! check_cert_status; then
         certbot certonly --standalone -d "$DOMAIN" -m "$EMAIL" --agree-tos --no-eff-email --preferred-challenges=http-01
     fi
+
+    sync_certificates
+    ensure_certificate_placeholders
     
     # Set certificate permissions
     for dir in /etc/letsencrypt/{live,archive}; do

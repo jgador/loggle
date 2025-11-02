@@ -22,6 +22,7 @@ param (
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
 
 function Initialize-AzureModules {
     [CmdletBinding()]
