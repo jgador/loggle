@@ -45,7 +45,7 @@ resource "azurerm_key_vault" "kv" {
   sku_name                   = "standard"
   enable_rbac_authorization  = true
   lifecycle {
-    prevent_destroy = false
+    prevent_destroy = true
   }
 }
 
@@ -119,7 +119,7 @@ resource "azurerm_network_security_group" "nsg" {
     access                     = "Allow"
     protocol                   = "*"
     source_port_range          = "*"
-    destination_port_ranges    = [80, 443, 5601, 4318]
+    destination_port_ranges    = [80, 443, 4318]
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }

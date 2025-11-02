@@ -123,6 +123,17 @@ try {
         Connect-AzAccount -Identity
     }
 
+    try {
+        $existingCert = Get-AzKeyVaultCertificate -VaultName $KeyVaultName -Name $CertificateName -ErrorAction SilentlyContinue
+        if ($existingCert) {
+            Write-Output "Removing existing certificate $CertificateName from Key Vault to store fresh version."
+            Remove-AzKeyVaultCertificate -VaultName $KeyVaultName -Name $CertificateName -Force
+        }
+    }
+    catch {
+        Write-Output "WARN: Failed to remove existing certificate (it may not exist): $_"
+    }
+
     # Connect and import certificate
     Import-AzKeyVaultCertificate -VaultName $KeyVaultName -Name $CertificateName -FilePath $TempPfxPath
     

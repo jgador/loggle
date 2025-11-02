@@ -61,6 +61,14 @@ apt_get() {
     apt-get $APT_OPTIONS "$@"
 }
 
+enable_universe_repo() {
+    if ! grep -Rq "^[[:space:]]*deb .*universe" /etc/apt/sources.list /etc/apt/sources.list.d 2>/dev/null; then
+        apt_get update
+        apt_get install -y software-properties-common
+        add-apt-repository -y universe
+    fi
+}
+
 sync_certificates() {
     local source_dir="/etc/letsencrypt/live/$DOMAIN"
     if [[ -f "$source_dir/fullchain.pem" && -f "$source_dir/privkey.pem" ]]; then
@@ -135,6 +143,7 @@ main() {
     set_permissions
     ensure_certificate_placeholders
     
+    enable_universe_repo
     apt_get update
     apt_get upgrade -y
     apt_get install -y ca-certificates curl wget python3 python3-venv libaugeas0
@@ -157,10 +166,9 @@ main() {
     else
         pwsh "$LOGGLE_PATH/export-cert.ps1"
     fi
-    
-    if ! check_cert_status; then
-        certbot certonly --standalone -d "$DOMAIN" -m "$EMAIL" --agree-tos --no-eff-email --preferred-challenges=http-01
-    fi
+
+    echo "Requesting fresh certificate from Let's Encrypt..."
+    certbot certonly --standalone -d "$DOMAIN" -m "$EMAIL" --agree-tos --no-eff-email --preferred-challenges=http-01 --force-renewal
 
     sync_certificates
     ensure_certificate_placeholders

@@ -145,7 +145,7 @@ Your applications forward their logs to the OpenTelemetry Collector, which expor
 
 
 7. **Access Kibana:**  
-    Kibana is automatically set up as part of the deployment and listens on port **5601**. Open your browser and navigate to your DNS name (for example, `kibana.loggle.co:5601`) to view your logs. Remember: the OpenTelemetry Collector listens on port **4318** and Kibana on port **5601**.
+    Kibana is automatically set up as part of the deployment and exposed on standard HTTPS. Open your browser and navigate to `https://kibana.loggle.co` (replace with your domain) to view your logs. Remember: the OpenTelemetry Collector listens on port **4318** and Kibana is now published on port **443**.
 
 8. **Tear Down (Optional):**  
     A helper script keeps the resource group and static public IP while destroying everything else:

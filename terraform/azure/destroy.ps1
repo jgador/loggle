@@ -30,7 +30,8 @@ function Invoke-Terraform {
 
 $protectedResources = @(
     'azurerm_resource_group.rg',
-    'azurerm_public_ip.public_ip'
+    'azurerm_public_ip.public_ip',
+    'azurerm_key_vault.kv'
 )
 
 Write-Host 'Building target list from Terraform state...' -ForegroundColor Cyan
