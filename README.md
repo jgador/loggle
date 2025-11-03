@@ -112,6 +112,16 @@ Your applications forward their logs to the OpenTelemetry Collector, which expor
     > Replace the IP if you change it. This prevents host key warnings when you SSH back in.
     > Kibana is locked down to a default allow list. Update `kibana_allowed_ips` in `terraform/azure/variables.tf` (or override via `terraform.tfvars`) with your own public IPs before applying if `34.126.86.243` is not yours.
 
+### Re-run the provisioning script inside the VM
+
+The VM stores the managed identity in `/etc/loggle/identity.env`, so `/etc/loggle/setup.sh` can be run repeatedly without additional parameters. After SSH-ing into the host:
+
+```bash
+sudo /bin/bash /etc/loggle/setup.sh
+```
+
+This replays package installs, certificate sync, and service configuration in an idempotent manner.
+
 6. **Send Your Logs:**  
     Configure your application to forward logs using the following steps:
     1. Add configuration to `appsettings.json`:
