@@ -9,7 +9,8 @@ readonly DOMAIN="kibana.loggle.co"
 readonly EMAIL="certbot@loggle.co"
 readonly CERT_PATH="/etc/loggle/certs"
 readonly LOGGLE_PATH="/etc/loggle"
-readonly MANAGED_IDENTITY_CLIENT_ID="${LOGGLE_MANAGED_IDENTITY_CLIENT_ID:-}"
+readonly IDENTITY_ENV_PATH="$LOGGLE_PATH/identity.env"
+MANAGED_IDENTITY_CLIENT_ID="${LOGGLE_MANAGED_IDENTITY_CLIENT_ID:-}"
 
 # Function definitions
 setup_environment() {
@@ -23,10 +24,23 @@ setup_environment() {
 move_config_files() {
     local config_files=("docker-compose.yml" "otel-collector-config.yaml" "kibana.yml" "import-cert.ps1" "export-cert.ps1")
     for file in "${config_files[@]}"; do
-        mv "/tmp/$file" "$LOGGLE_PATH/"
+        local source="/tmp/$file"
+        if [[ -e "$source" ]]; then
+            mv -f "$source" "$LOGGLE_PATH/"
+        fi
     done
-    mv "/tmp/loggle.service" "/etc/systemd/system/"
-    mv "/tmp/init-es" "$LOGGLE_PATH/"
+
+    if [[ -f "/tmp/loggle.service" ]]; then
+        mv -f "/tmp/loggle.service" "/etc/systemd/system/loggle.service"
+    fi
+
+    if [[ -d "/tmp/init-es" ]]; then
+        local target="$LOGGLE_PATH/init-es"
+        if [[ -d "$target" ]]; then
+            rm -rf "$target"
+        fi
+        mv "/tmp/init-es" "$LOGGLE_PATH/"
+    fi
 }
 
 ensure_directories() {
@@ -57,6 +71,24 @@ ensure_certificate_placeholders() {
     done
 }
 
+load_or_cache_managed_identity() {
+    if [[ -z "$MANAGED_IDENTITY_CLIENT_ID" && -f "$IDENTITY_ENV_PATH" ]]; then
+        # shellcheck disable=SC1090
+        source "$IDENTITY_ENV_PATH"
+        MANAGED_IDENTITY_CLIENT_ID="${LOGGLE_MANAGED_IDENTITY_CLIENT_ID:-}"
+    fi
+
+    if [[ -n "$MANAGED_IDENTITY_CLIENT_ID" ]]; then
+        export LOGGLE_MANAGED_IDENTITY_CLIENT_ID="$MANAGED_IDENTITY_CLIENT_ID"
+        if [[ ! -f "$IDENTITY_ENV_PATH" ]] || ! grep -qx "LOGGLE_MANAGED_IDENTITY_CLIENT_ID=$MANAGED_IDENTITY_CLIENT_ID" "$IDENTITY_ENV_PATH"; then
+            printf 'LOGGLE_MANAGED_IDENTITY_CLIENT_ID=%s\n' "$MANAGED_IDENTITY_CLIENT_ID" > "$IDENTITY_ENV_PATH"
+            chmod 600 "$IDENTITY_ENV_PATH"
+        fi
+    else
+        echo "Managed identity client ID not provided and not cached."
+    fi
+}
+
 apt_get() {
     apt-get $APT_OPTIONS "$@"
 }
@@ -85,6 +117,15 @@ sync_certificates() {
 }
 
 install_powershell() {
+    if command -v pwsh >/dev/null 2>&1; then
+        local installed_version
+        installed_version="$(pwsh --version 2>/dev/null | awk '{print $NF}')"
+        if [[ "$installed_version" == "$POWERSHELL_VERSION" ]]; then
+            echo "PowerShell $POWERSHELL_VERSION already installed; skipping installation."
+            return
+        fi
+    fi
+
     local deb_file="powershell_${POWERSHELL_VERSION}-1.deb_amd64.deb"
     wget -q "https://github.com/PowerShell/PowerShell/releases/download/v${POWERSHELL_VERSION}/${deb_file}"
     dpkg -i "$deb_file"
@@ -139,6 +180,7 @@ wait_for_elasticsearch() {
 main() {
     setup_environment
     ensure_directories
+    load_or_cache_managed_identity
     move_config_files
     set_permissions
     ensure_certificate_placeholders
@@ -151,7 +193,9 @@ main() {
     install_powershell
     install_docker
     
-    echo 'vm.max_map_count=262144' | sudo tee -a /etc/sysctl.conf
+    if [[ ! -f /etc/sysctl.conf ]] || ! grep -q '^vm.max_map_count=262144$' /etc/sysctl.conf; then
+        echo 'vm.max_map_count=262144' | sudo tee -a /etc/sysctl.conf >/dev/null
+    fi
     sysctl -p
     
     # Install and configure Certbot
