@@ -110,6 +110,7 @@ Your applications forward their logs to the OpenTelemetry Collector, which expor
     > ssh-keygen -R 52.230.2.122
     > ```
     > Replace the IP if you change it. This prevents host key warnings when you SSH back in.
+    > Kibana is locked down to a default allow list. Update `kibana_allowed_ips` in `terraform/azure/variables.tf` (or override via `terraform.tfvars`) with your own public IPs before applying if `34.126.86.243` is not yours.
 
 6. **Send Your Logs:**  
     Configure your application to forward logs using the following steps:
@@ -150,6 +151,6 @@ Your applications forward their logs to the OpenTelemetry Collector, which expor
 8. **Tear Down (Optional):**  
     A helper script keeps the resource group and static public IP while destroying everything else:
     ```powershell
-    pwsh .\destroy.ps1          # Add -AutoApprove to skip confirmation
+    pwsh .\destroy.ps1          # Use -AutoApprove:$false if you want to confirm the destroy
     ```
-    Run it from `terraform\azure`. The script enumerates the Terraform state, filters out the protected resources, and calls `terraform destroy` with the remaining targets. If you prefer the raw command, you can still run `terraform destroy` manually after removing the `prevent_destroy` blocks.
+    Run it from `terraform\azure`. The wrapper builds a `terraform destroy` call that targets every managed resource except the protected resource group, public IP, and Key Vault, so those stay in place while the rest is removed.

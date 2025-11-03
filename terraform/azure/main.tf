@@ -119,8 +119,8 @@ resource "azurerm_network_security_group" "nsg" {
     access                     = "Allow"
     protocol                   = "*"
     source_port_range          = "*"
+    source_address_prefixes    = var.kibana_allowed_ips
     destination_port_ranges    = [80, 443, 4318]
-    source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
   lifecycle {

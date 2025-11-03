@@ -11,7 +11,7 @@
 
 [CmdletBinding()]
 param (
-    [switch]$AutoApprove
+    [bool]$AutoApprove = $true
 )
 
 Set-StrictMode -Version Latest
@@ -42,7 +42,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $targets = $stateResources |
-    Where-Object { $_ -and ($_ -notin $protectedResources) } |
+    Where-Object { $_ -and ($_ -notin $protectedResources) -and ($_ -notlike 'data.*') } |
     ForEach-Object { "-target=$_" }
 
 if (-not $targets) {
@@ -50,11 +50,11 @@ if (-not $targets) {
     exit 0
 }
 
-Write-Host 'Running terraform destroy with filtered targets...' -ForegroundColor Cyan
+Write-Host 'Destroying targeted resources while keeping protected infrastructure...' -ForegroundColor Cyan
 $destroyArgs = @('destroy') + $targets
 if ($AutoApprove) {
     $destroyArgs += '-auto-approve'
 }
 
 Invoke-Terraform -Arguments $destroyArgs
-Write-Host 'Destroy completed successfully (protected resources retained).' -ForegroundColor Green
+Write-Host 'Destroy operation completed. Protected resources remained in place.' -ForegroundColor Green

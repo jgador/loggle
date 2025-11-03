@@ -162,15 +162,23 @@ main() {
     # Certificate management
     echo "Attempting to export certificate from Key Vault..."
     if [[ -n "$MANAGED_IDENTITY_CLIENT_ID" ]]; then
-        pwsh "$LOGGLE_PATH/export-cert.ps1" -ManagedIdentityClientId "$MANAGED_IDENTITY_CLIENT_ID"
+        if ! pwsh "$LOGGLE_PATH/export-cert.ps1" -ManagedIdentityClientId "$MANAGED_IDENTITY_CLIENT_ID"; then
+            echo "Key Vault certificate export failed or no certificate found; proceeding to Certbot fallback."
+        fi
     else
-        pwsh "$LOGGLE_PATH/export-cert.ps1"
+        if ! pwsh "$LOGGLE_PATH/export-cert.ps1"; then
+            echo "Key Vault certificate export failed or no certificate found; proceeding to Certbot fallback."
+        fi
     fi
 
-    echo "Requesting fresh certificate from Let's Encrypt..."
-    certbot certonly --standalone -d "$DOMAIN" -m "$EMAIL" --agree-tos --no-eff-email --preferred-challenges=http-01 --force-renewal
+    if check_cert_status; then
+        echo "Valid certificate available in $CERT_PATH; skipping Let's Encrypt request."
+    else
+        echo "Requesting fresh certificate from Let's Encrypt..."
+        certbot certonly --standalone -d "$DOMAIN" -m "$EMAIL" --agree-tos --no-eff-email --preferred-challenges=http-01
+        sync_certificates
+    fi
 
-    sync_certificates
     ensure_certificate_placeholders
     
     # Set certificate permissions
