@@ -2,6 +2,9 @@ import logging
 import os
 import sys
 import time
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Optional
 
 try:
     from opentelemetry import logs  # type: ignore[attr-defined]
@@ -13,28 +16,81 @@ try:
 except ImportError:  # pragma: no cover
     from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler  # type: ignore[attr-defined]
     from opentelemetry.sdk._logs.export import BatchLogRecordProcessor  # type: ignore[attr-defined]
-from opentelemetry.sdk.resources import Resource
 from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
+from opentelemetry.sdk.resources import Resource
 
 
-def configure_logger():
-    endpoint = os.environ.get("LOGGLE_OTLP_ENDPOINT", "http://localhost:4318/v1/logs")
+def load_env_file():
+    env_path = Path(__file__).resolve().parent / ".env"
+    if not env_path.exists():
+        return
+
+    for raw_line in env_path.read_text().splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+@dataclass
+class Config:
+    endpoint: str
+    bearer_token: Optional[str]
+    service_name: str
+    service_version: str
+    environment: str
+
+
+def load_config() -> Config:
+    required_keys = {
+        "LOGGLE_OTLP_ENDPOINT": "endpoint",
+        "LOGGLE_SERVICE_NAME": "service_name",
+        "LOGGLE_SERVICE_VERSION": "service_version",
+        "LOGGLE_ENVIRONMENT": "environment",
+    }
+
+    values = {}
+    missing = []
+    for key, field_name in required_keys.items():
+        value = os.environ.get(key)
+        if not value:
+            missing.append(key)
+        else:
+            values[field_name] = value
+
+    if missing:
+        formatted = ", ".join(missing)
+        raise RuntimeError(f"Missing required configuration value(s): {formatted}. Ensure examples/python-otel-logger/.env is populated.")
+
     bearer = os.environ.get("LOGGLE_BEARER_TOKEN")
+    return Config(
+        endpoint=values["endpoint"],
+        bearer_token=bearer if bearer else None,
+        service_name=values["service_name"],
+        service_version=values["service_version"],
+        environment=values["environment"],
+    )
 
+
+def configure_logger(config: Config):
     headers = {}
-    if bearer:
-        headers["Authorization"] = f"Bearer {bearer}"
+    if config.bearer_token:
+        headers["Authorization"] = f"Bearer {config.bearer_token}"
 
     resource = Resource.create(
         {
-            "service.name": os.environ.get("LOGGLE_SERVICE_NAME", "loggle-python-example"),
-            "service.version": os.environ.get("LOGGLE_SERVICE_VERSION", "0.1.0"),
-            "deployment.environment": os.environ.get("LOGGLE_ENVIRONMENT", "local"),
+            "service.name": config.service_name,
+            "service.version": config.service_version,
+            "deployment.environment": config.environment,
         }
     )
 
     provider = LoggerProvider(resource=resource)
-    exporter = OTLPLogExporter(endpoint=endpoint, headers=headers)
+    exporter = OTLPLogExporter(endpoint=config.endpoint, headers=headers)
     processor = BatchLogRecordProcessor(exporter)
     provider.add_log_record_processor(processor)
     logs.set_logger_provider(provider)
@@ -59,7 +115,9 @@ def run(logger):
 
 
 def main():
-    logger, processor = configure_logger()
+    load_env_file()
+    config = load_config()
+    logger, processor = configure_logger(config)
     try:
         run(logger)
     finally:

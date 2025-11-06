@@ -7,15 +7,105 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
+	"runtime"
 	"time"
 )
 
+type Config struct {
+	Loggle LoggleConfig `json:"loggle"`
+}
+
+type LoggleConfig struct {
+	ServiceName    string              `json:"serviceName"`
+	ServiceVersion string              `json:"serviceVersion"`
+	Environment    string              `json:"environment"`
+	OtelCollector  OtelCollectorConfig `json:"otelCollector"`
+}
+
+type OtelCollectorConfig struct {
+	LogsReceiverEndpoint string `json:"logsReceiverEndpoint"`
+	BearerToken          string `json:"bearerToken"`
+}
+
+func loadConfig() (*Config, error) {
+	configPath, err := findConfigPath()
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("read config file %s: %w", configPath, err)
+	}
+
+	var cfg Config
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return nil, fmt.Errorf("parse config file %s: %w", configPath, err)
+	}
+
+	if err := validateConfig(&cfg); err != nil {
+		return nil, err
+	}
+	return &cfg, nil
+}
+
+func findConfigPath() (string, error) {
+	candidates := []string{
+		"config.json",
+		filepath.Join(".", "config.json"),
+		filepath.Join("examples", "go-otel-logger", "config.json"),
+	}
+
+	if _, file, _, ok := runtime.Caller(0); ok {
+		dir := filepath.Dir(file)
+		candidates = append([]string{filepath.Join(dir, "config.json")}, candidates...)
+	}
+
+	for _, candidate := range candidates {
+		if candidate == "" {
+			continue
+		}
+		path, err := filepath.Abs(candidate)
+		if err != nil {
+			continue
+		}
+		if _, err := os.Stat(path); err == nil {
+			return path, nil
+		}
+	}
+
+	return "", fmt.Errorf("could not locate config.json in expected locations. Checked: %v", candidates)
+}
+
+func validateConfig(cfg *Config) error {
+	missing := make([]string, 0, 4)
+	if cfg.Loggle.ServiceName == "" {
+		missing = append(missing, "loggle.serviceName")
+	}
+	if cfg.Loggle.ServiceVersion == "" {
+		missing = append(missing, "loggle.serviceVersion")
+	}
+	if cfg.Loggle.Environment == "" {
+		missing = append(missing, "loggle.environment")
+	}
+	if cfg.Loggle.OtelCollector.LogsReceiverEndpoint == "" {
+		missing = append(missing, "loggle.otelCollector.logsReceiverEndpoint")
+	}
+
+	if len(missing) > 0 {
+		return fmt.Errorf("missing required configuration value(s): %v", missing)
+	}
+
+	return nil
+}
+
 func main() {
-	endpoint := getenv("LOGGLE_OTLP_ENDPOINT", "http://localhost:4318/v1/logs")
-	bearer := getenv("LOGGLE_BEARER_TOKEN", "")
-	serviceName := getenv("LOGGLE_SERVICE_NAME", "loggle-go-example")
-	serviceVersion := getenv("LOGGLE_SERVICE_VERSION", "0.1.0")
-	environment := getenv("LOGGLE_ENVIRONMENT", "local")
+	cfg, err := loadConfig()
+	if err != nil {
+		log.Fatalf("failed to load config: %v", err)
+	}
+	loggleCfg := cfg.Loggle
 
 	logRecords := make([]map[string]interface{}, 0, 6)
 	for i := 0; i < 5; i++ {
@@ -45,9 +135,9 @@ func main() {
 			map[string]interface{}{
 				"resource": map[string]interface{}{
 					"attributes": []interface{}{
-						attrString("service.name", serviceName),
-						attrString("service.version", serviceVersion),
-						attrString("deployment.environment", environment),
+						attrString("service.name", loggleCfg.ServiceName),
+						attrString("service.version", loggleCfg.ServiceVersion),
+						attrString("deployment.environment", loggleCfg.Environment),
 						attrString("logger.language", "go"),
 					},
 				},
@@ -55,7 +145,7 @@ func main() {
 					map[string]interface{}{
 						"scope": map[string]interface{}{
 							"name":    "loggle.go.example",
-							"version": serviceVersion,
+							"version": loggleCfg.ServiceVersion,
 						},
 						"logRecords": logRecords,
 					},
@@ -69,13 +159,13 @@ func main() {
 		log.Fatalf("failed to marshal OTLP payload: %v", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(data))
+	req, err := http.NewRequest(http.MethodPost, loggleCfg.OtelCollector.LogsReceiverEndpoint, bytes.NewReader(data))
 	if err != nil {
 		log.Fatalf("failed to create request: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	if bearer != "" {
-		req.Header.Set("Authorization", "Bearer "+bearer)
+	if token := loggleCfg.OtelCollector.BearerToken; token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
 	}
 
 	client := &http.Client{Timeout: 10 * time.Second}
@@ -138,11 +228,4 @@ func newLogRecord(message, severityText string, severityNumber int, attributes m
 		},
 		"attributes": attrList,
 	}
-}
-
-func getenv(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return fallback
 }

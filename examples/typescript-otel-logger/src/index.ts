@@ -1,3 +1,7 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { diag, DiagConsoleLogger, DiagLogLevel } from "@opentelemetry/api";
 import { Resource } from "@opentelemetry/resources";
 import {
@@ -6,28 +10,117 @@ import {
 } from "@opentelemetry/sdk-logs";
 import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+function loadEnvFile(): void {
+  const envPath = path.join(__dirname, "..", ".env");
+  if (!fs.existsSync(envPath)) {
+    return;
+  }
+
+  const content = fs.readFileSync(envPath, "utf8");
+  for (const rawLine of content.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#") || !line.includes("=")) {
+      continue;
+    }
+
+    const [keyPart, ...rest] = line.split("=");
+    const key = keyPart.trim();
+    const value = rest.join("=").trim().replace(/^['"]|['"]$/g, "");
+    if (key && !(key in process.env)) {
+      process.env[key] = value;
+    }
+  }
+}
+
+type RequiredConfigKey =
+  | "LOGGLE_OTLP_ENDPOINT"
+  | "LOGGLE_SERVICE_NAME"
+  | "LOGGLE_SERVICE_VERSION"
+  | "LOGGLE_ENVIRONMENT";
+
+class Config {
+  readonly endpoint: string;
+  readonly bearerToken: string | null;
+  readonly serviceName: string;
+  readonly serviceVersion: string;
+  readonly environment: string;
+
+  private constructor(values: {
+    endpoint: string;
+    bearerToken: string | null;
+    serviceName: string;
+    serviceVersion: string;
+    environment: string;
+  }) {
+    this.endpoint = values.endpoint;
+    this.bearerToken = values.bearerToken;
+    this.serviceName = values.serviceName;
+    this.serviceVersion = values.serviceVersion;
+    this.environment = values.environment;
+  }
+
+  static fromEnv(): Config {
+    const requiredKeys: RequiredConfigKey[] = [
+      "LOGGLE_OTLP_ENDPOINT",
+      "LOGGLE_SERVICE_NAME",
+      "LOGGLE_SERVICE_VERSION",
+      "LOGGLE_ENVIRONMENT",
+    ];
+
+    const values: Partial<Record<RequiredConfigKey, string>> = {};
+    const missing: RequiredConfigKey[] = [];
+
+    for (const key of requiredKeys) {
+      const value = process.env[key];
+      if (!value) {
+        missing.push(key);
+      } else {
+        values[key] = value;
+      }
+    }
+
+    if (missing.length > 0) {
+      throw new Error(
+        `Missing required configuration value(s): ${missing.join(
+          ", ",
+        )}. Ensure examples/typescript-otel-logger/.env is populated.`,
+      );
+    }
+
+    return new Config({
+      endpoint: values.LOGGLE_OTLP_ENDPOINT!,
+      bearerToken: process.env.LOGGLE_BEARER_TOKEN ?? null,
+      serviceName: values.LOGGLE_SERVICE_NAME!,
+      serviceVersion: values.LOGGLE_SERVICE_VERSION!,
+      environment: values.LOGGLE_ENVIRONMENT!,
+    });
+  }
+}
+
+loadEnvFile();
+
+const config = Config.fromEnv();
+
 diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.ERROR);
 
-const endpoint =
-  process.env.LOGGLE_OTLP_ENDPOINT ?? "http://localhost:4318/v1/logs";
-const bearer = process.env.LOGGLE_BEARER_TOKEN;
-
 const headers: Record<string, string> = {};
-if (bearer) {
-  headers.Authorization = `Bearer ${bearer}`;
+if (config.bearerToken) {
+  headers.Authorization = `Bearer ${config.bearerToken}`;
 }
 
 const resource = Resource.default().merge(
   new Resource({
-    "service.name":
-      process.env.LOGGLE_SERVICE_NAME ?? "loggle-typescript-example",
-    "service.version": process.env.LOGGLE_SERVICE_VERSION ?? "0.1.0",
-    "deployment.environment": process.env.LOGGLE_ENVIRONMENT ?? "local",
+    "service.name": config.serviceName,
+    "service.version": config.serviceVersion,
+    "deployment.environment": config.environment,
   }),
 );
 
 const provider = new LoggerProvider({ resource });
-const exporter = new OTLPLogExporter({ url: endpoint, headers });
+const exporter = new OTLPLogExporter({ url: config.endpoint, headers });
 provider.addLogRecordProcessor(new BatchLogRecordProcessor(exporter));
 
 const logger = provider.getLogger("loggle.typescript.example");

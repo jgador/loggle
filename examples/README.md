@@ -1,50 +1,35 @@
 # Cross-language Logging Samples
 
-The `examples` directory now contains minimal OpenTelemetry logging snippets for common languages. Each sample targets an OTLP/HTTP collector compatible with Loggle.
+## .NET (dotnet-otel-logger)
+- Run `dotnet run` inside `examples/dotnet-otel-logger`.
+- Adjust `appsettings.json` (`Logging:Loggle:OtelCollector`) for endpoint, token, and service metadata.
+- Works against the same OTLP collector as the other samples.
 
-## Available languages
+## Go (go-otel-logger)
+- Run with `go run .` from `examples/go-otel-logger`.
+- Update `config.json` (`loggle.*`) for endpoint, token, and service metadata.
+- Emits a handful of sample logs, finishing with a WARN entry.
 
-- `python-otel-logger`
-- `javascript-otel-logger`
-- `typescript-otel-logger`
-- `go-otel-logger`
-- `Examples.Loggle.Console` (.NET)
+## Python (python-otel-logger)
+- Install deps via `python -m pip install -r requirements.txt`.
+- Provide settings in `.env`; they hydrate the `Config` dataclass on startup.
+- Produces structured INFO/WARN entries plus an expected exception example.
 
-Every sample respects the following environment variables:
+## JavaScript (javascript-otel-logger)
+- Install with `npm install`, then run `npm start`.
+- Configuration is read from `.env`; `index.js` validates required keys.
+- Cycles through INFO, WARN, and ERROR severities for six example logs.
 
-- `LOGGLE_OTLP_ENDPOINT` (required unless the default `http://localhost:4318/v1/logs` applies)
-- `LOGGLE_BEARER_TOKEN` (optional)
-- `LOGGLE_SERVICE_NAME`
-- `LOGGLE_SERVICE_VERSION`
-- `LOGGLE_ENVIRONMENT`
-
-Each subfolder includes language-specific instructions in its README.
-
-### .NET Example
-
-The existing .NET sample lives in `Examples.Loggle.Console`. To run it:
-
-```powershell
-cd Examples.Loggle.Console
-dotnet run
-```
-
-It uses the same configuration pattern (`appsettings.json`) to target your Loggle collector and is also callable from the shared runner (use `-Language csharp`).
+## TypeScript (typescript-otel-logger)
+- Install with `npm install`; execute using `npm start` (ts-node).
+- Reads `.env` into a typed `Config` class mirroring the JavaScript pattern.
+- Emits five INFO logs and a final WARN before shutdown.
 
 ## Runner script
+- `examples/run-examples.ps1 -Language <lang>` loops any sample until Ctrl+C.
+- Each language folder keeps its own configuration (`config.json`, `.env`, or similar); adjust those files before running.
+- The runner restores per-language dependencies (pip/npm/dotnet) so you can focus on configs.
 
-Valid `-Language` values: `csharp`, `python`, `javascript`, `typescript`, `go`.
-
-Use `run-examples.ps1` to execute one sample at a time from PowerShell 7+:
-
-```powershell
-cd examples
-.\run-examples.ps1 -Language python -OtlpEndpoint "http://localhost:4318/v1/logs"
-# Provide -BearerToken if your collector enforces authentication:
-# .\run-examples.ps1 -Language python -BearerToken "your-shared-secret"
-# Use -Continuous to loop the selected sample until Ctrl+C:
-# .\run-examples.ps1 -Language python -Continuous
-```
-
-The script installs dependencies where practical (for example `pip install` or `npm install --legacy-peer-deps`) and restores the caller's environment variables on completion. For Python, it attempts to enable `pip` automatically via `python -m ensurepip` if it is not already available. If `-OtlpEndpoint` is not provided, the script defaults to `http://localhost:4318/v1/logs`.
-If `-BearerToken` is omitted, the runner supplies the placeholder value `REPLACE_WITH_YOUR_OWN_SECRET`; update your collector configuration to match or override it when invoking the script.
+## Shared bearer token
+- The collector (`examples/otel-collector-config.yaml`) expects the token `REPLACE_WITH_YOUR_OWN_SECRET`.
+- Ensure every example uses the same value in its config file (`.env`, `config.json`, or `appsettings.json`) before sending logs.

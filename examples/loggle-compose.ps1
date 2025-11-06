@@ -4,8 +4,8 @@
     - OTEL Collector forwards Ingestion API.
     - The API is run locally in Visual Studio.
     Usage:
-        .\startdc.ps1 start   # Starts Docker Compose
-        .\startdc.ps1 stop    # Stops Docker Compose
+        .\loggle-compose.ps1 start   # Starts Docker Compose
+        .\loggle-compose.ps1 stop    # Stops Docker Compose
 #>
 
 Param(
@@ -13,6 +13,13 @@ Param(
     [ValidateSet("start", "stop")]
     [string]$action = "start"
 )
+
+$composeFile = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "docker-compose.yml"))
+$initScript = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".." "remote" "init-es" "init-es.ps1"))
+
+if (-not (Test-Path $composeFile)) {
+    throw "docker-compose.yml not found at $composeFile"
+}
 
 function Wait-ForElasticsearch {
   $esReady = $false
@@ -37,19 +44,18 @@ function Wait-ForElasticsearch {
 
 if ($action -eq "stop") {
   Write-Host "Stopping Loggle Docker Compose..."
-  docker compose --project-name loggle down
+  docker compose -f $composeFile --project-name loggle down
 } else {
   Write-Host "Starting Loggle Docker Compose..."
-  docker compose -f .\docker-compose.yml --project-name loggle up -d
+  docker compose -f $composeFile --project-name loggle up -d
 
   # Wait for Elasticsearch to be ready.
   Wait-ForElasticsearch
 
   # Provision defaults by calling init-es if it exists.
-  $batchScript = "..\..\remote\init-es\init-es.ps1"
-  if (Test-Path $batchScript) {
+  if (Test-Path $initScript) {
       Write-Host "Provisioning defaults with init-es.ps1..."
-      & $batchScript
+      & $initScript
   } else {
       Write-Host "Warning: init-es.ps1 not found."
   }
