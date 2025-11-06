@@ -12,8 +12,8 @@ Before diving into cloud deployment, try Loggle locally:
 
 2. **Run with Docker:**
    ```powershell
-   cd examples\Examples.Loggle.Console
-   .\dc.ps1 start   # Starts all required containers
+   cd examples
+   .\loggle-compose.ps1 start   # Starts all required containers
    ```
    This will provision:
    - Elasticsearch
@@ -32,7 +32,7 @@ Before diving into cloud deployment, try Loggle locally:
 
 5. **Cleanup:**
    ```powershell
-   .\dc.ps1 stop    # Stops and removes all containers
+   .\loggle-compose.ps1 stop    # Stops and removes all containers
    ```
 
 ### Multilingual logging samples
@@ -41,12 +41,11 @@ The `examples` folder contains OpenTelemetry logging snippets for .NET, Python, 
 
 ```powershell
 cd examples
-.\run-examples.ps1 -Language python -OtlpEndpoint "http://localhost:4318/v1/logs"
-# Supply -BearerToken if your collector requires authentication.
-# Add -Continuous to loop the selected sample until Ctrl+C.
+.\run-examples.ps1 -Language python
+# The script keeps running until you press Ctrl+C.
 ```
 
-Each sample respects `LOGGLE_OTLP_ENDPOINT`, `LOGGLE_BEARER_TOKEN`, and related settings so you can target a Loggle collector directly; the runner populates those variables using the parameters you pass (or their defaults). It automatically installs per-language dependencies (for example `pip install` or `npm install --legacy-peer-deps`). If no bearer token is provided, the runner uses the placeholder `REPLACE_WITH_YOUR_OWN_SECRET`, so ensure your collector accepts the same value or override it. When `-OtlpEndpoint` is omitted, the script falls back to `http://localhost:4318/v1/logs`.
+Each sample now ships with its own configuration (`config.json`, `.env`, or `appsettings.json`). Adjust those files to point at your collector or change service metadata. The runner simply installs per-language dependencies (for example `pip install` or `npm install --legacy-peer-deps`) and loops the program until you stop it.
 
 ## Video Tutorial
 
@@ -72,11 +71,28 @@ This video provides a concise overview of deploying Loggle, configuring log forw
 Your applications forward their logs to the OpenTelemetry Collector, which exports them to the Log Ingestion API. The Log Ingestion API processes the data and stores it in Elasticsearch, from where Kibana pulls the data for visualization.
 
 ```mermaid
-graph TB
-    A[Application Logs] --> B[OpenTelemetry Collector]
-    B --> C[Log Ingestion API]
-    C --> D[Elasticsearch]
-    D --> E[Kibana]
+flowchart TB
+    csharp["C#"]
+    go["Go"]
+    javascript["JavaScript"]
+    python["Python"]
+    typescript["TypeScript"]
+    others["Other"]
+
+    subgraph sources["Application Logs"]
+        csharp --> apps
+        go --> apps
+        javascript --> apps
+        python --> apps
+        typescript --> apps
+        others --> apps
+    end
+
+    apps --> collector["OpenTelemetry Collector"]
+    collector --> ingestion["Log Ingestion API"]
+    ingestion --> elastic["Elasticsearch"]
+    elastic --> kibana["Kibana"]
+    elastic --> aspire[".NET Aspire Dashboard (future)"]
 ```
 
 ## Cloud Deployment Guide
