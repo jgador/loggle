@@ -45,7 +45,7 @@ resource "azurerm_key_vault" "kv" {
   sku_name                   = "standard"
   enable_rbac_authorization  = true
   lifecycle {
-    prevent_destroy = false
+    prevent_destroy = true
   }
 }
 
@@ -68,7 +68,7 @@ resource "azurerm_virtual_network" "vnet" {
   resource_group_name = azurerm_resource_group.rg.name
   address_space       = ["10.0.0.0/16"]
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 }
 
@@ -79,7 +79,7 @@ resource "azurerm_subnet" "subnet" {
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.1.0/24"]
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 }
 
@@ -119,12 +119,12 @@ resource "azurerm_network_security_group" "nsg" {
     access                     = "Allow"
     protocol                   = "*"
     source_port_range          = "*"
-    destination_port_ranges    = [80, 443, 5601, 4318]
-    source_address_prefix      = "*"
+    source_address_prefixes    = var.kibana_allowed_ips
+    destination_port_ranges    = [80, 443, 4318]
     destination_address_prefix = "*"
   }
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 }
 
@@ -141,7 +141,7 @@ resource "azurerm_network_interface" "nic" {
     public_ip_address_id          = azurerm_public_ip.public_ip.id # Associate static public IP
   }
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 }
 
@@ -149,7 +149,7 @@ resource "azurerm_network_interface_security_group_association" "nsg_assoc" {
   network_interface_id      = azurerm_network_interface.nic.id
   network_security_group_id = azurerm_network_security_group.nsg.id
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 }
 
@@ -208,7 +208,7 @@ resource "azurerm_virtual_machine" "vm" {
       "sudo mkdir -p /etc/loggle/kibana-data",
       "sudo mv /tmp/setup.sh /etc/loggle/",
       "sudo chmod +x /etc/loggle/setup.sh",
-      "sudo /etc/loggle/setup.sh"
+      "sudo LOGGLE_MANAGED_IDENTITY_CLIENT_ID=${azurerm_user_assigned_identity.auth_id.client_id} /etc/loggle/setup.sh"
     ]
   }
   depends_on = [azurerm_user_assigned_identity.auth_id, azurerm_key_vault.kv]

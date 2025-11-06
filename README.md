@@ -12,8 +12,8 @@ Before diving into cloud deployment, try Loggle locally:
 
 2. **Run with Docker:**
    ```powershell
-   cd examples\Examples.Loggle.Console
-   .\dc.ps1 start   # Starts all required containers
+   cd examples
+   .\loggle-compose.ps1 start   # Starts all required containers
    ```
    This will provision:
    - Elasticsearch
@@ -32,8 +32,20 @@ Before diving into cloud deployment, try Loggle locally:
 
 5. **Cleanup:**
    ```powershell
-   .\dc.ps1 stop    # Stops and removes all containers
+   .\loggle-compose.ps1 stop    # Stops and removes all containers
    ```
+
+### Multilingual logging samples
+
+The `examples` folder contains OpenTelemetry logging snippets for .NET, Python, JavaScript, TypeScript, and Go. Run any combination from PowerShell:
+
+```powershell
+cd examples
+.\run-examples.ps1 -Language python
+# The script keeps running until you press Ctrl+C.
+```
+
+Each sample now ships with its own configuration (`config.json`, `.env`, or `appsettings.json`). Adjust those files to point at your collector or change service metadata. The runner simply installs per-language dependencies (for example `pip install` or `npm install --legacy-peer-deps`) and loops the program until you stop it.
 
 ## Video Tutorial
 
@@ -58,10 +70,29 @@ This video provides a concise overview of deploying Loggle, configuring log forw
 
 Your applications forward their logs to the OpenTelemetry Collector, which exports them to the Log Ingestion API. The Log Ingestion API processes the data and stores it in Elasticsearch, from where Kibana pulls the data for visualization.
 
-```plaintext
-+------------------+      +-------------------------+      +-------------------+      +---------------+      +--------+
-| Application Logs | ---> | OpenTelemetry Collector | ---> | Log Ingestion API | ---> | Elasticsearch | ---> | Kibana |
-+------------------+      +-------------------------+      +-------------------+      +---------------+      +--------+
+```mermaid
+flowchart TB
+    csharp["C#"]
+    go["Go"]
+    javascript["JavaScript"]
+    python["Python"]
+    typescript["TypeScript"]
+    others["Other"]
+
+    subgraph sources["Application Logs"]
+        csharp --> apps
+        go --> apps
+        javascript --> apps
+        python --> apps
+        typescript --> apps
+        others --> apps
+    end
+
+    apps --> collector["OpenTelemetry Collector"]
+    collector --> ingestion["Log Ingestion API"]
+    ingestion --> elastic["Elasticsearch"]
+    elastic --> kibana["Kibana"]
+    elastic --> aspire[".NET Aspire Dashboard (future)"]
 ```
 
 ## Cloud Deployment Guide
@@ -83,6 +114,14 @@ Your applications forward their logs to the OpenTelemetry Collector, which expor
     cd terraform\azure
     ```
 
+   > **Multiple Azure subscriptions?**  
+   > List your available subscriptions and set the one Terraform should use:
+   > ```bash
+   > az account list -o table
+   > az account set --subscription "<subscription name or id>"
+   > ```
+   > Replace the placeholder with the subscription you want to target before running any Terraform commands.
+
 3. **Provision the Public IP:**  
     This will allocate a public IP for your VM.
     ```bash
@@ -97,6 +136,22 @@ Your applications forward their logs to the OpenTelemetry Collector, which expor
     ```bash
     terraform apply -auto-approve
     ```
+    > **Note:** If you rebuild the VM while reusing the same static public IP, clear the old SSH host fingerprint before reconnecting:
+    > ```powershell
+    > ssh-keygen -R 52.230.2.122
+    > ```
+    > Replace the IP if you change it. This prevents host key warnings when you SSH back in.
+    > Kibana is locked down to a default allow list. Update `kibana_allowed_ips` in `terraform/azure/variables.tf` (or override via `terraform.tfvars`) with your own public IPs before applying if `34.126.86.243` is not yours.
+
+### Re-run the provisioning script inside the VM
+
+The VM stores the managed identity in `/etc/loggle/identity.env`, so `/etc/loggle/setup.sh` can be run repeatedly without additional parameters. After SSH-ing into the host:
+
+```bash
+sudo /bin/bash /etc/loggle/setup.sh
+```
+
+This replays package installs, certificate sync, and service configuration in an idempotent manner.
 
 6. **Send Your Logs:**  
     Configure your application to forward logs using the following steps:
@@ -132,4 +187,11 @@ Your applications forward their logs to the OpenTelemetry Collector, which expor
 
 
 7. **Access Kibana:**  
-    Kibana is automatically set up as part of the deployment and listens on port **5601**. Open your browser and navigate to your DNS name (for example, `kibana.loggle.co:5601`) to view your logs. Remember: the OpenTelemetry Collector listens on port **4318** and Kibana on port **5601**.
+    Kibana is automatically set up as part of the deployment and exposed on standard HTTPS. Open your browser and navigate to `https://kibana.loggle.co` (replace with your domain) to view your logs. Remember: the OpenTelemetry Collector listens on port **4318** and Kibana is now published on port **443**.
+
+8. **Tear Down (Optional):**  
+    A helper script keeps the resource group and static public IP while destroying everything else:
+    ```powershell
+    pwsh .\destroy.ps1          # Use -AutoApprove:$false if you want to confirm the destroy
+    ```
+    Run it from `terraform\azure`. The wrapper builds a `terraform destroy` call that targets every managed resource except the protected resource group, public IP, and Key Vault, so those stay in place while the rest is removed.

@@ -1,0 +1,11 @@
+{
+  "loggle": {
+    "serviceName": "loggle-go-example",
+    "serviceVersion": "0.1.0",
+    "environment": "local",
+    "otelCollector": {
+      "logsReceiverEndpoint": "http://localhost:4318/v1/logs",
+      "bearerToken": "REPLACE_WITH_YOUR_OWN_SECRET"
+    }
+  }
+}

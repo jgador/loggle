@@ -15,11 +15,13 @@ param (
     [string]$Domain = "kibana.loggle.co",
     [string]$FullchainPath = "/etc/letsencrypt/live/$Domain/fullchain.pem",
     [string]$PrivkeyPath = "/etc/letsencrypt/live/$Domain/privkey.pem",
-    [string]$TempPfxPath = "/etc/loggle/certs/kv-import-kibana.pfx"
+    [string]$TempPfxPath = "/etc/loggle/certs/kv-import-kibana.pfx",
+    [string]$ManagedIdentityClientId
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
 
 function Initialize-AzureModules {
     [CmdletBinding()]
@@ -57,6 +59,31 @@ function Initialize-AzureModules {
     }
 }
 
+function Get-ManagedIdentityClientId {
+    try {
+        $headers = @{ Metadata = 'true' }
+        $metadataUri = 'http://169.254.169.254/metadata/instance?api-version=2021-02-01'
+        $response = Invoke-RestMethod -Method Get -Uri $metadataUri -Headers $headers -ErrorAction Stop
+
+        $userAssigned = $response.compute.identity.userAssignedIdentities
+        if ($null -ne $userAssigned) {
+            $firstIdentity = $userAssigned.PSObject.Properties | Select-Object -First 1
+            if ($null -ne $firstIdentity) {
+                return $firstIdentity.Value.clientId
+            }
+        }
+
+        if ($response.compute.identity.type -like '*SystemAssigned*' -and $null -ne $response.compute.identity.clientId) {
+            return $response.compute.identity.clientId
+        }
+    }
+    catch {
+        Write-Output "WARN: Unable to query Azure Instance Metadata Service for managed identity: $_"
+    }
+
+    return $null
+}
+
 # Check certificate files first
 if (-not (Test-Path $FullchainPath) -or -not (Test-Path $PrivkeyPath)) {
     Write-Output "Certificate files not found. Skipping import."
@@ -79,8 +106,35 @@ try {
     # Initialize Azure modules
     Initialize-AzureModules
     
+    if (-not $ManagedIdentityClientId) {
+        $ManagedIdentityClientId = $env:LOGGLE_MANAGED_IDENTITY_CLIENT_ID
+    }
+
+    if (-not $ManagedIdentityClientId) {
+        $ManagedIdentityClientId = Get-ManagedIdentityClientId
+    }
+
+    if ($ManagedIdentityClientId) {
+        Write-Output "Connecting to Azure using managed identity $ManagedIdentityClientId."
+        Connect-AzAccount -Identity -AccountId $ManagedIdentityClientId
+    }
+    else {
+        Write-Output "Connecting to Azure using default managed identity context."
+        Connect-AzAccount -Identity
+    }
+
+    try {
+        $existingCert = Get-AzKeyVaultCertificate -VaultName $KeyVaultName -Name $CertificateName -ErrorAction SilentlyContinue
+        if ($existingCert) {
+            Write-Output "Removing existing certificate $CertificateName from Key Vault to store fresh version."
+            Remove-AzKeyVaultCertificate -VaultName $KeyVaultName -Name $CertificateName -Force
+        }
+    }
+    catch {
+        Write-Output "WARN: Failed to remove existing certificate (it may not exist): $_"
+    }
+
     # Connect and import certificate
-    Connect-AzAccount -Identity
     Import-AzKeyVaultCertificate -VaultName $KeyVaultName -Name $CertificateName -FilePath $TempPfxPath
     
     Write-Output "Certificate successfully imported to Key Vault."

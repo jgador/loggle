@@ -54,7 +54,7 @@ services:
     networks:
       - loggle
     ports:
-      - "5601:5601"
+      - "443:5601"
     depends_on:
       - elasticsearch
     volumes:

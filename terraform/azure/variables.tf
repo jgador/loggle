@@ -15,3 +15,9 @@ variable "ssh_key_data" {
   type        = string
   default     = "~/.ssh/loggle.pub"
 }
+
+variable "kibana_allowed_ips" {
+  description = "List of IPv4 addresses or CIDR blocks allowed to access Kibana and related HTTPS endpoints."
+  type        = list(string)
+  default     = ["34.126.86.243"]
+}

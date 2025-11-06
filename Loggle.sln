@@ -20,7 +20,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{9B783609-9
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Loggle.Tests", "test\Loggle.Tests\Loggle.Tests.csproj", "{18873848-783F-46A5-8D88-AE4E32243FE6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Examples.Loggle.Console", "examples\Examples.Loggle.Console\Examples.Loggle.Console.csproj", "{4AE66C49-3E67-4477-978E-8475E215AD8F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Examples.Loggle.Console", "examples\dotnet-otel-logger\Examples.Loggle.Console.csproj", "{4AE66C49-3E67-4477-978E-8475E215AD8F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Loggle.Web", "src\Loggle.Web\Loggle.Web.csproj", "{F3EA0323-C05F-40DB-AA0C-6EA0A51593DA}"
 EndProject

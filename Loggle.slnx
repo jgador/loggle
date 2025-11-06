@@ -3,7 +3,7 @@
     <File Path=".github/workflows/ci.yml" />
   </Folder>
   <Folder Name="/examples/">
-    <Project Path="examples/Examples.Loggle.Console/Examples.Loggle.Console.csproj" />
+    <Project Path="examples/dotnet-otel-logger/Examples.Loggle.Console.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
