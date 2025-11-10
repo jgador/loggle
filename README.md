@@ -18,6 +18,7 @@ Before diving into cloud deployment, try Loggle locally:
    This will provision:
    - Elasticsearch
    - Kibana
+   - .NET Aspire Dashboard
    - OpenTelemetry Collector
    - Loggle.Web
 
@@ -28,6 +29,7 @@ Before diving into cloud deployment, try Loggle locally:
 
 4. **View Your Logs:**
    - Open [Kibana Log Explorer](http://localhost:5601/app/observability-logs-explorer/)
+   - Open [.NET Aspire Dashboard](http://localhost:18888/) for an Aspire-first log browsing experience
    - Watch your logs flow in real-time
 
 5. **Cleanup:**
@@ -47,6 +49,13 @@ cd examples
 
 Each sample now ships with its own configuration (`config.json`, `.env`, or `appsettings.json`). Adjust those files to point at your collector or change service metadata. The runner simply installs per-language dependencies (for example `pip install` or `npm install --legacy-peer-deps`) and loops the program until you stop it.
 
+## .NET Aspire Dashboard
+
+When you run the local Docker stack, Loggle ships a self-contained `.NET Aspire` dashboard that reads directly from the same Elasticsearch data stream as Kibana.
+- Access the dashboard UI at `http://localhost:18888/` (default local setup does not require authentication).
+- Ports `18889` and `18890` stay exposed for OTLP and gRPC endpoints, matching Aspire defaults.
+- Update `examples/aspire-dashboard/appsettings.Development.json` if you need the dashboard to target a different Elasticsearch host or data stream.
+
 ## Video Tutorial
 
 Watch this short video on Google Drive for a walkthrough of setting up and using Loggle:  
@@ -60,7 +69,8 @@ This video provides a concise overview of deploying Loggle, configuring log forw
 - **Complete Toolset:**  
   - **OpenTelemetry Collector:** Collects your logs.  
   - **Elasticsearch:** Stores your logs.  
-  - **Kibana:** Visualizes your logs.
+  - **Kibana:** Visualizes your logs.  
+  - **.NET Aspire Dashboard:** Offers an Aspire-native observability view backed by Elasticsearch.
 - **Easy Deployment:**  
   - Provision a virtual machine with Terraform on Azure (support for AWS and GCP coming soon).  
   - Automatically obtain and renew SSL/TLS certificates using Certbot with Let's Encrypt.
@@ -92,7 +102,7 @@ flowchart TB
     collector --> ingestion["Log Ingestion API"]
     ingestion --> elastic["Elasticsearch"]
     elastic --> kibana["Kibana"]
-    elastic --> aspire[".NET Aspire Dashboard (future)"]
+    elastic --> aspire[".NET Aspire Dashboard"]
 ```
 
 ## Cloud Deployment Guide
