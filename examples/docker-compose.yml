@@ -59,6 +59,23 @@ services:
     volumes:
       - ./kibana.yml:/usr/share/kibana/config/kibana.yml
 
+  aspire-dashboard:
+    image: jessegador/loggle-aspire-dashboard:latest
+    container_name: aspire-dashboard
+    networks:
+      - loggle
+    ports:
+      - "18888:18888"
+      - "18889:18889"
+      - "18890:18890"
+    depends_on:
+      - otelcol
+      - elasticsearch
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    volumes:
+      - ./aspire-dashboard/appsettings.Development.json:/app/appsettings.Development.json:ro
+
 networks:
   loggle:
     driver: bridge
