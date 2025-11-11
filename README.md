@@ -37,6 +37,53 @@ Before diving into cloud deployment, try Loggle locally:
    .\loggle-compose.ps1 stop    # Stops and removes all containers
    ```
 
+### Quick .NET integration
+
+If you're already instrumenting applications with .NET, wiring Loggle into your existing logging pipeline takes just a couple of minutes:
+
+0. **Add the NuGet package**
+   ```powershell
+   dotnet add package Loggle
+   ```
+   Or with the Package Manager Console:
+   ```powershell
+   Install-Package Loggle
+   ```
+   This brings in the `AddLoggleExporter()` extension method used below.
+
+1. **Add configuration to `appsettings.json`:**
+   ```json
+   {
+     "Logging": {
+       "OpenTelemetry": {
+         "IncludeFormattedMessage": true,
+         "IncludeScopes": true,
+         "ParseStateValues": true
+       },
+       "Loggle": {
+         "ServiceName": "Examples.Loggle.Console",
+         "ServiceVersion": "v0.99.5-rc.7",
+         "OtelCollector": {
+           "BearerToken": "REPLACE_WITH_YOUR_OWN_SECRET",
+           "LogsReceiverEndpoint": "http://your-domain-or-ip:4318/v1/logs"
+         }
+       }
+     }
+   }
+   ```
+
+2. **Register the Loggle exporter in `Program.cs`:**
+   ```csharp
+   var builder = Host.CreateDefaultBuilder(args)
+     .ConfigureServices((hostContext, services) =>
+     {
+       // Register the Loggle exporter
+       services.AddLoggleExporter();
+     });
+   ```
+
+That’s it—run your app and the logs stream straight into Loggle alongside the rest of your stack.
+
 ### Multilingual logging samples
 
 The `examples` folder contains OpenTelemetry logging snippets for .NET, Python, JavaScript, TypeScript, and Go. Run any combination from PowerShell:
@@ -55,6 +102,7 @@ When you run the local Docker stack, Loggle ships a self-contained `.NET Aspire`
 - Access the dashboard UI at `http://localhost:18888/` (default local setup does not require authentication).
 - Ports `18889` and `18890` stay exposed for OTLP and gRPC endpoints, matching Aspire defaults.
 - Update `examples/aspire-dashboard/appsettings.Development.json` if you need the dashboard to target a different Elasticsearch host or data stream.
+- ⚠️ **Experimental integration:** the current Aspire dashboard work is a persistence experiment. Active development happens in the fork at [jgador/loggle_aspire](https://github.com/jgador/loggle_aspire), where the Aspire-specific updates will continue to evolve.
 
 ## Video Tutorial
 
