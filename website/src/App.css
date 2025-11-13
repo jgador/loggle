@@ -43,12 +43,13 @@
   color: var(--navy);
 }
 
-.hero__brand-mark {
+.hero__brand-logo {
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  background: linear-gradient(180deg, var(--brand-blue), #3b82f6);
-  box-shadow: inset 0 4px 12px rgba(255, 255, 255, 0.35);
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
 }
 
 .hero__nav-links {

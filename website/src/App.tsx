@@ -118,7 +118,11 @@ function App() {
       <header className="hero" id="top">
         <nav className="hero__nav">
           <a className="hero__brand" href="#top" aria-label="Go to top of page">
-            <span className="hero__brand-mark" />
+            <img
+              className="hero__brand-logo"
+              src="/logo.png"
+              alt="Loggle logo"
+            />
             Loggle
           </a>
           <div className="hero__nav-links">
