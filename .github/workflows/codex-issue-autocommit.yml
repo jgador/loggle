@@ -13,8 +13,8 @@ jobs:
     if: github.event.issue.user.login == github.repository_owner
     runs-on: ubuntu-latest
     env:
-      CODEX_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY != '' && secrets.AZURE_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
-      CODEX_RESPONSES_ENDPOINT: ${{ secrets.AZURE_OPENAI_API_KEY != '' && secrets.AZURE_OPENAI_ENDPOINT || '' }}
+      AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+      AZURE_OPENAI_RESPONSES_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
 
     steps:
       - name: Evaluate issue trigger and branch
@@ -66,6 +66,20 @@ EOF
           git fetch origin master
           git checkout -B "$TARGET_BRANCH" origin/master
 
+      - name: Validate Azure OpenAI configuration
+        if: steps.evaluate.outputs.should_run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${AZURE_OPENAI_API_KEY:-}" ]]; then
+            echo "::error::AZURE_OPENAI_API_KEY secret is required for this workflow."
+            exit 1
+          fi
+          if [[ -z "${AZURE_OPENAI_RESPONSES_ENDPOINT:-}" ]]; then
+            echo "::error::AZURE_OPENAI_ENDPOINT secret is required for this workflow."
+            exit 1
+          fi
+
       - name: Configure Git author
         if: steps.evaluate.outputs.should_run == 'true'
         run: |
@@ -77,8 +91,8 @@ EOF
         id: run_codex
         uses: openai/codex-action@v1
         with:
-          openai-api-key: ${{ env.CODEX_API_KEY }}
-          responses-api-endpoint: ${{ env.CODEX_RESPONSES_ENDPOINT }}
+          openai-api-key: ${{ env.AZURE_OPENAI_API_KEY }}
+          responses-api-endpoint: ${{ env.AZURE_OPENAI_RESPONSES_ENDPOINT }}
           prompt: |
             You are Codex, an autonomous coding agent running inside a GitHub Actions job for ${{ github.repository }}.
             The repository is already checked out on branch "${{ steps.evaluate.outputs.branch }}", created from master.
