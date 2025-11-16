@@ -10,65 +10,579 @@
                 "@timestamp": {
                     "type": "date"
                 },
-                "serviceInstanceId": {
-                    "ignore_above": 256,
-                    "type": "keyword"
+                "observedTimestamp": {
+                    "type": "date"
                 },
-                "serviceName": {
-                    "ignore_above": 256,
-                    "type": "keyword"
+                "timeUnixNano": {
+                    "type": "long"
                 },
-                "serviceVersion": {
-                    "ignore_above": 256,
-                    "type": "keyword"
-                },
-                "attributes": {
-                    "properties": {
-                        "name": {
-                            "type": "keyword"
-                        },
-                        "value": {
-                            "type": "keyword"
-                        }
-                    },
-                    "type": "nested"
+                "observedTimeUnixNano": {
+                    "type": "long"
                 },
                 "flags": {
                     "type": "long"
                 },
-                "logLevel": {
-                    "ignore_above": 256,
-                    "type": "keyword"
+                "severityNumber": {
+                    "type": "short"
                 },
-                "message": {
-                    "analyzer": "standard",
-                    "type": "text"
-                },
-                "originalFormat": {
-                    "type": "keyword"
-                },
-                "parentId": {
-                    "ignore_above": 256,
-                    "type": "keyword"
-                },
-                "serviceAttributes": {
-                    "properties": {
-                        "name": {
-                            "type": "keyword"
-                        },
-                        "value": {
-                            "type": "keyword"
-                        }
-                    },
-                    "type": "nested"
-                },
-                "spanId": {
+                "severityText": {
                     "ignore_above": 256,
                     "type": "keyword"
                 },
                 "traceId": {
                     "ignore_above": 256,
                     "type": "keyword"
+                },
+                "traceState": {
+                    "ignore_above": 1024,
+                    "type": "keyword"
+                },
+                "spanId": {
+                    "ignore_above": 256,
+                    "type": "keyword"
+                },
+                "logRecordId": {
+                    "ignore_above": 256,
+                    "type": "keyword"
+                },
+                "body": {
+                    "properties": {
+                        "arrayValue": {
+                            "properties": {
+                                "values": {
+                                    "type": "nested",
+                                    "properties": {
+                                        "boolValue": {
+                                            "type": "boolean"
+                                        },
+                                        "bytesValue": {
+                                            "type": "binary"
+                                        },
+                                        "doubleValue": {
+                                            "type": "double"
+                                        },
+                                        "intValue": {
+                                            "type": "long"
+                                        },
+                                        "kvlistValue": {
+                                            "properties": {
+                                                "values": {
+                                                    "type": "nested",
+                                                    "properties": {
+                                                        "key": {
+                                                            "ignore_above": 256,
+                                                            "type": "keyword"
+                                                        },
+                                                        "value": {
+                                                            "type": "flattened"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "stringValue": {
+                                            "type": "text",
+                                            "fields": {
+                                                "keyword": {
+                                                    "ignore_above": 256,
+                                                    "type": "keyword"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "boolValue": {
+                            "type": "boolean"
+                        },
+                        "bytesValue": {
+                            "type": "binary"
+                        },
+                        "doubleValue": {
+                            "type": "double"
+                        },
+                        "intValue": {
+                            "type": "long"
+                        },
+                        "kvlistValue": {
+                            "properties": {
+                                "values": {
+                                    "type": "nested",
+                                    "properties": {
+                                        "key": {
+                                            "ignore_above": 256,
+                                            "type": "keyword"
+                                        },
+                                        "value": {
+                                            "type": "flattened"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "stringValue": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "ignore_above": 256,
+                                    "type": "keyword"
+                                }
+                            }
+                        }
+                    }
+                },
+                "attributes": {
+                    "type": "nested",
+                    "properties": {
+                        "key": {
+                            "ignore_above": 256,
+                            "type": "keyword"
+                        },
+                        "value": {
+                            "properties": {
+                                "arrayValue": {
+                                    "properties": {
+                                        "values": {
+                                            "type": "nested",
+                                            "properties": {
+                                                "boolValue": {
+                                                    "type": "boolean"
+                                                },
+                                                "bytesValue": {
+                                                    "type": "binary"
+                                                },
+                                                "doubleValue": {
+                                                    "type": "double"
+                                                },
+                                                "intValue": {
+                                                    "type": "long"
+                                                },
+                                                "kvlistValue": {
+                                                    "properties": {
+                                                        "values": {
+                                                            "type": "nested",
+                                                            "properties": {
+                                                                "key": {
+                                                                    "ignore_above": 256,
+                                                                    "type": "keyword"
+                                                                },
+                                                                "value": {
+                                                                    "type": "flattened"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                "stringValue": {
+                                                    "type": "text",
+                                                    "fields": {
+                                                        "keyword": {
+                                                            "ignore_above": 256,
+                                                            "type": "keyword"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "boolValue": {
+                                    "type": "boolean"
+                                },
+                                "bytesValue": {
+                                    "type": "binary"
+                                },
+                                "doubleValue": {
+                                    "type": "double"
+                                },
+                                "intValue": {
+                                    "type": "long"
+                                },
+                                "kvlistValue": {
+                                    "properties": {
+                                        "values": {
+                                            "type": "nested",
+                                            "properties": {
+                                                "key": {
+                                                    "ignore_above": 256,
+                                                    "type": "keyword"
+                                                },
+                                                "value": {
+                                                    "type": "flattened"
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "stringValue": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "ignore_above": 256,
+                                            "type": "keyword"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "droppedAttributesCount": {
+                    "type": "integer"
+                },
+                "resource": {
+                    "properties": {
+                        "schemaUrl": {
+                            "ignore_above": 256,
+                            "type": "keyword"
+                        },
+                        "droppedAttributesCount": {
+                            "type": "integer"
+                        },
+                        "attributes": {
+                            "type": "nested",
+                            "properties": {
+                                "key": {
+                                    "ignore_above": 256,
+                                    "type": "keyword"
+                                },
+                                "value": {
+                                    "properties": {
+                                        "arrayValue": {
+                                            "properties": {
+                                                "values": {
+                                                    "type": "nested",
+                                                    "properties": {
+                                                        "boolValue": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "bytesValue": {
+                                                            "type": "binary"
+                                                        },
+                                                        "doubleValue": {
+                                                            "type": "double"
+                                                        },
+                                                        "intValue": {
+                                                            "type": "long"
+                                                        },
+                                                        "kvlistValue": {
+                                                            "properties": {
+                                                                "values": {
+                                                                    "type": "nested",
+                                                                    "properties": {
+                                                                        "key": {
+                                                                            "ignore_above": 256,
+                                                                            "type": "keyword"
+                                                                        },
+                                                                        "value": {
+                                                                            "type": "flattened"
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        "stringValue": {
+                                                            "type": "text",
+                                                            "fields": {
+                                                                "keyword": {
+                                                                    "ignore_above": 256,
+                                                                    "type": "keyword"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "boolValue": {
+                                            "type": "boolean"
+                                        },
+                                        "bytesValue": {
+                                            "type": "binary"
+                                        },
+                                        "doubleValue": {
+                                            "type": "double"
+                                        },
+                                        "intValue": {
+                                            "type": "long"
+                                        },
+                                        "kvlistValue": {
+                                            "properties": {
+                                                "values": {
+                                                    "type": "nested",
+                                                    "properties": {
+                                                        "key": {
+                                                            "ignore_above": 256,
+                                                            "type": "keyword"
+                                                        },
+                                                        "value": {
+                                                            "type": "flattened"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "stringValue": {
+                                            "type": "text",
+                                            "fields": {
+                                                "keyword": {
+                                                    "ignore_above": 256,
+                                                    "type": "keyword"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "scope": {
+                    "properties": {
+                        "name": {
+                            "ignore_above": 256,
+                            "type": "keyword"
+                        },
+                        "version": {
+                            "ignore_above": 256,
+                            "type": "keyword"
+                        },
+                        "schemaUrl": {
+                            "ignore_above": 256,
+                            "type": "keyword"
+                        },
+                        "droppedAttributesCount": {
+                            "type": "integer"
+                        },
+                        "attributes": {
+                            "type": "nested",
+                            "properties": {
+                                "key": {
+                                    "ignore_above": 256,
+                                    "type": "keyword"
+                                },
+                                "value": {
+                                    "properties": {
+                                        "arrayValue": {
+                                            "properties": {
+                                                "values": {
+                                                    "type": "nested",
+                                                    "properties": {
+                                                        "boolValue": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "bytesValue": {
+                                                            "type": "binary"
+                                                        },
+                                                        "doubleValue": {
+                                                            "type": "double"
+                                                        },
+                                                        "intValue": {
+                                                            "type": "long"
+                                                        },
+                                                        "kvlistValue": {
+                                                            "properties": {
+                                                                "values": {
+                                                                    "type": "nested",
+                                                                    "properties": {
+                                                                        "key": {
+                                                                            "ignore_above": 256,
+                                                                            "type": "keyword"
+                                                                        },
+                                                                        "value": {
+                                                                            "type": "flattened"
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        "stringValue": {
+                                                            "type": "text",
+                                                            "fields": {
+                                                                "keyword": {
+                                                                    "ignore_above": 256,
+                                                                    "type": "keyword"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "boolValue": {
+                                            "type": "boolean"
+                                        },
+                                        "bytesValue": {
+                                            "type": "binary"
+                                        },
+                                        "doubleValue": {
+                                            "type": "double"
+                                        },
+                                        "intValue": {
+                                            "type": "long"
+                                        },
+                                        "kvlistValue": {
+                                            "properties": {
+                                                "values": {
+                                                    "type": "nested",
+                                                    "properties": {
+                                                        "key": {
+                                                            "ignore_above": 256,
+                                                            "type": "keyword"
+                                                        },
+                                                        "value": {
+                                                            "type": "flattened"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "stringValue": {
+                                            "type": "text",
+                                            "fields": {
+                                                "keyword": {
+                                                    "ignore_above": 256,
+                                                    "type": "keyword"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "instrumentationScope": {
+                    "properties": {
+                        "name": {
+                            "ignore_above": 256,
+                            "type": "keyword"
+                        },
+                        "version": {
+                            "ignore_above": 256,
+                            "type": "keyword"
+                        },
+                        "schemaUrl": {
+                            "ignore_above": 256,
+                            "type": "keyword"
+                        },
+                        "droppedAttributesCount": {
+                            "type": "integer"
+                        },
+                        "attributes": {
+                            "type": "nested",
+                            "properties": {
+                                "key": {
+                                    "ignore_above": 256,
+                                    "type": "keyword"
+                                },
+                                "value": {
+                                    "properties": {
+                                        "arrayValue": {
+                                            "properties": {
+                                                "values": {
+                                                    "type": "nested",
+                                                    "properties": {
+                                                        "boolValue": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "bytesValue": {
+                                                            "type": "binary"
+                                                        },
+                                                        "doubleValue": {
+                                                            "type": "double"
+                                                        },
+                                                        "intValue": {
+                                                            "type": "long"
+                                                        },
+                                                        "kvlistValue": {
+                                                            "properties": {
+                                                                "values": {
+                                                                    "type": "nested",
+                                                                    "properties": {
+                                                                        "key": {
+                                                                            "ignore_above": 256,
+                                                                            "type": "keyword"
+                                                                        },
+                                                                        "value": {
+                                                                            "type": "flattened"
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        "stringValue": {
+                                                            "type": "text",
+                                                            "fields": {
+                                                                "keyword": {
+                                                                    "ignore_above": 256,
+                                                                    "type": "keyword"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "boolValue": {
+                                            "type": "boolean"
+                                        },
+                                        "bytesValue": {
+                                            "type": "binary"
+                                        },
+                                        "doubleValue": {
+                                            "type": "double"
+                                        },
+                                        "intValue": {
+                                            "type": "long"
+                                        },
+                                        "kvlistValue": {
+                                            "properties": {
+                                                "values": {
+                                                    "type": "nested",
+                                                    "properties": {
+                                                        "key": {
+                                                            "ignore_above": 256,
+                                                            "type": "keyword"
+                                                        },
+                                                        "value": {
+                                                            "type": "flattened"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "stringValue": {
+                                            "type": "text",
+                                            "fields": {
+                                                "keyword": {
+                                                    "ignore_above": 256,
+                                                    "type": "keyword"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "service": {
+                    "properties": {
+                        "name": {
+                            "ignore_above": 256,
+                            "type": "keyword"
+                        },
+                        "version": {
+                            "ignore_above": 256,
+                            "type": "keyword"
+                        },
+                        "instance": {
+                            "ignore_above": 256,
+                            "type": "keyword"
+                        }
+                    }
                 }
             }
         },
