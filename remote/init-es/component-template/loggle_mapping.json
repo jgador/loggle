@@ -41,10 +41,6 @@
                     "ignore_above": 256,
                     "type": "keyword"
                 },
-                "logRecordId": {
-                    "ignore_above": 256,
-                    "type": "keyword"
-                },
                 "body": {
                     "properties": {
                         "arrayValue": {
@@ -571,6 +567,10 @@
                 "service": {
                     "properties": {
                         "name": {
+                            "ignore_above": 256,
+                            "type": "keyword"
+                        },
+                        "namespace": {
                             "ignore_above": 256,
                             "type": "keyword"
                         },
