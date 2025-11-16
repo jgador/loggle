@@ -1,0 +1,60 @@
+:root {
+  font-family: 'Roboto', 'Segoe UI', Tahoma, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #101023;
+  background-color: #f4f6ff;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  --navy: #010046;
+  --brand-blue: #096bef;
+  --soft-blue: #d9e9ff;
+  --slate: #394066;
+  --muted: #5f678a;
+  --surface: #ffffff;
+  --surface-alt: #f0f4ff;
+  --border: rgba(9, 107, 239, 0.15);
+  --shadow: 0 18px 36px rgba(15, 28, 74, 0.12);
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-sm: 999px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f4f6ff 0%, #ffffff 100%);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--brand-blue);
+}
+
+p,
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
