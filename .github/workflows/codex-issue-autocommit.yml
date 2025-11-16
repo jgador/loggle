@@ -1,0 +1,142 @@
+name: Auto Codex Commit on Issue
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  codex:
+    if: github.event.issue.user.login == github.repository_owner
+    runs-on: ubuntu-latest
+    env:
+      AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+      AZURE_OPENAI_RESPONSES_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+
+    steps:
+      - name: Evaluate issue trigger and branch
+        id: evaluate
+        shell: bash
+        run: |
+          set -eo pipefail
+
+          issue_body=$(cat <<'EOF'
+${{ github.event.issue.body }}
+EOF
+)
+
+          first_line=$(printf '%s\n' "$issue_body" | sed -n '/\S/{s/^[[:space:]]*//;p;q}')
+          if [[ -z "$first_line" || "${first_line%%[[:space:]]*}" != "/codex" ]]; then
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            echo "Issue does not start with /codex hint; skipping."
+            exit 0
+          fi
+
+          branch_line=$(printf '%s\n' "$issue_body" | grep -m1 '^branch:' || true)
+          if [[ -z "$branch_line" ]]; then
+            branch="codex/issue-${{ github.event.issue.number }}"
+          else
+            branch=$(echo "$branch_line" | cut -d':' -f2- | xargs)
+          fi
+
+          if ! git check-ref-format --allow-onelevel "$branch"; then
+            echo "::error::Invalid branch name \"$branch\"."
+            exit 1
+          fi
+
+          echo "should_run=true" >> "$GITHUB_OUTPUT"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout repository
+        if: steps.evaluate.outputs.should_run == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Create working branch
+        if: steps.evaluate.outputs.should_run == 'true'
+        env:
+          TARGET_BRANCH: ${{ steps.evaluate.outputs.branch }}
+        run: |
+          git fetch origin master
+          git checkout -B "$TARGET_BRANCH" origin/master
+
+      - name: Validate Azure OpenAI configuration
+        if: steps.evaluate.outputs.should_run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${AZURE_OPENAI_API_KEY:-}" ]]; then
+            echo "::error::AZURE_OPENAI_API_KEY secret is required for this workflow."
+            exit 1
+          fi
+          if [[ -z "${AZURE_OPENAI_RESPONSES_ENDPOINT:-}" ]]; then
+            echo "::error::AZURE_OPENAI_RESPONSES_ENDPOINT secret is required for this workflow."
+            exit 1
+          fi
+
+      - name: Configure Git author
+        if: steps.evaluate.outputs.should_run == 'true'
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "github-actions@users.noreply.github.com"
+
+      - name: Run Codex
+        if: steps.evaluate.outputs.should_run == 'true'
+        id: run_codex
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ env.AZURE_OPENAI_API_KEY }}
+          responses-api-endpoint: ${{ env.AZURE_OPENAI_RESPONSES_ENDPOINT }}
+          prompt: |
+            You are Codex, an autonomous coding agent running inside a GitHub Actions job for ${{ github.repository }}.
+            The repository is already checked out on branch "${{ steps.evaluate.outputs.branch }}", created from master.
+            Follow the repository's established coding conventions.
+
+            Context:
+              - Issue number: #${{ github.event.issue.number }}
+              - Issue title: ${{ github.event.issue.title }}
+              - Issue body:
+                ----
+                ${{ github.event.issue.body }}
+                ----
+
+            Your tasks:
+              1. Implement the feature or fix requested in the issue.
+              2. Keep changes minimal and focused on the request.
+              3. Stage only relevant files.
+              4. Create one or more commits. Each commit message must start with "codex:" and include "#${{ github.event.issue.number }}".
+              5. Push commits to origin/${{ steps.evaluate.outputs.branch }} when finished.
+              6. Summarize the work and list changed files in your final response.
+
+            Constraints:
+              - Do not modify unrelated files or rewrite history.
+              - Prefer using apply_patch for file edits when practical.
+              - Run available tests when safe and include results in the final summary.
+              - If the request is ambiguous or unsafe, stop and explain why instead of making changes.
+
+            Begin by reviewing the issue details and the existing codebase as needed.
+
+      - name: Post Codex summary
+        if: steps.evaluate.outputs.should_run == 'true' && steps.run_codex.outputs.final-message != ''
+        uses: actions/github-script@v7
+        env:
+          CODEX_FINAL_MESSAGE: ${{ steps.run_codex.outputs['final-message'] }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: process.env.CODEX_FINAL_MESSAGE,
+            });
+
+      - name: Note skipped execution
+        if: steps.evaluate.outputs.should_run != 'true'
+        run: echo "Codex workflow skipped because the issue body did not start with the /codex trigger."
