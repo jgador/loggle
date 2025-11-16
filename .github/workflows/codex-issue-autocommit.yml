@@ -48,4 +48,3 @@ jobs:
     secrets:
       OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
       OPENAI_RESPONSES_ENDPOINT: ${{ secrets.AZURE_OPENAI_RESPONSES_ENDPOINT }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
