@@ -12,6 +12,9 @@ jobs:
   codex:
     if: github.event.issue.user.login == github.repository_owner
     runs-on: ubuntu-latest
+    env:
+      CODEX_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY != '' && secrets.AZURE_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
+      CODEX_RESPONSES_ENDPOINT: ${{ secrets.AZURE_OPENAI_API_KEY != '' && secrets.AZURE_OPENAI_ENDPOINT || '' }}
 
     steps:
       - name: Evaluate issue trigger and branch
@@ -74,7 +77,8 @@ EOF
         id: run_codex
         uses: openai/codex-action@v1
         with:
-          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          openai-api-key: ${{ env.CODEX_API_KEY }}
+          responses-api-endpoint: ${{ env.CODEX_RESPONSES_ENDPOINT }}
           prompt: |
             You are Codex, an autonomous coding agent running inside a GitHub Actions job for ${{ github.repository }}.
             The repository is already checked out on branch "${{ steps.evaluate.outputs.branch }}", created from master.
