@@ -121,6 +121,8 @@ jobs:
               - Do not modify unrelated files or rewrite history.
               - Prefer using apply_patch for file edits when practical.
               - Run available tests when safe and include results in the final summary.
+              - When executing tests or other long-running commands, prefix them with 'timeout 5m' to avoid hangs.
+              - Do not run 'dotnet run' commands.
               - If the request is ambiguous or unsafe, stop and explain why instead of making changes.
 
             Begin by reviewing the issue details and the existing codebase as needed.
