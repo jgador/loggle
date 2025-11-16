@@ -20,18 +20,17 @@ jobs:
       - name: Evaluate issue trigger and branch
         id: evaluate
         shell: bash
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
         run: |
           set -eo pipefail
 
-          issue_body=$(cat <<'EOF'
-${{ github.event.issue.body }}
-EOF
-)
+          issue_body="$ISSUE_BODY"
 
           first_line=$(printf '%s\n' "$issue_body" | sed -n '/\S/{s/^[[:space:]]*//;p;q}')
           if [[ -z "$first_line" || "${first_line%%[[:space:]]*}" != "/codex" ]]; then
             echo "should_run=false" >> "$GITHUB_OUTPUT"
-            echo "Issue does not start with /codex hint; skipping."
+            echo "Issue does not start with the /codex trigger; skipping."
             exit 0
           fi
 
