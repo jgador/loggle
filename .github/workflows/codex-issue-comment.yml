@@ -38,7 +38,6 @@ jobs:
           fi
 
           branch_line=$(printf '%s\n' "$issue_body" | grep -m1 '^branch:' || true)
-          branch_line=$(printf '%s\n' "$issue_body" | grep -m1 '^branch:' || true)
           # If no branch hint exists in the issue (-z evaluates to true for empty strings), fall back to the standard codex/issue-<number> naming.
           if [[ -z "$branch_line" ]]; then
             # Default to a predictable branch when the issue doesn't specify one (e.g., codex/issue-123).
@@ -147,7 +146,8 @@ jobs:
           TARGET_BRANCH: ${{ steps.evaluate.outputs.branch }}
         run: |
           set -eo pipefail
-          # Fail loudly if Codex left uncommitted changes that would prevent a clean push. The -n test triggers only when git status emits output.
+          # Fail loudly if Codex left uncommitted changes that would prevent a clean push.
+          # The -n test triggers only when git status emits output.
           if [[ -n "$(git status --porcelain)" ]]; then
             echo "::error::Uncommitted changes remain after Codex run. Ensure commits are created before push."
             exit 1
