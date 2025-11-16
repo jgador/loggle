@@ -17,7 +17,7 @@ jobs:
       require-owner: true
       prompt: |
         You are Codex, an autonomous coding agent running inside a GitHub Actions job for ${{ github.repository }}.
-        The workflow has already checked out the feature branch created for this issue from master; keep working on that branch.
+        The repository is already checked out on the working branch associated with this issue, created from master.
         Follow the repository's established coding conventions.
 
         Context:
