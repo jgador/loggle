@@ -76,7 +76,7 @@ EOF
             exit 1
           fi
           if [[ -z "${AZURE_OPENAI_RESPONSES_ENDPOINT:-}" ]]; then
-            echo "::error::AZURE_OPENAI_ENDPOINT secret is required for this workflow."
+            echo "::error::AZURE_OPENAI_RESPONSES_ENDPOINT secret is required for this workflow."
             exit 1
           fi
 
