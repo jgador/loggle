@@ -32,7 +32,20 @@ const MermaidDiagram = ({ chart, ariaLabel }: MermaidDiagramProps) => {
         const { svg } = await mermaid.render(renderId, chart);
 
         if (isActive && containerRef.current) {
-          containerRef.current.innerHTML = svg;
+          const parser = new DOMParser();
+          const svgDocument = parser.parseFromString(svg, 'image/svg+xml');
+          const svgElement = svgDocument.documentElement;
+
+          if (svgElement?.tagName?.toLowerCase() === 'svg') {
+            const adoptedSvg = document.importNode(svgElement, true);
+            const container = containerRef.current;
+
+            container.textContent = '';
+            container.appendChild(adoptedSvg);
+          } else {
+            console.warn('Mermaid render did not return a valid SVG element');
+            containerRef.current.textContent = '';
+          }
         }
       } catch (error) {
         console.error('Failed to render mermaid diagram', error);

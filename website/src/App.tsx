@@ -49,7 +49,7 @@ const DocsList = ({ items }: { items: DocHighlight[] }) => (
           className="docs-card__link"
           href={link}
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
         >
           Read section
           <span aria-hidden="true">{'\u2192'}</span>
@@ -131,7 +131,7 @@ function App() {
             <a href="#dotnet">.NET</a>
             <a href="#docs">Docs</a>
             <a href="#integrations">Integrations</a>
-            <a href={repositoryUrl} target="_blank" rel="noreferrer">
+              <a href={repositoryUrl} target="_blank" rel="noopener noreferrer">
               GitHub
             </a>
           </div>
@@ -162,7 +162,7 @@ function App() {
                 className="hero__link hero__link--ghost"
                 href={repositoryUrl}
                 target="_blank"
-                rel="noreferrer"
+                  rel="noopener noreferrer"
               >
                 View on GitHub
               </a>
@@ -193,7 +193,7 @@ function App() {
           <SectionIntro
             eyebrow="Aligned with modern teams"
             title="A focused platform for everyday logging routines"
-            description="Loggle keeps the essentials front and centre: clean navigation, fast searching, and straightforward operations that help teams stay productive."
+            description="Loggle keeps the essentials front and center: clean navigation, fast searching, and straightforward operations that help teams stay productive."
           />
 
           <FeatureList items={features} />
