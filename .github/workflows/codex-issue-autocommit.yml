@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
-      AZURE_OPENAI_RESPONSES_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+      AZURE_OPENAI_RESPONSES_ENDPOINT: ${{ secrets.AZURE_OPENAI_RESPONSES_ENDPOINT }}
 
     steps:
       - name: Evaluate issue trigger and branch
