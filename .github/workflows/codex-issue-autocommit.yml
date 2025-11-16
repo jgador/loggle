@@ -110,7 +110,7 @@ jobs:
               2. Keep changes minimal and focused on the request.
               3. Stage only relevant files.
               4. Create one or more commits. Each commit message must start with "codex:" and include "#${{ github.event.issue.number }}".
-              5. Leave the branch ready for manual review (do not run git push yourself, and remind the user to push).
+              5. Leave the branch ready for this workflow to push (do not run git push yourself).
               6. Summarize the work and list changed files in your final response.
 
             Constraints:
@@ -120,6 +120,18 @@ jobs:
               - If the request is ambiguous or unsafe, stop and explain why instead of making changes.
 
             Begin by reviewing the issue details and the existing codebase as needed.
+
+      - name: Push branch updates
+        if: steps.evaluate.outputs.should_run == 'true'
+        env:
+          TARGET_BRANCH: ${{ steps.evaluate.outputs.branch }}
+        run: |
+          set -eo pipefail
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo "::error::Uncommitted changes remain after Codex run. Ensure commits are created before push."
+            exit 1
+          fi
+          git push --set-upstream origin "$TARGET_BRANCH"
 
       - name: Post Codex summary
         if: steps.evaluate.outputs.should_run == 'true' && steps.run_codex.outputs.final-message != ''
