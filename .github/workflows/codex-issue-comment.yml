@@ -9,168 +9,45 @@ permissions:
   issues: write
 
 jobs:
-  codex-comment:
-    if: github.event.comment.user.login == github.repository_owner
-    runs-on: ubuntu-latest
-    env:
-      AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
-      AZURE_OPENAI_RESPONSES_ENDPOINT: ${{ secrets.AZURE_OPENAI_RESPONSES_ENDPOINT }}
+  codex:
+    uses: jgador/codex-issue-bot/.github/workflows/codex-comment-agent.yml@master
+    with:
+      base-branch: master
+      prompt: |
+        You are Codex, an autonomous coding agent iterating on an existing issue for ${{ github.repository }}.
+        The repository is already checked out on the working branch associated with this issue, created from master.
+        Follow the repository's established coding conventions.
 
-    steps:
-      - name: Evaluate comment trigger and branch
-        id: evaluate
-        shell: bash
-        env:
-          COMMENT_BODY: ${{ github.event.comment.body }}
-          ISSUE_BODY: ${{ github.event.issue.body }}
-        run: |
-          set -eo pipefail
+        Context:
+          - Issue number: #${{ github.event.issue.number }}
+          - Issue title: ${{ github.event.issue.title }}
+          - Issue body:
+            ----
+            ${{ github.event.issue.body }}
+            ----
+          - Latest comment (iteration request):
+            ----
+            ${{ github.event.comment.body }}
+            ----
 
-          comment_body="$COMMENT_BODY"
-          issue_body="$ISSUE_BODY"
+        Your tasks:
+          1. Review the existing changes on this branch and the new comment instructions.
+          2. Implement the requested updates while keeping changes minimal and focused.
+          3. Stage only relevant files.
+          4. Create one or more commits. Each commit message must start with "codex:" and include "#${{ github.event.issue.number }}".
+          5. Leave the branch ready for this workflow to push (do not run git push yourself).
+          6. Summarize the work and list changed files in your final response.
 
-          # Extract the first non-empty line from the comment, trimming leading whitespace.
-          first_line=$(printf '%s\n' "$comment_body" | sed -n '/\S/{s/^[[:space:]]*//;p;q}')
-          if [[ -z "$first_line" || "${first_line%%[[:space:]]*}" != "/codex" ]]; then
-            echo "should_run=false" >> "$GITHUB_OUTPUT"
-            echo "Comment does not start with the /codex trigger; skipping."
-            exit 0
-          fi
+        Constraints:
+          - Do not modify unrelated files or rewrite history.
+          - Prefer using apply_patch for file edits when practical.
+          - Run available tests when safe and include results in the final summary.
+          - When executing tests or other long-running commands, prefix them with 'timeout 5m' to avoid hangs.
+          - Do not run 'dotnet run' commands.
+          - If the request is ambiguous or unsafe, stop and explain why instead of making changes.
 
-          branch_line=$(printf '%s\n' "$issue_body" | grep -m1 '^branch:' || true)
-          # If no branch hint exists in the issue (-z evaluates to true for empty strings), fall back to the standard codex/issue-<number> naming.
-          if [[ -z "$branch_line" ]]; then
-            # Default to a predictable branch when the issue doesn't specify one (e.g., codex/issue-123).
-            branch="codex/issue-${{ github.event.issue.number }}"
-          else
-            branch=$(echo "$branch_line" | cut -d':' -f2- | xargs)
-          fi
-
-          if ! git check-ref-format --allow-onelevel "$branch"; then
-            echo "::error::Invalid branch name \"$branch\"."
-            exit 1
-          fi
-
-          echo "should_run=true" >> "$GITHUB_OUTPUT"
-          echo "branch=$branch" >> "$GITHUB_OUTPUT"
-
-      - name: Checkout repository
-        if: steps.evaluate.outputs.should_run == 'true'
-        uses: actions/checkout@v4
-        with:
-          ref: master
-          fetch-depth: 0
-          persist-credentials: true
-
-      - name: Prepare working branch
-        if: steps.evaluate.outputs.should_run == 'true'
-        env:
-          TARGET_BRANCH: ${{ steps.evaluate.outputs.branch }}
-        run: |
-          set -eo pipefail
-          # Fetch the candidate branch (if it already exists) along with master as the base.
-          git fetch origin "$TARGET_BRANCH" master || true
-
-          if git show-ref --verify --quiet "refs/remotes/origin/$TARGET_BRANCH"; then
-            # Branch already exists remotely; reuse it and fast-forward to the latest remote state.
-            git checkout "$TARGET_BRANCH"
-            git pull --ff-only origin "$TARGET_BRANCH"
-          else
-            # Branch does not exist yet; create it from the latest master commit.
-            git checkout -B "$TARGET_BRANCH" origin/master
-          fi
-
-      - name: Validate Azure OpenAI configuration
-        if: steps.evaluate.outputs.should_run == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ -z "${AZURE_OPENAI_API_KEY:-}" ]]; then
-            echo "::error::AZURE_OPENAI_API_KEY secret is required for this workflow."
-            exit 1
-          fi
-          if [[ -z "${AZURE_OPENAI_RESPONSES_ENDPOINT:-}" ]]; then
-            echo "::error::AZURE_OPENAI_RESPONSES_ENDPOINT secret is required for this workflow."
-            exit 1
-          fi
-
-      - name: Configure Git author
-        if: steps.evaluate.outputs.should_run == 'true'
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "github-actions@users.noreply.github.com"
-
-      - name: Run Codex
-        if: steps.evaluate.outputs.should_run == 'true'
-        id: run_codex
-        uses: openai/codex-action@v1
-        with:
-          openai-api-key: ${{ env.AZURE_OPENAI_API_KEY }}
-          responses-api-endpoint: ${{ env.AZURE_OPENAI_RESPONSES_ENDPOINT }}
-          prompt: |
-            You are Codex, an autonomous coding agent iterating on an existing issue for ${{ github.repository }}.
-            The repository is checked out on branch "${{ steps.evaluate.outputs.branch }}".
-            Follow the repository's established coding conventions.
-
-            Context:
-              - Issue number: #${{ github.event.issue.number }}
-              - Issue title: ${{ github.event.issue.title }}
-              - Issue body:
-                ----
-                ${{ github.event.issue.body }}
-                ----
-              - Latest comment (iteration request):
-                ----
-                ${{ github.event.comment.body }}
-                ----
-
-            Your tasks:
-              1. Review the existing changes on this branch and the new comment instructions.
-              2. Implement the requested updates while keeping changes minimal and focused.
-              3. Stage only relevant files.
-              4. Create one or more commits. Each commit message must start with "codex:" and include "#${{ github.event.issue.number }}".
-              5. Leave the branch ready for this workflow to push (do not run git push yourself).
-              6. Summarize the work and list changed files in your final response.
-
-            Constraints:
-              - Do not modify unrelated files or rewrite history.
-              - Prefer using apply_patch for file edits when practical.
-              - Run available tests when safe and include results in the final summary.
-              - When executing tests or other long-running commands, prefix them with 'timeout 5m' to avoid hangs.
-              - Do not run 'dotnet run' commands.
-              - If the request is ambiguous or unsafe, stop and explain why instead of making changes.
-
-            Begin by reviewing the repository state and applying the requested iteration.
-
-      - name: Push branch updates
-        if: steps.evaluate.outputs.should_run == 'true'
-        env:
-          TARGET_BRANCH: ${{ steps.evaluate.outputs.branch }}
-        run: |
-          set -eo pipefail
-          # Fail loudly if Codex left uncommitted changes that would prevent a clean push.
-          # The -n test triggers only when git status emits output.
-          if [[ -n "$(git status --porcelain)" ]]; then
-            echo "::error::Uncommitted changes remain after Codex run. Ensure commits are created before push."
-            exit 1
-          fi
-          git push --set-upstream origin "$TARGET_BRANCH"
-
-      - name: Post Codex summary
-        if: steps.evaluate.outputs.should_run == 'true' && steps.run_codex.outputs.final-message != ''
-        uses: actions/github-script@v7
-        env:
-          CODEX_FINAL_MESSAGE: ${{ steps.run_codex.outputs['final-message'] }}
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: process.env.CODEX_FINAL_MESSAGE,
-            });
-
-      - name: Note skipped execution
-        if: steps.evaluate.outputs.should_run != 'true'
-        run: echo "Codex iteration workflow skipped because the comment did not start with the /codex trigger."
+        Begin by reviewing the repository state and applying the requested iteration.
+    secrets:
+      OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+      OPENAI_RESPONSES_ENDPOINT: ${{ secrets.AZURE_OPENAI_RESPONSES_ENDPOINT }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
