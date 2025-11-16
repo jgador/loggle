@@ -13,6 +13,7 @@ jobs:
     uses: jgador/codex-issue-bot/.github/workflows/codex-comment-agent.yml@master
     with:
       base-branch: master
+      require-owner: true
       prompt: |
         You are Codex, an autonomous coding agent iterating on an existing issue for ${{ github.repository }}.
         The repository is already checked out on the working branch associated with this issue, created from master.
