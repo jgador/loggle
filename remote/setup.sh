@@ -3,12 +3,12 @@
 # Exit on error, undefined variables, and pipe failures
 set -euo pipefail
 
-# Define constants
+# Define constants (allow overrides for multi-tenant use)
 readonly POWERSHELL_VERSION="7.5.0"
-readonly DOMAIN="kibana.loggle.co"
-readonly EMAIL="certbot@loggle.co"
-readonly CERT_PATH="/etc/loggle/certs"
-readonly LOGGLE_PATH="/etc/loggle"
+readonly LOGGLE_PATH="${LOGGLE_INSTALL_ROOT:-/etc/loggle}"
+readonly CERT_PATH="${LOGGLE_CERT_PATH:-$LOGGLE_PATH/certs}"
+readonly DOMAIN="${LOGGLE_DOMAIN:-kibana.loggle.co}"
+readonly EMAIL="${LOGGLE_CERT_EMAIL:-certbot@loggle.co}"
 readonly IDENTITY_ENV_PATH="$LOGGLE_PATH/identity.env"
 MANAGED_IDENTITY_CLIENT_ID="${LOGGLE_MANAGED_IDENTITY_CLIENT_ID:-}"
 
