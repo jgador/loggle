@@ -35,12 +35,23 @@ param resourceNames object = {}
 @description('HTTPS URL pointing at the loggle-remote tarball that setup.sh expects.')
 param remoteBundleUrl string = 'https://raw.githubusercontent.com/jgador/loggle/feat/deploy/azure/loggle-remote.tar.gz'
 
+@description('Optional explicit Key Vault name. Leave empty to use the default prefix+date naming pattern.')
+param keyVaultName string = ''
+
+@metadata({
+  description: 'Internal date stamp appended to generated Key Vault names.'
+  'x-ms-visibility': 'internal'
+})
+param keyVaultDateSuffix string = utcNow('yyyyMMdd')
+
 var tags = union({
   workload: 'loggle'
 }, extraTags)
 
 var prefixSegment = empty(namePrefix) ? '' : '${namePrefix}-'
 var sanitizedNamePrefix = toLower(replace(namePrefix, '-', ''))
+var defaultKeyVaultBaseName = empty(sanitizedNamePrefix) ? 'kvstore' : '${sanitizedNamePrefix}kv'
+var providedKeyVaultName = toLower(keyVaultName)
 var vnetGeneratedName = '${prefixSegment}vnet'
 var subnetGeneratedName = 'default'
 var publicIpGeneratedName = '${prefixSegment}pip'
@@ -48,7 +59,7 @@ var nsgGeneratedName = '${prefixSegment}nsg'
 var nicGeneratedName = '${prefixSegment}nic'
 var vmGeneratedName = '${prefixSegment}vm'
 var identityGeneratedName = '${prefixSegment}id'
-var keyVaultNameSeed = empty(sanitizedNamePrefix) ? 'kvstore' : '${sanitizedNamePrefix}kv'
+var keyVaultNameSeed = empty(keyVaultName) ? '${defaultKeyVaultBaseName}${keyVaultDateSuffix}' : providedKeyVaultName
 var keyVaultGeneratedName = substring(keyVaultNameSeed, 0, min(24, length(keyVaultNameSeed)))
 var osDiskGeneratedName = '${prefixSegment}osdisk'
 
@@ -59,7 +70,7 @@ var nsgName = resourceNames.?networkSecurityGroup ?? nsgGeneratedName
 var nicName = resourceNames.?networkInterface ?? nicGeneratedName
 var vmName = resourceNames.?virtualMachine ?? vmGeneratedName
 var identityName = resourceNames.?userAssignedIdentity ?? identityGeneratedName
-var keyVaultName = resourceNames.?keyVault ?? keyVaultGeneratedName
+var keyVaultEffectiveName = resourceNames.?keyVault ?? keyVaultGeneratedName
 var osDiskName = resourceNames.?osDisk ?? osDiskGeneratedName
 
 resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
@@ -88,14 +99,13 @@ export LOGGLE_DOMAIN="{1}" LOGGLE_CERT_EMAIL="{2}" LOGGLE_MANAGED_IDENTITY_CLIEN
 ''', remoteBundleUrl, domainName, certificateEmail, userAssignedIdentity.properties.clientId)
 
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
-  name: keyVaultName
+  name: keyVaultEffectiveName
   location: location
   tags: tags
   properties: {
     tenantId: tenant().tenantId
     enableRbacAuthorization: true
     softDeleteRetentionInDays: 7
-    enablePurgeProtection: true
     publicNetworkAccess: 'Enabled'
     sku: {
       name: 'standard'

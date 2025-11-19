@@ -34,11 +34,12 @@ This produces an Azure Resource Manager template (`loggle.json`) that you can di
 | `kibanaAllowedIps` | Array of CIDR ranges allowed through the NSG for HTTP/S. | `["34.126.86.243"]` |
 | `extraTags` | Additional resource tags merged with `{ workload = "loggle" }`. | `{}` |
 | `resourceNames` | Object that overrides auto-generated names (keys: `virtualNetwork`, `subnet`, `networkSecurityGroup`, `publicIp`, `networkInterface`, `virtualMachine`, `userAssignedIdentity`, `keyVault`, `osDisk`). | `{}` |
+| `keyVaultName` | Optional explicit Key Vault name. Leave empty to use the prefix + date pattern. | `""` |
 | `remoteBundleUrl` | HTTPS URL pointing at the `loggle-remote.tar.gz` archive that `setup.sh` expects. | Raw GitHub URL for this repo/branch |
 
-> Key Vault purge protection is always enabled in this template to satisfy Azure's irreversible requirement: once a vault has purge protection, redeployments must continue to request `enablePurgeProtection: true`.
+> Purge protection is disabled by default so the Key Vault can be deleted (and purged) during environment teardown. Toggle it manually if your compliance posture requires it.
 
-Key Vault names are deterministic: the template lowercases the `namePrefix`, strips dashes, and appends `kv` (for example, `loggle` becomes `logglekv`). Provide `resourceNames.keyVault` if you need a different value or if your prefix would cause a collision.
+Key Vault names are deterministic by default: the template lowercases the `namePrefix`, strips dashes, appends `kv`, and then adds the current UTC date suffix (e.g., `loggle` on 2025‑03‑20 becomes `logglekv20250320`). If you prefer a fixed name, set the `keyVaultName` parameter (or `resourceNames.keyVault`) and the template will use it verbatim.
 
 ## 3. Azure Portal deployment workflow
 
