@@ -4,109 +4,6 @@ targetScope = 'resourceGroup'
 param namePrefix string = 'loggle'
 
 @description('Azure location / region for all resources in this deployment.')
-@allowed([
-  'asia'
-  'asiapacific'
-  'australia'
-  'australiacentral'
-  'australiacentral2'
-  'australiaeast'
-  'australiasoutheast'
-  'austriaeast'
-  'belgiumcentral'
-  'brazil'
-  'brazilsouth'
-  'brazilsoutheast'
-  'canada'
-  'canadacentral'
-  'canadaeast'
-  'centralindia'
-  'centralus'
-  'centraluseuap'
-  'centralusstage'
-  'chilecentral'
-  'eastasia'
-  'eastasiastage'
-  'eastus'
-  'eastus2'
-  'eastus2euap'
-  'eastus2stage'
-  'eastusstage'
-  'eastusstg'
-  'europe'
-  'france'
-  'francecentral'
-  'francesouth'
-  'germany'
-  'germanynorth'
-  'germanywestcentral'
-  'global'
-  'india'
-  'indonesia'
-  'indonesiacentral'
-  'israel'
-  'israelcentral'
-  'italy'
-  'italynorth'
-  'japan'
-  'japaneast'
-  'japanwest'
-  'jioindiacentral'
-  'jioindiawest'
-  'korea'
-  'koreacentral'
-  'koreasouth'
-  'malaysia'
-  'malaysiawest'
-  'mexico'
-  'mexicocentral'
-  'newzealand'
-  'newzealandnorth'
-  'northcentralus'
-  'northcentralusstage'
-  'northeurope'
-  'norway'
-  'norwayeast'
-  'norwaywest'
-  'poland'
-  'polandcentral'
-  'qatar'
-  'qatarcentral'
-  'singapore'
-  'southafrica'
-  'southafricanorth'
-  'southafricawest'
-  'southcentralus'
-  'southcentralusstage'
-  'southcentralusstg'
-  'southeastasia'
-  'southeastasiastage'
-  'southindia'
-  'spain'
-  'spaincentral'
-  'sweden'
-  'swedencentral'
-  'switzerland'
-  'switzerlandnorth'
-  'switzerlandwest'
-  'taiwan'
-  'uae'
-  'uaecentral'
-  'uaenorth'
-  'uk'
-  'uksouth'
-  'ukwest'
-  'unitedstates'
-  'unitedstateseuap'
-  'westcentralus'
-  'westeurope'
-  'westindia'
-  'westus'
-  'westus2'
-  'westus2stage'
-  'westus3'
-  'westusstage'
-])
 param location string = resourceGroup().location
 
 @description('VM SKU for the Loggle host.')
@@ -121,10 +18,10 @@ param sshPublicKey string
 @description('Public hostname served by the stack (also used for TLS issuance).')
 param domainName string = 'kibana.loggle.co'
 
-@description('Contact email used for Let’s Encrypt requests.')
+@description('Contact email used for Let\'s Encrypt requests.')
 param certificateEmail string = 'certbot@loggle.co'
 
-@description('IPv4 addresses or CIDR ranges allowed to reach Kibana / HTTPS. Default 0.0.0.0/0 leaves Kibana open to the entire internet—override this to restrict access.')
+@description('IPv4 addresses or CIDR ranges allowed to reach Kibana / HTTPS. Default 0.0.0.0/0 leaves Kibana open to the entire internet - override this to restrict access.')
 param kibanaAllowedIps array = [
   '0.0.0.0/0'
 ]
@@ -135,14 +32,15 @@ param extraTags object = {}
 @description('Optional explicit names for resources to override prefix-based defaults. Keys: virtualNetwork, subnet, networkSecurityGroup, publicIp, networkInterface, virtualMachine, userAssignedIdentity, keyVault, osDisk.')
 param resourceNames object = {}
 
-@description('Base64-encoded tar.gz produced from the remote/ folder.')
-param remoteBundleBase64 string = loadFileAsBase64('loggle-remote.tar.gz')
+@description('HTTPS URL pointing at the loggle-remote tarball that setup.sh expects.')
+param remoteBundleUrl string = 'https://raw.githubusercontent.com/jgador/loggle/feat/deploy/azure/loggle-remote.tar.gz'
 
 var tags = union({
   workload: 'loggle'
 }, extraTags)
 
 var prefixSegment = empty(namePrefix) ? '' : '${namePrefix}-'
+var sanitizedNamePrefix = toLower(replace(namePrefix, '-', ''))
 var vnetGeneratedName = '${prefixSegment}vnet'
 var subnetGeneratedName = 'default'
 var publicIpGeneratedName = '${prefixSegment}pip'
@@ -150,19 +48,19 @@ var nsgGeneratedName = '${prefixSegment}nsg'
 var nicGeneratedName = '${prefixSegment}nic'
 var vmGeneratedName = '${prefixSegment}vm'
 var identityGeneratedName = '${prefixSegment}id'
-var keyVaultUnique = uniqueString(resourceGroup().id, namePrefix)
-var keyVaultGeneratedName = toLower(substring(replace('${empty(namePrefix) ? "" : namePrefix}kv${keyVaultUnique}', '-', ''), 0, 24))
+var keyVaultNameSeed = empty(sanitizedNamePrefix) ? 'kvstore' : '${sanitizedNamePrefix}kv'
+var keyVaultGeneratedName = substring(keyVaultNameSeed, 0, min(24, length(keyVaultNameSeed)))
 var osDiskGeneratedName = '${prefixSegment}osdisk'
 
-var vnetName = contains(resourceNames, 'virtualNetwork') ? resourceNames.virtualNetwork : vnetGeneratedName
-var subnetName = contains(resourceNames, 'subnet') ? resourceNames.subnet : subnetGeneratedName
-var publicIpName = contains(resourceNames, 'publicIp') ? resourceNames.publicIp : publicIpGeneratedName
-var nsgName = contains(resourceNames, 'networkSecurityGroup') ? resourceNames.networkSecurityGroup : nsgGeneratedName
-var nicName = contains(resourceNames, 'networkInterface') ? resourceNames.networkInterface : nicGeneratedName
-var vmName = contains(resourceNames, 'virtualMachine') ? resourceNames.virtualMachine : vmGeneratedName
-var identityName = contains(resourceNames, 'userAssignedIdentity') ? resourceNames.userAssignedIdentity : identityGeneratedName
-var keyVaultName = contains(resourceNames, 'keyVault') ? resourceNames.keyVault : keyVaultGeneratedName
-var osDiskName = contains(resourceNames, 'osDisk') ? resourceNames.osDisk : osDiskGeneratedName
+var vnetName = resourceNames.?virtualNetwork ?? vnetGeneratedName
+var subnetName = resourceNames.?subnet ?? subnetGeneratedName
+var publicIpName = resourceNames.?publicIp ?? publicIpGeneratedName
+var nsgName = resourceNames.?networkSecurityGroup ?? nsgGeneratedName
+var nicName = resourceNames.?networkInterface ?? nicGeneratedName
+var vmName = resourceNames.?virtualMachine ?? vmGeneratedName
+var identityName = resourceNames.?userAssignedIdentity ?? identityGeneratedName
+var keyVaultName = resourceNames.?keyVault ?? keyVaultGeneratedName
+var osDiskName = resourceNames.?osDisk ?? osDiskGeneratedName
 
 resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: identityName
@@ -170,20 +68,24 @@ resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@
   tags: tags
 }
 
-var commandToExecute = '''
-bash -c "set -euo pipefail
+var commandToExecute = format('''
+bash -c 'set -euo pipefail
 TMP_DIR=/tmp/loggle-deploy
-rm -rf \"$TMP_DIR\"
-mkdir -p \"$TMP_DIR\"
-cat <<'ARCHIVE' | base64 -d > \"$TMP_DIR/bundle.tgz\"
-${remoteBundleBase64}
-ARCHIVE
-tar -xzf \"$TMP_DIR/bundle.tgz\" -C \"$TMP_DIR\"
-chmod +x \"$TMP_DIR/setup.sh\"
-export LOGGLE_DOMAIN=\"${domainName}\" LOGGLE_CERT_EMAIL=\"${certificateEmail}\" LOGGLE_MANAGED_IDENTITY_CLIENT_ID=\"${userAssignedIdentity.properties.clientId}\"
-\"$TMP_DIR/setup.sh\"
-"
-'''
+rm -rf "$TMP_DIR"
+mkdir -p "$TMP_DIR"
+REMOTE_BUNDLE_URL="{0}"
+ARCHIVE_PATH="$TMP_DIR/bundle.tgz"
+if command -v curl >/dev/null 2>&1; then
+  curl -fL "$REMOTE_BUNDLE_URL" -o "$ARCHIVE_PATH"
+else
+  wget -O "$ARCHIVE_PATH" "$REMOTE_BUNDLE_URL"
+fi
+tar -xzf "$ARCHIVE_PATH" -C "$TMP_DIR"
+chmod +x "$TMP_DIR/setup.sh"
+export LOGGLE_DOMAIN="{1}" LOGGLE_CERT_EMAIL="{2}" LOGGLE_MANAGED_IDENTITY_CLIENT_ID="{3}"
+"$TMP_DIR/setup.sh"
+'
+''', remoteBundleUrl, domainName, certificateEmail, userAssignedIdentity.properties.clientId)
 
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: keyVaultName
@@ -193,7 +95,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
     tenantId: tenant().tenantId
     enableRbacAuthorization: true
     softDeleteRetentionInDays: 7
-    enablePurgeProtection: false
+    enablePurgeProtection: true
     publicNetworkAccess: 'Enabled'
     sku: {
       name: 'standard'
@@ -241,13 +143,11 @@ resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-02-01' = {
 }
 
 resource subnet 'Microsoft.Network/virtualNetworks/subnets@2023-02-01' = {
-  name: '${vnetName}/${subnetName}'
+  name: subnetName
+  parent: virtualNetwork
   properties: {
     addressPrefix: '10.0.1.0/24'
   }
-  dependsOn: [
-    virtualNetwork
-  ]
 }
 
 resource networkSecurityGroup 'Microsoft.Network/networkSecurityGroups@2023-02-01' = {
@@ -384,7 +284,8 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2023-09-01' = {
 }
 
 resource customScript 'Microsoft.Compute/virtualMachines/extensions@2023-09-01' = {
-  name: '${virtualMachine.name}/loggleProvisioning'
+  name: 'loggleProvisioning'
+  parent: virtualMachine
   location: location
   properties: {
     publisher: 'Microsoft.Azure.Extensions'
@@ -396,9 +297,6 @@ resource customScript 'Microsoft.Compute/virtualMachines/extensions@2023-09-01' 
     }
     settings: {}
   }
-  dependsOn: [
-    virtualMachine
-  ]
 }
 
 output publicIpAddress string = publicIp.properties.ipAddress
