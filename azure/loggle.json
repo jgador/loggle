@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.39.26.7824",
-      "templateHash": "15432462289247052761"
+      "templateHash": "942112665161683096"
     }
   },
   "parameters": {
@@ -80,11 +80,25 @@
         "description": "Optional explicit names for resources to override prefix-based defaults. Keys: virtualNetwork, subnet, networkSecurityGroup, publicIp, networkInterface, virtualMachine, userAssignedIdentity, keyVault, osDisk."
       }
     },
-    "remoteBundleUrl": {
+    "assetRepoUrl": {
       "type": "string",
-      "defaultValue": "https://raw.githubusercontent.com/jgador/loggle/feat/deploy/azure/loggle-remote.tar.gz",
+      "defaultValue": "https://github.com/jgador/loggle.git",
       "metadata": {
-        "description": "HTTPS URL pointing at the loggle-remote tarball that setup.sh expects."
+        "description": "Git repository that hosts the VM bootstrap assets (setup.sh, docker-compose.yml, etc.)."
+      }
+    },
+    "assetRepoRef": {
+      "type": "string",
+      "defaultValue": "feat/deploy/azure",
+      "metadata": {
+        "description": "Git ref (branch or tag) to checkout when pulling the VM bootstrap assets."
+      }
+    },
+    "assetRepoPath": {
+      "type": "string",
+      "defaultValue": "azure/vm-assets",
+      "metadata": {
+        "description": "Path inside the repository that contains the VM bootstrap assets."
       }
     },
     "keyVaultName": {
@@ -377,7 +391,7 @@
         "typeHandlerVersion": "2.1",
         "autoUpgradeMinorVersion": true,
         "protectedSettings": {
-          "commandToExecute": "[format('bash -c ''set -euo pipefail\r\nTMP_DIR=/tmp/loggle-deploy\r\nrm -rf \"$TMP_DIR\"\r\nmkdir -p \"$TMP_DIR\"\r\nREMOTE_BUNDLE_URL=\"{0}\"\r\nARCHIVE_PATH=\"$TMP_DIR/bundle.tgz\"\r\nif command -v curl >/dev/null 2>&1; then\r\n  curl -fL \"$REMOTE_BUNDLE_URL\" -o \"$ARCHIVE_PATH\"\r\nelse\r\n  wget -O \"$ARCHIVE_PATH\" \"$REMOTE_BUNDLE_URL\"\r\nfi\r\ntar -xzf \"$ARCHIVE_PATH\" -C \"$TMP_DIR\"\r\nchmod +x \"$TMP_DIR/setup.sh\"\r\nexport LOGGLE_DOMAIN=\"{1}\" LOGGLE_CERT_EMAIL=\"{2}\" LOGGLE_MANAGED_IDENTITY_CLIENT_ID=\"{3}\"\r\n\"$TMP_DIR/setup.sh\"\r\n''\r\n', parameters('remoteBundleUrl'), parameters('domainName'), parameters('certificateEmail'), reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2023-01-31').clientId)]"
+          "commandToExecute": "[format('bash -c ''set -euo pipefail\nREPO_URL=\"{0}\"\nREPO_REF=\"{1}\"\nREPO_PATH=\"{2}\"\nSRC_DIR=\"/tmp/loggle-src\"\nrm -rf \"$SRC_DIR\"\nif ! command -v git >/dev/null 2>&1; then\n  export DEBIAN_FRONTEND=noninteractive\n  apt-get update -y\n  apt-get install -y git\nfi\ngit clone --depth 1 --branch \"$REPO_REF\" \"$REPO_URL\" \"$SRC_DIR\"\nASSETS_DIR=\"$SRC_DIR/$REPO_PATH\"\nif [ ! -d \"$ASSETS_DIR\" ]; then\n  echo \"Assets path $REPO_PATH not found in repository $REPO_URL\"\n  exit 1\nfi\nrm -f /tmp/setup.sh /tmp/docker-compose.yml /tmp/otel-collector-config.yaml /tmp/kibana.yml /tmp/import-cert.ps1 /tmp/export-cert.ps1 /tmp/loggle.service\nrm -rf /tmp/init-es\nshopt -s dotglob\ncp -R \"$ASSETS_DIR\"/* /tmp/\nshopt -u dotglob\nchmod +x /tmp/setup.sh\nexport LOGGLE_DOMAIN=\"{3}\" LOGGLE_CERT_EMAIL=\"{4}\" LOGGLE_MANAGED_IDENTITY_CLIENT_ID=\"{5}\"\n/tmp/setup.sh\n''\n', parameters('assetRepoUrl'), parameters('assetRepoRef'), parameters('assetRepoPath'), parameters('domainName'), parameters('certificateEmail'), reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2023-01-31').clientId)]"
         },
         "settings": {}
       },

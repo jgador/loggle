@@ -1,0 +1,68 @@
+services:
+  loggle-web:
+    image: jessegador/loggle-web:latest
+    container_name: loggle-web
+    networks:
+      - loggle
+    ports:
+      - "8080:8080"
+    depends_on:
+      - otelcol
+      - elasticsearch
+
+  otelcol:
+    image: otel/opentelemetry-collector-contrib:0.117.0
+    container_name: otelcol
+    networks:
+      - loggle
+    ports:
+      - "4318:4318" # otlphttp
+    volumes:
+      - /etc/loggle/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
+
+  elasticsearch:
+    image: elasticsearch:8.17.0
+    container_name: elasticsearch
+    networks:
+      - loggle
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - node.name=elasticsearch
+      - discovery.seed_hosts=elasticsearch
+      - cluster.initial_master_nodes=elasticsearch
+      - cluster.name=elasticsearch
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
+      - xpack.monitoring.collection.enabled=true
+      - xpack.monitoring.exporters.my_local.type=local
+      - xpack.http.max_response_size=50MB
+      - xpack.security.enabled=false
+      - script.painless.regex.enabled=true
+      - network.host=0.0.0.0
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - /etc/loggle/elasticsearch-data:/usr/share/elasticsearch/data
+
+  kibana:
+    image: kibana:8.17.0
+    container_name: kibana
+    networks:
+      - loggle
+    ports:
+      - "443:5601"
+    depends_on:
+      - elasticsearch
+    volumes:
+      - /etc/loggle/kibana.yml:/usr/share/kibana/config/kibana.yml
+      - /etc/loggle/kibana-data:/usr/share/kibana/data
+      - /etc/loggle/certs/fullchain.pem:/usr/share/kibana/fullchain.pem
+      - /etc/loggle/certs/privkey.pem:/usr/share/kibana/privkey.pem
+
+networks:
+  loggle:
+    driver: bridge

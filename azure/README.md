@@ -1,16 +1,18 @@
 # Loggle Azure Template
 
-This folder holds the Bicep template that mirrors the Terraform stack under `terraform/azure`. The template packages everything under `remote/` and executes `setup.sh` through the VM Custom Script Extension so the provisioning behavior matches Terraform.
+This folder holds the Bicep template that mirrors the Terraform stack under `terraform/azure`. The VM Custom Script extension now clones this repository, copies the contents of `azure/vm-assets/` into `/tmp`, and executes `setup.sh`, so operators can inspect every file without having to trust a pre-built archive.
 
-## 1. Refresh the packaged remote assets
+## 1. Keep the VM assets in sync
 
-Whenever a file inside `remote/` (e.g., `setup.sh`, `docker-compose.yml`, `kibana.yml`, PowerShell helpers, or the `init-es` assets) changes, regenerate the tarball that the VM downloads during provisioning:
+`azure/vm-assets/` is a straight copy of the root `remote/` directory (the same payload Terraform uploads with its `file` provisioner). Whenever you touch anything under `remote/`, refresh the Azure copy before committing:
 
 ```pwsh
-tar -czf azure/loggle-remote.tar.gz -C remote .
+Remove-Item -Path azure/vm-assets -Recurse -Force -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Path azure/vm-assets | Out-Null
+Copy-Item -Path remote/* -Destination azure/vm-assets -Recurse -Force
 ```
 
-The archive is a straight copy of the `remote/` directory. Edit the files in-place under `remote/`, test them as needed, and then re-run the `tar` command above so the latest bits are bundled. Publish the tarball somewhere reachable (the default value uses the raw GitHub URL for `azure/loggle-remote.tar.gz`). Whenever you regenerate the archive, make sure the hosted copy is refreshed too, otherwise new deployments will keep downloading the stale bits.
+This keeps the Azure artifacts readable in-tree and guarantees the deployment bundle always matches the Terraform provisioning logic.
 
 ## 2. Compile Bicep -> ARM JSON
 
@@ -35,7 +37,9 @@ This produces an Azure Resource Manager template (`loggle.json`) that you can di
 | `extraTags` | Additional resource tags merged with `{ workload = "loggle" }`. | `{}` |
 | `resourceNames` | Object that overrides auto-generated names (keys: `virtualNetwork`, `subnet`, `networkSecurityGroup`, `publicIp`, `networkInterface`, `virtualMachine`, `userAssignedIdentity`, `keyVault`, `osDisk`). | `{}` |
 | `keyVaultName` | Optional explicit Key Vault name. Leave empty to use the prefix + date pattern. | `""` |
-| `remoteBundleUrl` | HTTPS URL pointing at the `loggle-remote.tar.gz` archive that `setup.sh` expects. | Raw GitHub URL for this repo/branch |
+| `assetRepoUrl` | Git repository that hosts the `vm-assets` folder. | `https://github.com/jgador/loggle.git` |
+| `assetRepoRef` | Branch or tag to checkout when downloading the assets. | `feat/deploy/azure` |
+| `assetRepoPath` | Repository-relative path that contains the VM assets. | `azure/vm-assets` |
 
 > Purge protection is disabled by default so the Key Vault can be deleted (and purged) during environment teardown. Toggle it manually if your compliance posture requires it.
 

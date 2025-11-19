@@ -1,0 +1,33 @@
+extensions:
+  bearertokenauth:
+    scheme: "Bearer"
+    token: "REPLACE_WITH_YOUR_OWN_SECRET"
+
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+        auth:
+          authenticator: bearertokenauth
+
+exporters:
+  debug:
+    verbosity: detailed
+  otlphttp:
+    endpoint: http://loggle-web:8080
+    tls:
+      insecure: true
+    headers:
+      Content-Type: application/x-protobuf
+      Authorization: ApiKey REPLACE_WITH_YOUR_OWN_SECRET
+      X-Loggle-Key: REPLACE_WITH_YOUR_OWN_SECRET
+    encoding: proto
+    compression: none
+
+service:
+  extensions: [bearertokenauth]
+  pipelines:
+    logs:
+      receivers: [otlp]
+      exporters: [debug, otlphttp]

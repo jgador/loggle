@@ -1,0 +1,13 @@
+[Unit]
+Description=Start Docker Compose for Loggle
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker compose -f /etc/loggle/docker-compose.yml --project-name loggle up -d
+ExecStop=/usr/bin/docker compose --project-name loggle down
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

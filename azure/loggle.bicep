@@ -32,8 +32,14 @@ param extraTags object = {}
 @description('Optional explicit names for resources to override prefix-based defaults. Keys: virtualNetwork, subnet, networkSecurityGroup, publicIp, networkInterface, virtualMachine, userAssignedIdentity, keyVault, osDisk.')
 param resourceNames object = {}
 
-@description('HTTPS URL pointing at the loggle-remote tarball that setup.sh expects.')
-param remoteBundleUrl string = 'https://raw.githubusercontent.com/jgador/loggle/feat/deploy/azure/loggle-remote.tar.gz'
+@description('Git repository that hosts the VM bootstrap assets (setup.sh, docker-compose.yml, etc.).')
+param assetRepoUrl string = 'https://github.com/jgador/loggle.git'
+
+@description('Git ref (branch or tag) to checkout when pulling the VM bootstrap assets.')
+param assetRepoRef string = 'feat/deploy/azure'
+
+@description('Path inside the repository that contains the VM bootstrap assets.')
+param assetRepoPath string = 'azure/vm-assets'
 
 @description('Optional explicit Key Vault name. Leave empty to use the default prefix+date naming pattern.')
 param keyVaultName string = ''
@@ -81,22 +87,32 @@ resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@
 
 var commandToExecute = format('''
 bash -c 'set -euo pipefail
-TMP_DIR=/tmp/loggle-deploy
-rm -rf "$TMP_DIR"
-mkdir -p "$TMP_DIR"
-REMOTE_BUNDLE_URL="{0}"
-ARCHIVE_PATH="$TMP_DIR/bundle.tgz"
-if command -v curl >/dev/null 2>&1; then
-  curl -fL "$REMOTE_BUNDLE_URL" -o "$ARCHIVE_PATH"
-else
-  wget -O "$ARCHIVE_PATH" "$REMOTE_BUNDLE_URL"
+REPO_URL="{0}"
+REPO_REF="{1}"
+REPO_PATH="{2}"
+SRC_DIR="/tmp/loggle-src"
+rm -rf "$SRC_DIR"
+if ! command -v git >/dev/null 2>&1; then
+  export DEBIAN_FRONTEND=noninteractive
+  apt-get update -y
+  apt-get install -y git
 fi
-tar -xzf "$ARCHIVE_PATH" -C "$TMP_DIR"
-chmod +x "$TMP_DIR/setup.sh"
-export LOGGLE_DOMAIN="{1}" LOGGLE_CERT_EMAIL="{2}" LOGGLE_MANAGED_IDENTITY_CLIENT_ID="{3}"
-"$TMP_DIR/setup.sh"
+git clone --depth 1 --branch "$REPO_REF" "$REPO_URL" "$SRC_DIR"
+ASSETS_DIR="$SRC_DIR/$REPO_PATH"
+if [ ! -d "$ASSETS_DIR" ]; then
+  echo "Assets path $REPO_PATH not found in repository $REPO_URL"
+  exit 1
+fi
+rm -f /tmp/setup.sh /tmp/docker-compose.yml /tmp/otel-collector-config.yaml /tmp/kibana.yml /tmp/import-cert.ps1 /tmp/export-cert.ps1 /tmp/loggle.service
+rm -rf /tmp/init-es
+shopt -s dotglob
+cp -R "$ASSETS_DIR"/* /tmp/
+shopt -u dotglob
+chmod +x /tmp/setup.sh
+export LOGGLE_DOMAIN="{3}" LOGGLE_CERT_EMAIL="{4}" LOGGLE_MANAGED_IDENTITY_CLIENT_ID="{5}"
+/tmp/setup.sh
 '
-''', remoteBundleUrl, domainName, certificateEmail, userAssignedIdentity.properties.clientId)
+''', assetRepoUrl, assetRepoRef, assetRepoPath, domainName, certificateEmail, userAssignedIdentity.properties.clientId)
 
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: keyVaultEffectiveName
