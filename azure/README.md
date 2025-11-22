@@ -33,6 +33,7 @@ This produces an Azure Resource Manager template (`loggle.json`) that you can di
 | `sshPublicKey` | **Required** OpenSSH public key. | *(none)* |
 | `domainName` | Hostname served by the stack and used for TLS. | `kibana.loggle.co` |
 | `certificateEmail` | Let's Encrypt contact email. | `certbot@loggle.co` |
+| `letsEncryptEnvironment` | Choose `production` for real certs or `staging` when testing repeatedly (avoids rate limits with test certificates). | `production` |
 | `kibanaAllowedIps` | Array of CIDR ranges allowed through the NSG for HTTP/S. | `["34.126.86.243"]` |
 | `extraTags` | Additional resource tags merged with `{ workload = "loggle" }`. | `{}` |
 | `resourceNames` | Object that overrides auto-generated names (keys: `virtualNetwork`, `subnet`, `networkSecurityGroup`, `networkInterface`, `virtualMachine`, `userAssignedIdentity`, `keyVault`, `osDisk`). | `{}` |
@@ -43,7 +44,8 @@ This produces an Azure Resource Manager template (`loggle.json`) that you can di
 | `publicIpName` | **Required** name of the pre-created public IP that already lives in the chosen resource group. The template only attaches to this IP. | *(none)* |
 
 > Purge protection is disabled by default so the Key Vault can be deleted (and purged) during environment teardown. Toggle it manually if your compliance posture requires it.  
-> **Important:** The `publicIpName` you provide must reference an existing public IP resource inside the same resource group you deploy to; the template will fail if it cannot find that IP.
+> **Important:** The `publicIpName` you provide must reference an existing public IP resource inside the same resource group you deploy to; the template will fail if it cannot find that IP.  
+> **Testing tip:** switch `letsEncryptEnvironment` to `staging` while iterating, then back to `production` before go-live.
 
 Key Vault names are deterministic by default: the template lowercases the `namePrefix`, strips dashes, appends `kv`, and then adds the current UTC date suffix (e.g., `loggle` on 2025‑03‑20 becomes `logglekv20250320`). If you prefer a fixed name, set the `keyVaultName` parameter (or `resourceNames.keyVault`) and the template will use it verbatim.
 

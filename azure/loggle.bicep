@@ -41,6 +41,13 @@ param assetRepoRef string = 'master'
 @description('Path inside the repository that contains the VM bootstrap assets.')
 param assetRepoPath string = 'azure/vm-assets'
 
+@allowed([
+  'production'
+  'staging'
+])
+@description('LetsEncrypt environment for certificate issuance. Leave at production for real deployments; switch to staging when repeatedly testing to avoid rate limits.')
+param letsEncryptEnvironment string = 'production'
+
 @description('IMPORTANT: Name of the pre-existing public IP address that already exists in this resource group. The template only attaches to it; it will not create a new public IP.')
 param publicIpName string
 
@@ -116,10 +123,10 @@ shopt -s dotglob
 cp -R "$ASSETS_DIR"/* /tmp/
 shopt -u dotglob
 chmod +x /tmp/setup.sh
-export LOGGLE_DOMAIN="{3}" LOGGLE_CERT_EMAIL="{4}" LOGGLE_MANAGED_IDENTITY_CLIENT_ID="{5}"
+export LOGGLE_DOMAIN="{3}" LOGGLE_CERT_EMAIL="{4}" LOGGLE_MANAGED_IDENTITY_CLIENT_ID="{5}" LOGGLE_CERT_ENV="{6}"
 /tmp/setup.sh
 '
-''', assetRepoUrl, assetRepoRef, assetRepoPath, domainName, certificateEmail, userAssignedIdentity.properties.clientId)
+''', assetRepoUrl, assetRepoRef, assetRepoPath, domainName, certificateEmail, userAssignedIdentity.properties.clientId, letsEncryptEnvironment)
 
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: keyVaultEffectiveName

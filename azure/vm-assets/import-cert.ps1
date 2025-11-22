@@ -109,7 +109,7 @@ function Get-RuntimeEnvValue {
         }
     }
     catch {
-        Write-Output "WARN: Unable to read runtime environment file $Path: $_"
+        Write-Output "WARN: Unable to read runtime environment file ${Path}: $_"
     }
 
     return $null

@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.39.26.7824",
-      "templateHash": "8101406638309072666"
+      "templateHash": "14128085709429809192"
     }
   },
   "parameters": {
@@ -99,6 +99,17 @@
       "defaultValue": "azure/vm-assets",
       "metadata": {
         "description": "Path inside the repository that contains the VM bootstrap assets."
+      }
+    },
+    "letsEncryptEnvironment": {
+      "type": "string",
+      "defaultValue": "production",
+      "allowedValues": [
+        "production",
+        "staging"
+      ],
+      "metadata": {
+        "description": "LetsEncrypt environment for certificate issuance. Leave at production for real deployments; switch to staging when repeatedly testing to avoid rate limits."
       }
     },
     "publicIpName": {
@@ -381,7 +392,7 @@
         "typeHandlerVersion": "2.1",
         "autoUpgradeMinorVersion": true,
         "protectedSettings": {
-          "commandToExecute": "[format('bash -c ''set -euo pipefail\nREPO_URL=\"{0}\"\nREPO_REF=\"{1}\"\nREPO_PATH=\"{2}\"\nSRC_DIR=\"/tmp/loggle-src\"\nrm -rf \"$SRC_DIR\"\nif ! command -v git >/dev/null 2>&1; then\n  export DEBIAN_FRONTEND=noninteractive\n  apt-get update -y\n  apt-get install -y git\nfi\ngit clone --depth 1 --filter=blob:none --branch \"$REPO_REF\" \"$REPO_URL\" \"$SRC_DIR\"\nif [ -n \"$REPO_PATH\" ] && [ \"$REPO_PATH\" != \".\" ]; then\n  git -C \"$SRC_DIR\" sparse-checkout init --cone\n  git -C \"$SRC_DIR\" sparse-checkout set \"$REPO_PATH\"\nelse\n  REPO_PATH=\".\"\nfi\nASSETS_DIR=\"$SRC_DIR/$REPO_PATH\"\nif [ ! -d \"$ASSETS_DIR\" ]; then\n  echo \"Assets path $REPO_PATH not found in repository $REPO_URL\"\n  exit 1\nfi\nrm -f /tmp/setup.sh /tmp/docker-compose.yml /tmp/otel-collector-config.yaml /tmp/kibana.yml /tmp/import-cert.ps1 /tmp/export-cert.ps1 /tmp/loggle.service\nrm -rf /tmp/init-es\nshopt -s dotglob\ncp -R \"$ASSETS_DIR\"/* /tmp/\nshopt -u dotglob\nchmod +x /tmp/setup.sh\nexport LOGGLE_DOMAIN=\"{3}\" LOGGLE_CERT_EMAIL=\"{4}\" LOGGLE_MANAGED_IDENTITY_CLIENT_ID=\"{5}\"\n/tmp/setup.sh\n''\n', parameters('assetRepoUrl'), parameters('assetRepoRef'), parameters('assetRepoPath'), parameters('domainName'), parameters('certificateEmail'), reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2023-01-31').clientId)]"
+          "commandToExecute": "[format('bash -c ''set -euo pipefail\nREPO_URL=\"{0}\"\nREPO_REF=\"{1}\"\nREPO_PATH=\"{2}\"\nSRC_DIR=\"/tmp/loggle-src\"\nrm -rf \"$SRC_DIR\"\nif ! command -v git >/dev/null 2>&1; then\n  export DEBIAN_FRONTEND=noninteractive\n  apt-get update -y\n  apt-get install -y git\nfi\ngit clone --depth 1 --filter=blob:none --branch \"$REPO_REF\" \"$REPO_URL\" \"$SRC_DIR\"\nif [ -n \"$REPO_PATH\" ] && [ \"$REPO_PATH\" != \".\" ]; then\n  git -C \"$SRC_DIR\" sparse-checkout init --cone\n  git -C \"$SRC_DIR\" sparse-checkout set \"$REPO_PATH\"\nelse\n  REPO_PATH=\".\"\nfi\nASSETS_DIR=\"$SRC_DIR/$REPO_PATH\"\nif [ ! -d \"$ASSETS_DIR\" ]; then\n  echo \"Assets path $REPO_PATH not found in repository $REPO_URL\"\n  exit 1\nfi\nrm -f /tmp/setup.sh /tmp/docker-compose.yml /tmp/otel-collector-config.yaml /tmp/kibana.yml /tmp/import-cert.ps1 /tmp/export-cert.ps1 /tmp/loggle.service\nrm -rf /tmp/init-es\nshopt -s dotglob\ncp -R \"$ASSETS_DIR\"/* /tmp/\nshopt -u dotglob\nchmod +x /tmp/setup.sh\nexport LOGGLE_DOMAIN=\"{3}\" LOGGLE_CERT_EMAIL=\"{4}\" LOGGLE_MANAGED_IDENTITY_CLIENT_ID=\"{5}\" LOGGLE_CERT_ENV=\"{6}\"\n/tmp/setup.sh\n''\n', parameters('assetRepoUrl'), parameters('assetRepoRef'), parameters('assetRepoPath'), parameters('domainName'), parameters('certificateEmail'), reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2023-01-31').clientId, parameters('letsEncryptEnvironment'))]"
         },
         "settings": {}
       },

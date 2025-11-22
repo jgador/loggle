@@ -16,6 +16,11 @@ readonly CERT_PATH="${LOGGLE_CERT_PATH:-$LOGGLE_PATH/certs}"
 readonly DOMAIN="${LOGGLE_DOMAIN:-kibana.loggle.co}"
 readonly EMAIL="${LOGGLE_CERT_EMAIL:-certbot@loggle.co}"
 MANAGED_IDENTITY_CLIENT_ID="${LOGGLE_MANAGED_IDENTITY_CLIENT_ID:-}"
+CERT_ENV="${LOGGLE_CERT_ENV:-production}"
+case "${CERT_ENV,,}" in
+    staging|production) CERT_ENV="${CERT_ENV,,}" ;;
+    *) CERT_ENV="production" ;;
+esac
 
 # Function definitions
 setup_environment() {
@@ -104,6 +109,7 @@ ensure_certificate_placeholders() {
 cache_bootstrap_configuration() {
     persist_runtime_var "LOGGLE_DOMAIN" "$DOMAIN"
     persist_runtime_var "LOGGLE_CERT_EMAIL" "$EMAIL"
+    persist_runtime_var "LOGGLE_CERT_ENV" "$CERT_ENV"
 }
 
 load_or_cache_managed_identity() {
@@ -250,7 +256,11 @@ main() {
         echo "Valid certificate available in $CERT_PATH; skipping Let's Encrypt request."
     else
         echo "Requesting fresh certificate from Let's Encrypt..."
-        certbot certonly --standalone -d "$DOMAIN" -m "$EMAIL" --agree-tos --no-eff-email --preferred-challenges=http-01
+        local certbot_cmd=(certbot certonly --standalone -d "$DOMAIN" -m "$EMAIL" --agree-tos --no-eff-email --preferred-challenges=http-01)
+        if [[ "$CERT_ENV" == "staging" ]]; then
+            certbot_cmd+=(--staging)
+        fi
+        "${certbot_cmd[@]}"
         sync_certificates
     fi
 
