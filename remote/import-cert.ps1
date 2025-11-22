@@ -16,7 +16,8 @@ param (
     [string]$FullchainPath = "/etc/letsencrypt/live/$Domain/fullchain.pem",
     [string]$PrivkeyPath = "/etc/letsencrypt/live/$Domain/privkey.pem",
     [string]$TempPfxPath = "/etc/loggle/certs/kv-import-kibana.pfx",
-    [string]$ManagedIdentityClientId
+    [string]$ManagedIdentityClientId,
+    [string]$RuntimeEnvPath = "/etc/loggle/runtime.env"
 )
 
 Set-StrictMode -Version Latest
@@ -84,6 +85,36 @@ function Get-ManagedIdentityClientId {
     return $null
 }
 
+function Get-RuntimeEnvValue {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Key,
+        [string]$Path = "/etc/loggle/runtime.env"
+    )
+
+    if (-not (Test-Path -Path $Path -PathType Leaf)) {
+        return $null
+    }
+
+    try {
+        foreach ($line in Get-Content -Path $Path) {
+            if ([string]::IsNullOrWhiteSpace($line) -or $line.TrimStart().StartsWith("#")) {
+                continue
+            }
+
+            $parts = $line.Split('=', 2)
+            if ($parts.Count -eq 2 -and $parts[0].Trim() -eq $Key) {
+                return $parts[1].Trim()
+            }
+        }
+    }
+    catch {
+        Write-Output "WARN: Unable to read runtime environment file $Path: $_"
+    }
+
+    return $null
+}
+
 # Check certificate files first
 if (-not (Test-Path $FullchainPath) -or -not (Test-Path $PrivkeyPath)) {
     Write-Output "Certificate files not found. Skipping import."
@@ -108,6 +139,10 @@ try {
     
     if (-not $ManagedIdentityClientId) {
         $ManagedIdentityClientId = $env:LOGGLE_MANAGED_IDENTITY_CLIENT_ID
+    }
+
+    if (-not $ManagedIdentityClientId) {
+        $ManagedIdentityClientId = Get-RuntimeEnvValue -Key "LOGGLE_MANAGED_IDENTITY_CLIENT_ID" -Path $RuntimeEnvPath
     }
 
     if (-not $ManagedIdentityClientId) {
