@@ -97,7 +97,13 @@ if ! command -v git >/dev/null 2>&1; then
   apt-get update -y
   apt-get install -y git
 fi
-git clone --depth 1 --branch "$REPO_REF" "$REPO_URL" "$SRC_DIR"
+git clone --depth 1 --filter=blob:none --branch "$REPO_REF" "$REPO_URL" "$SRC_DIR"
+if [ -n "$REPO_PATH" ] && [ "$REPO_PATH" != "." ]; then
+  git -C "$SRC_DIR" sparse-checkout init --cone
+  git -C "$SRC_DIR" sparse-checkout set "$REPO_PATH"
+else
+  REPO_PATH="."
+fi
 ASSETS_DIR="$SRC_DIR/$REPO_PATH"
 if [ ! -d "$ASSETS_DIR" ]; then
   echo "Assets path $REPO_PATH not found in repository $REPO_URL"
