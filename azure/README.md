@@ -22,7 +22,7 @@ Install/refresh the bundled CLI through Azure CLI (`az bicep install`). Then bui
 az bicep build --file azure/loggle.bicep --outfile azure/loggle.json
 ```
 
-This produces an Azure Resource Manager template (`loggle.json`) that you can distribute to consumers. The template exposes the following key parameters:
+This produces an Azure Resource Manager template (`loggle.json`) that you can distribute to consumers. **Prerequisites:** create (or select) the resource group up front and provision a public IP inside that group; the deployment only attaches to an existing IP and will not create one for you. The template exposes the following key parameters:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
@@ -35,13 +35,15 @@ This produces an Azure Resource Manager template (`loggle.json`) that you can di
 | `certificateEmail` | Let's Encrypt contact email. | `certbot@loggle.co` |
 | `kibanaAllowedIps` | Array of CIDR ranges allowed through the NSG for HTTP/S. | `["34.126.86.243"]` |
 | `extraTags` | Additional resource tags merged with `{ workload = "loggle" }`. | `{}` |
-| `resourceNames` | Object that overrides auto-generated names (keys: `virtualNetwork`, `subnet`, `networkSecurityGroup`, `publicIp`, `networkInterface`, `virtualMachine`, `userAssignedIdentity`, `keyVault`, `osDisk`). | `{}` |
+| `resourceNames` | Object that overrides auto-generated names (keys: `virtualNetwork`, `subnet`, `networkSecurityGroup`, `networkInterface`, `virtualMachine`, `userAssignedIdentity`, `keyVault`, `osDisk`). | `{}` |
 | `keyVaultName` | Optional explicit Key Vault name. Leave empty to use the prefix + date pattern. | `""` |
 | `assetRepoUrl` | Git repository that hosts the `vm-assets` folder. | `https://github.com/jgador/loggle.git` |
 | `assetRepoRef` | Branch or tag used to download `assetRepoPath` (usually `azure/vm-assets`). Leave at `master` unless testing another ref. | `master` |
 | `assetRepoPath` | Repository-relative path that contains the VM assets. | `azure/vm-assets` |
+| `publicIpName` | **Required** name of the pre-created public IP that already lives in the chosen resource group. The template only attaches to this IP. | *(none)* |
 
-> Purge protection is disabled by default so the Key Vault can be deleted (and purged) during environment teardown. Toggle it manually if your compliance posture requires it.
+> Purge protection is disabled by default so the Key Vault can be deleted (and purged) during environment teardown. Toggle it manually if your compliance posture requires it.  
+> **Important:** The `publicIpName` you provide must reference an existing public IP resource inside the same resource group you deploy to; the template will fail if it cannot find that IP.
 
 Key Vault names are deterministic by default: the template lowercases the `namePrefix`, strips dashes, appends `kv`, and then adds the current UTC date suffix (e.g., `loggle` on 2025‑03‑20 becomes `logglekv20250320`). If you prefer a fixed name, set the `keyVaultName` parameter (or `resourceNames.keyVault`) and the template will use it verbatim.
 
@@ -62,7 +64,6 @@ By default, every resource name is derived from the `namePrefix` parameter (e.g.
 "resourceNames": {
   "virtualNetwork": "corp-core-vnet",
   "networkSecurityGroup": "corp-loggle-nsg",
-  "publicIp": "corp-loggle-pip",
   "virtualMachine": "corp-loggle-vm",
   "keyVault": "corplogglekv001"
 }

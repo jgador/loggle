@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.39.26.7824",
-      "templateHash": "15567983456791427748"
+      "templateHash": "8101406638309072666"
     }
   },
   "parameters": {
@@ -77,7 +77,7 @@
       "type": "object",
       "defaultValue": {},
       "metadata": {
-        "description": "Optional explicit names for resources to override prefix-based defaults. Keys: virtualNetwork, subnet, networkSecurityGroup, publicIp, networkInterface, virtualMachine, userAssignedIdentity, keyVault, osDisk."
+        "description": "Optional explicit names for resources to override prefix-based defaults. Keys: virtualNetwork, subnet, networkSecurityGroup, networkInterface, virtualMachine, userAssignedIdentity, keyVault, osDisk."
       }
     },
     "assetRepoUrl": {
@@ -99,6 +99,12 @@
       "defaultValue": "azure/vm-assets",
       "metadata": {
         "description": "Path inside the repository that contains the VM bootstrap assets."
+      }
+    },
+    "publicIpName": {
+      "type": "string",
+      "metadata": {
+        "description": "IMPORTANT: Name of the pre-existing public IP address that already exists in this resource group. The template only attaches to it; it will not create a new public IP."
       }
     },
     "keyVaultName": {
@@ -125,7 +131,6 @@
     "providedKeyVaultName": "[toLower(parameters('keyVaultName'))]",
     "vnetGeneratedName": "[format('{0}vnet', variables('prefixSegment'))]",
     "subnetGeneratedName": "default",
-    "publicIpGeneratedName": "[format('{0}pip', variables('prefixSegment'))]",
     "nsgGeneratedName": "[format('{0}nsg', variables('prefixSegment'))]",
     "nicGeneratedName": "[format('{0}nic', variables('prefixSegment'))]",
     "vmGeneratedName": "[format('{0}vm', variables('prefixSegment'))]",
@@ -135,7 +140,6 @@
     "osDiskGeneratedName": "[format('{0}osdisk', variables('prefixSegment'))]",
     "vnetName": "[coalesce(tryGet(parameters('resourceNames'), 'virtualNetwork'), variables('vnetGeneratedName'))]",
     "subnetName": "[coalesce(tryGet(parameters('resourceNames'), 'subnet'), variables('subnetGeneratedName'))]",
-    "publicIpName": "[coalesce(tryGet(parameters('resourceNames'), 'publicIp'), variables('publicIpGeneratedName'))]",
     "nsgName": "[coalesce(tryGet(parameters('resourceNames'), 'networkSecurityGroup'), variables('nsgGeneratedName'))]",
     "nicName": "[coalesce(tryGet(parameters('resourceNames'), 'networkInterface'), variables('nicGeneratedName'))]",
     "vmName": "[coalesce(tryGet(parameters('resourceNames'), 'virtualMachine'), variables('vmGeneratedName'))]",
@@ -276,19 +280,6 @@
       }
     },
     {
-      "type": "Microsoft.Network/publicIPAddresses",
-      "apiVersion": "2023-02-01",
-      "name": "[variables('publicIpName')]",
-      "location": "[parameters('location')]",
-      "tags": "[variables('tags')]",
-      "sku": {
-        "name": "Basic"
-      },
-      "properties": {
-        "publicIPAllocationMethod": "Static"
-      }
-    },
-    {
       "type": "Microsoft.Network/networkInterfaces",
       "apiVersion": "2023-02-01",
       "name": "[variables('nicName')]",
@@ -307,7 +298,7 @@
                 "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('subnetName'))]"
               },
               "publicIPAddress": {
-                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName'))]"
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIpName'))]"
               }
             }
           }
@@ -315,7 +306,6 @@
       },
       "dependsOn": [
         "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]",
-        "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName'))]",
         "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('subnetName'))]"
       ]
     },
@@ -404,7 +394,7 @@
   "outputs": {
     "publicIpAddress": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName')), '2023-02-01').ipAddress]"
+      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIpName')), '2023-02-01').ipAddress]"
     },
     "managedIdentityClientId": {
       "type": "string",

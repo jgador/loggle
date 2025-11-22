@@ -115,7 +115,7 @@ This video provides a concise overview of deploying Loggle, configuring log forw
 
 - **Self-Hosted Monitoring:** Manage your logs on your own server.
 - **Complete Toolset:**  
-  - **OpenTelemetry Collector:** Collects your logs.  
+  - **OpenTelemetry Collector:** Collects your logs.
   - **Elasticsearch:** Stores your logs.  
   - **Kibana:** Visualizes your logs.  
   - **.NET Aspire Dashboard:** Offers an Aspire-native observability view backed by Elasticsearch.

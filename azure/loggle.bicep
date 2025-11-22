@@ -29,7 +29,7 @@ param kibanaAllowedIps array = [
 @description('Optional tags merged with the default workload tag.')
 param extraTags object = {}
 
-@description('Optional explicit names for resources to override prefix-based defaults. Keys: virtualNetwork, subnet, networkSecurityGroup, publicIp, networkInterface, virtualMachine, userAssignedIdentity, keyVault, osDisk.')
+@description('Optional explicit names for resources to override prefix-based defaults. Keys: virtualNetwork, subnet, networkSecurityGroup, networkInterface, virtualMachine, userAssignedIdentity, keyVault, osDisk.')
 param resourceNames object = {}
 
 @description('Git repository that hosts the VM bootstrap assets (setup.sh, docker-compose.yml, etc.).')
@@ -40,6 +40,9 @@ param assetRepoRef string = 'master'
 
 @description('Path inside the repository that contains the VM bootstrap assets.')
 param assetRepoPath string = 'azure/vm-assets'
+
+@description('IMPORTANT: Name of the pre-existing public IP address that already exists in this resource group. The template only attaches to it; it will not create a new public IP.')
+param publicIpName string
 
 @description('Optional explicit Key Vault name. Leave empty to use the default prefix+date naming pattern.')
 param keyVaultName string = ''
@@ -60,7 +63,6 @@ var defaultKeyVaultBaseName = empty(sanitizedNamePrefix) ? 'kvstore' : '${saniti
 var providedKeyVaultName = toLower(keyVaultName)
 var vnetGeneratedName = '${prefixSegment}vnet'
 var subnetGeneratedName = 'default'
-var publicIpGeneratedName = '${prefixSegment}pip'
 var nsgGeneratedName = '${prefixSegment}nsg'
 var nicGeneratedName = '${prefixSegment}nic'
 var vmGeneratedName = '${prefixSegment}vm'
@@ -71,7 +73,6 @@ var osDiskGeneratedName = '${prefixSegment}osdisk'
 
 var vnetName = resourceNames.?virtualNetwork ?? vnetGeneratedName
 var subnetName = resourceNames.?subnet ?? subnetGeneratedName
-var publicIpName = resourceNames.?publicIp ?? publicIpGeneratedName
 var nsgName = resourceNames.?networkSecurityGroup ?? nsgGeneratedName
 var nicName = resourceNames.?networkInterface ?? nicGeneratedName
 var vmName = resourceNames.?virtualMachine ?? vmGeneratedName
@@ -222,18 +223,6 @@ resource networkSecurityGroup 'Microsoft.Network/networkSecurityGroups@2023-02-0
   }
 }
 
-resource publicIp 'Microsoft.Network/publicIPAddresses@2023-02-01' = {
-  name: publicIpName
-  location: location
-  tags: tags
-  sku: {
-    name: 'Basic'
-  }
-  properties: {
-    publicIPAllocationMethod: 'Static'
-  }
-}
-
 resource networkInterface 'Microsoft.Network/networkInterfaces@2023-02-01' = {
   name: nicName
   location: location
@@ -251,7 +240,7 @@ resource networkInterface 'Microsoft.Network/networkInterfaces@2023-02-01' = {
             id: subnet.id
           }
           publicIPAddress: {
-            id: publicIp.id
+            id: resourceId('Microsoft.Network/publicIPAddresses', publicIpName)
           }
         }
       }
@@ -331,6 +320,6 @@ resource customScript 'Microsoft.Compute/virtualMachines/extensions@2023-09-01' 
   }
 }
 
-output publicIpAddress string = publicIp.properties.ipAddress
+output publicIpAddress string = reference(resourceId('Microsoft.Network/publicIPAddresses', publicIpName), '2023-02-01').ipAddress
 output managedIdentityClientId string = userAssignedIdentity.properties.clientId
 output keyVaultResourceId string = keyVault.id

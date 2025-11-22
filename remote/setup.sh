@@ -5,11 +5,16 @@ set -euo pipefail
 
 # Define constants (allow overrides for multi-tenant use)
 readonly POWERSHELL_VERSION="7.5.0"
-readonly LOGGLE_PATH="${LOGGLE_INSTALL_ROOT:-/etc/loggle}"
+readonly LOGGLE_ROOT="${LOGGLE_INSTALL_ROOT:-/etc/loggle}"
+readonly RUNTIME_ENV_PATH="$LOGGLE_ROOT/runtime.env"
+if [[ -f "$RUNTIME_ENV_PATH" ]]; then
+    # shellcheck disable=SC1090
+    source "$RUNTIME_ENV_PATH"
+fi
+readonly LOGGLE_PATH="$LOGGLE_ROOT"
 readonly CERT_PATH="${LOGGLE_CERT_PATH:-$LOGGLE_PATH/certs}"
 readonly DOMAIN="${LOGGLE_DOMAIN:-kibana.loggle.co}"
 readonly EMAIL="${LOGGLE_CERT_EMAIL:-certbot@loggle.co}"
-readonly IDENTITY_ENV_PATH="$LOGGLE_PATH/identity.env"
 MANAGED_IDENTITY_CLIENT_ID="${LOGGLE_MANAGED_IDENTITY_CLIENT_ID:-}"
 
 # Function definitions
@@ -19,6 +24,31 @@ setup_environment() {
     export PIP_DISABLE_PIP_VERSION_CHECK=1
     export PIP_PROGRESS_BAR=off
     export APT_OPTIONS="-o Dpkg::Progress-Fancy=0 -o Dpkg::Use-Pty=0 -o APT::Color=0"
+}
+
+persist_runtime_var() {
+    local key="$1"
+    local value="${2:-}"
+    if [[ -z "$value" ]]; then
+        return
+    fi
+
+    mkdir -p "$(dirname "$RUNTIME_ENV_PATH")"
+
+    if [[ -f "$RUNTIME_ENV_PATH" ]] && grep -qx "${key}=${value}" "$RUNTIME_ENV_PATH"; then
+        return
+    fi
+
+    local tmp_file="${RUNTIME_ENV_PATH}.tmp"
+    if [[ -f "$RUNTIME_ENV_PATH" ]]; then
+        grep -v "^${key}=" "$RUNTIME_ENV_PATH" > "$tmp_file" || true
+    else
+        : > "$tmp_file"
+    fi
+
+    printf '%s=%s\n' "$key" "$value" >> "$tmp_file"
+    mv "$tmp_file" "$RUNTIME_ENV_PATH"
+    chmod 600 "$RUNTIME_ENV_PATH"
 }
 
 move_config_files() {
@@ -71,19 +101,19 @@ ensure_certificate_placeholders() {
     done
 }
 
+cache_bootstrap_configuration() {
+    persist_runtime_var "LOGGLE_DOMAIN" "$DOMAIN"
+    persist_runtime_var "LOGGLE_CERT_EMAIL" "$EMAIL"
+}
+
 load_or_cache_managed_identity() {
-    if [[ -z "$MANAGED_IDENTITY_CLIENT_ID" && -f "$IDENTITY_ENV_PATH" ]]; then
-        # shellcheck disable=SC1090
-        source "$IDENTITY_ENV_PATH"
-        MANAGED_IDENTITY_CLIENT_ID="${LOGGLE_MANAGED_IDENTITY_CLIENT_ID:-}"
+    if [[ -z "$MANAGED_IDENTITY_CLIENT_ID" && -n "${LOGGLE_MANAGED_IDENTITY_CLIENT_ID:-}" ]]; then
+        MANAGED_IDENTITY_CLIENT_ID="$LOGGLE_MANAGED_IDENTITY_CLIENT_ID"
     fi
 
     if [[ -n "$MANAGED_IDENTITY_CLIENT_ID" ]]; then
         export LOGGLE_MANAGED_IDENTITY_CLIENT_ID="$MANAGED_IDENTITY_CLIENT_ID"
-        if [[ ! -f "$IDENTITY_ENV_PATH" ]] || ! grep -qx "LOGGLE_MANAGED_IDENTITY_CLIENT_ID=$MANAGED_IDENTITY_CLIENT_ID" "$IDENTITY_ENV_PATH"; then
-            printf 'LOGGLE_MANAGED_IDENTITY_CLIENT_ID=%s\n' "$MANAGED_IDENTITY_CLIENT_ID" > "$IDENTITY_ENV_PATH"
-            chmod 600 "$IDENTITY_ENV_PATH"
-        fi
+        persist_runtime_var "LOGGLE_MANAGED_IDENTITY_CLIENT_ID" "$MANAGED_IDENTITY_CLIENT_ID"
     else
         echo "Managed identity client ID not provided and not cached."
     fi
@@ -180,6 +210,7 @@ wait_for_elasticsearch() {
 main() {
     setup_environment
     ensure_directories
+    cache_bootstrap_configuration
     load_or_cache_managed_identity
     move_config_files
     set_permissions

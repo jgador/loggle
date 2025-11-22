@@ -168,10 +168,17 @@ try {
         $ManagedIdentityClientId = Get-ManagedIdentityClientId
     }
 
-    if (-not (Export-CertificateFromKeyVault -VaultName $KeyVaultName -CertName $CertificateName -OutputPath $PfxPath -ManagedIdentityClientId $ManagedIdentityClientId)) {
-        exit 1
+    $exported = Export-CertificateFromKeyVault -VaultName $KeyVaultName -CertName $CertificateName -OutputPath $PfxPath -ManagedIdentityClientId $ManagedIdentityClientId
+    if (-not $exported) {
+        Write-Output "No certificate was downloaded from Key Vault; skipping conversion."
+        exit 2
     }
-    
+
+    if (-not (Test-Path -LiteralPath $PfxPath -PathType Leaf)) {
+        Write-Output "Expected PFX file '$PfxPath' was not created; skipping conversion."
+        exit 2
+    }
+
     if (-not (Convert-PfxToPem -PfxFile $PfxPath -FullchainOutput $FullchainPath -PrivkeyOutput $PrivkeyPath)) {
         exit 1
     }
