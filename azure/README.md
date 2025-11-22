@@ -38,7 +38,7 @@ This produces an Azure Resource Manager template (`loggle.json`) that you can di
 | `resourceNames` | Object that overrides auto-generated names (keys: `virtualNetwork`, `subnet`, `networkSecurityGroup`, `publicIp`, `networkInterface`, `virtualMachine`, `userAssignedIdentity`, `keyVault`, `osDisk`). | `{}` |
 | `keyVaultName` | Optional explicit Key Vault name. Leave empty to use the prefix + date pattern. | `""` |
 | `assetRepoUrl` | Git repository that hosts the `vm-assets` folder. | `https://github.com/jgador/loggle.git` |
-| `assetRepoRef` | Branch or tag to checkout when downloading the assets. | `feat/deploy/azure` |
+| `assetRepoRef` | Branch or tag used to download `assetRepoPath` (usually `azure/vm-assets`). Leave at `master` unless testing another ref. | `master` |
 | `assetRepoPath` | Repository-relative path that contains the VM assets. | `azure/vm-assets` |
 
 > Purge protection is disabled by default so the Key Vault can be deleted (and purged) during environment teardown. Toggle it manually if your compliance posture requires it.

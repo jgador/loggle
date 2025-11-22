@@ -35,8 +35,8 @@ param resourceNames object = {}
 @description('Git repository that hosts the VM bootstrap assets (setup.sh, docker-compose.yml, etc.).')
 param assetRepoUrl string = 'https://github.com/jgador/loggle.git'
 
-@description('Git ref (branch or tag) to checkout when pulling the VM bootstrap assets.')
-param assetRepoRef string = 'feat/deploy/azure'
+@description('Git branch or tag used to download the assetRepoPath contents (normally azure/vm-assets). Defaults to master; change only when testing assets from another ref.')
+param assetRepoRef string = 'master'
 
 @description('Path inside the repository that contains the VM bootstrap assets.')
 param assetRepoPath string = 'azure/vm-assets'
