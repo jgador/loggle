@@ -123,10 +123,10 @@ shopt -s dotglob
 cp -R "$ASSETS_DIR"/* /tmp/
 shopt -u dotglob
 chmod +x /tmp/setup.sh
-export LOGGLE_DOMAIN="{3}" LOGGLE_CERT_EMAIL="{4}" LOGGLE_MANAGED_IDENTITY_CLIENT_ID="{5}" LOGGLE_CERT_ENV="{6}"
+export LOGGLE_DOMAIN="{3}" LOGGLE_CERT_EMAIL="{4}" LOGGLE_MANAGED_IDENTITY_CLIENT_ID="{5}" LOGGLE_CERT_ENV="{6}" LOGGLE_KEY_VAULT_NAME="{7}"
 /tmp/setup.sh
 '
-''', assetRepoUrl, assetRepoRef, assetRepoPath, domainName, certificateEmail, userAssignedIdentity.properties.clientId, letsEncryptEnvironment)
+''', assetRepoUrl, assetRepoRef, assetRepoPath, domainName, certificateEmail, userAssignedIdentity.properties.clientId, letsEncryptEnvironment, keyVaultEffectiveName)
 
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: keyVaultEffectiveName

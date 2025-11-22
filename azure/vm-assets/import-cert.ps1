@@ -10,7 +10,7 @@
 
 [CmdletBinding()]
 param (
-    [string]$KeyVaultName = "kv-loggle",
+    [string]$KeyVaultName,
     [string]$CertificateName = "kibana",
     [string]$Domain = "kibana.loggle.co",
     [string]$FullchainPath = "/etc/letsencrypt/live/$Domain/fullchain.pem",
@@ -147,6 +147,15 @@ try {
 
     if (-not $ManagedIdentityClientId) {
         $ManagedIdentityClientId = Get-ManagedIdentityClientId
+    }
+
+    if (-not $KeyVaultName) {
+        $KeyVaultName = Get-RuntimeEnvValue -Key "LOGGLE_KEY_VAULT_NAME" -Path $RuntimeEnvPath
+    }
+
+    if (-not $KeyVaultName) {
+        Write-Output "ERROR: Key Vault name not provided. Pass -KeyVaultName or ensure LOGGLE_KEY_VAULT_NAME is set."
+        exit 1
     }
 
     if ($ManagedIdentityClientId) {

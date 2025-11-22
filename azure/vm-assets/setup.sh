@@ -17,10 +17,16 @@ readonly DOMAIN="${LOGGLE_DOMAIN:-kibana.loggle.co}"
 readonly EMAIL="${LOGGLE_CERT_EMAIL:-certbot@loggle.co}"
 MANAGED_IDENTITY_CLIENT_ID="${LOGGLE_MANAGED_IDENTITY_CLIENT_ID:-}"
 CERT_ENV="${LOGGLE_CERT_ENV:-production}"
+KEY_VAULT_NAME="${LOGGLE_KEY_VAULT_NAME:-}"
 case "${CERT_ENV,,}" in
     staging|production) CERT_ENV="${CERT_ENV,,}" ;;
     *) CERT_ENV="production" ;;
 esac
+if [[ -z "$KEY_VAULT_NAME" ]]; then
+    echo "Key Vault name missing. Ensure LOGGLE_KEY_VAULT_NAME is exported or persisted."
+    exit 1
+fi
+export LOGGLE_KEY_VAULT_NAME="$KEY_VAULT_NAME"
 
 # Function definitions
 setup_environment() {
@@ -110,6 +116,7 @@ cache_bootstrap_configuration() {
     persist_runtime_var "LOGGLE_DOMAIN" "$DOMAIN"
     persist_runtime_var "LOGGLE_CERT_EMAIL" "$EMAIL"
     persist_runtime_var "LOGGLE_CERT_ENV" "$CERT_ENV"
+    persist_runtime_var "LOGGLE_KEY_VAULT_NAME" "$KEY_VAULT_NAME"
 }
 
 load_or_cache_managed_identity() {
@@ -243,11 +250,11 @@ main() {
     # Certificate management
     echo "Attempting to export certificate from Key Vault..."
     if [[ -n "$MANAGED_IDENTITY_CLIENT_ID" ]]; then
-        if ! pwsh "$LOGGLE_PATH/export-cert.ps1" -ManagedIdentityClientId "$MANAGED_IDENTITY_CLIENT_ID"; then
+        if ! pwsh "$LOGGLE_PATH/export-cert.ps1" -KeyVaultName "$KEY_VAULT_NAME" -ManagedIdentityClientId "$MANAGED_IDENTITY_CLIENT_ID"; then
             echo "Key Vault certificate export failed or no certificate found; proceeding to Certbot fallback."
         fi
     else
-        if ! pwsh "$LOGGLE_PATH/export-cert.ps1"; then
+        if ! pwsh "$LOGGLE_PATH/export-cert.ps1" -KeyVaultName "$KEY_VAULT_NAME"; then
             echo "Key Vault certificate export failed or no certificate found; proceeding to Certbot fallback."
         fi
     fi
@@ -273,9 +280,9 @@ main() {
     
     echo "Importing certificate to Key Vault..."
     if [[ -n "$MANAGED_IDENTITY_CLIENT_ID" ]]; then
-        pwsh "$LOGGLE_PATH/import-cert.ps1" -ManagedIdentityClientId "$MANAGED_IDENTITY_CLIENT_ID"
+        pwsh "$LOGGLE_PATH/import-cert.ps1" -KeyVaultName "$KEY_VAULT_NAME" -ManagedIdentityClientId "$MANAGED_IDENTITY_CLIENT_ID"
     else
-        pwsh "$LOGGLE_PATH/import-cert.ps1"
+        pwsh "$LOGGLE_PATH/import-cert.ps1" -KeyVaultName "$KEY_VAULT_NAME"
     fi
     
     # Start services

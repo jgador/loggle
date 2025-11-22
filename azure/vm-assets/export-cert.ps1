@@ -11,13 +11,14 @@
 
 [CmdletBinding()]
 param (
-    [string]$KeyVaultName = "kv-loggle",
+    [string]$KeyVaultName,
     [string]$CertificateName = "kibana",
     [string]$CertPath = "/etc/loggle/certs",
     [string]$PfxPath = "$CertPath/kv-export-kibana.pfx",
     [string]$FullchainPath = "$CertPath/fullchain.pem",
     [string]$PrivkeyPath = "$CertPath/privkey.pem",
-    [string]$ManagedIdentityClientId
+    [string]$ManagedIdentityClientId,
+    [string]$RuntimeEnvPath = "/etc/loggle/runtime.env"
 )
 
 Set-StrictMode -Version Latest
@@ -76,6 +77,36 @@ function Get-ManagedIdentityClientId {
     }
     catch {
         Write-Output "WARN: Unable to query Azure Instance Metadata Service for managed identity: $_"
+    }
+
+    return $null
+}
+
+function Get-RuntimeEnvValue {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Key,
+        [string]$Path = "/etc/loggle/runtime.env"
+    )
+
+    if (-not (Test-Path -Path $Path -PathType Leaf)) {
+        return $null
+    }
+
+    try {
+        foreach ($line in Get-Content -Path $Path) {
+            if ([string]::IsNullOrWhiteSpace($line) -or $line.TrimStart().StartsWith("#")) {
+                continue
+            }
+
+            $parts = $line.Split('=', 2)
+            if ($parts.Count -eq 2 -and $parts[0].Trim() -eq $Key) {
+                return $parts[1].Trim()
+            }
+        }
+    }
+    catch {
+        Write-Output "WARN: Unable to read runtime environment file ${Path}: $_"
     }
 
     return $null
@@ -165,7 +196,20 @@ try {
     }
 
     if (-not $ManagedIdentityClientId) {
+        $ManagedIdentityClientId = Get-RuntimeEnvValue -Key "LOGGLE_MANAGED_IDENTITY_CLIENT_ID" -Path $RuntimeEnvPath
+    }
+
+    if (-not $ManagedIdentityClientId) {
         $ManagedIdentityClientId = Get-ManagedIdentityClientId
+    }
+
+    if (-not $KeyVaultName) {
+        $KeyVaultName = Get-RuntimeEnvValue -Key "LOGGLE_KEY_VAULT_NAME" -Path $RuntimeEnvPath
+    }
+
+    if (-not $KeyVaultName) {
+        Write-Output "ERROR: Key Vault name not provided. Pass -KeyVaultName or ensure LOGGLE_KEY_VAULT_NAME is set."
+        exit 1
     }
 
     $exported = Export-CertificateFromKeyVault -VaultName $KeyVaultName -CertName $CertificateName -OutputPath $PfxPath -ManagedIdentityClientId $ManagedIdentityClientId
