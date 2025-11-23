@@ -6,10 +6,10 @@ set -euo pipefail
 # Define constants (allow overrides for multi-tenant use)
 readonly POWERSHELL_VERSION="7.5.0"
 readonly LOGGLE_ROOT="${LOGGLE_INSTALL_ROOT:-/etc/loggle}"
-readonly RUNTIME_ENV_PATH="$LOGGLE_ROOT/runtime.env"
-if [[ -f "$RUNTIME_ENV_PATH" ]]; then
+readonly INFRA_ENV_PATH="$LOGGLE_ROOT/infra.env"
+if [[ -f "$INFRA_ENV_PATH" ]]; then
     # shellcheck disable=SC1090
-    source "$RUNTIME_ENV_PATH"
+    source "$INFRA_ENV_PATH"
 fi
 readonly LOGGLE_PATH="$LOGGLE_ROOT"
 readonly CERT_PATH="${LOGGLE_CERT_PATH:-$LOGGLE_PATH/certs}"
@@ -37,29 +37,29 @@ setup_environment() {
     export APT_OPTIONS="-o Dpkg::Progress-Fancy=0 -o Dpkg::Use-Pty=0 -o APT::Color=0"
 }
 
-persist_runtime_var() {
+persist_infra_var() {
     local key="$1"
     local value="${2:-}"
     if [[ -z "$value" ]]; then
         return
     fi
 
-    mkdir -p "$(dirname "$RUNTIME_ENV_PATH")"
+    mkdir -p "$(dirname "$INFRA_ENV_PATH")"
 
-    if [[ -f "$RUNTIME_ENV_PATH" ]] && grep -qx "${key}=${value}" "$RUNTIME_ENV_PATH"; then
+    if [[ -f "$INFRA_ENV_PATH" ]] && grep -qx "${key}=${value}" "$INFRA_ENV_PATH"; then
         return
     fi
 
-    local tmp_file="${RUNTIME_ENV_PATH}.tmp"
-    if [[ -f "$RUNTIME_ENV_PATH" ]]; then
-        grep -v "^${key}=" "$RUNTIME_ENV_PATH" > "$tmp_file" || true
+    local tmp_file="${INFRA_ENV_PATH}.tmp"
+    if [[ -f "$INFRA_ENV_PATH" ]]; then
+        grep -v "^${key}=" "$INFRA_ENV_PATH" > "$tmp_file" || true
     else
         : > "$tmp_file"
     fi
 
     printf '%s=%s\n' "$key" "$value" >> "$tmp_file"
-    mv "$tmp_file" "$RUNTIME_ENV_PATH"
-    chmod 600 "$RUNTIME_ENV_PATH"
+    mv "$tmp_file" "$INFRA_ENV_PATH"
+    chmod 600 "$INFRA_ENV_PATH"
 }
 
 move_config_files() {
@@ -113,10 +113,10 @@ ensure_certificate_placeholders() {
 }
 
 cache_bootstrap_configuration() {
-    persist_runtime_var "LOGGLE_DOMAIN" "$DOMAIN"
-    persist_runtime_var "LOGGLE_CERT_EMAIL" "$EMAIL"
-    persist_runtime_var "LOGGLE_CERT_ENV" "$CERT_ENV"
-    persist_runtime_var "LOGGLE_KEY_VAULT_NAME" "$KEY_VAULT_NAME"
+    persist_infra_var "LOGGLE_DOMAIN" "$DOMAIN"
+    persist_infra_var "LOGGLE_CERT_EMAIL" "$EMAIL"
+    persist_infra_var "LOGGLE_CERT_ENV" "$CERT_ENV"
+    persist_infra_var "LOGGLE_KEY_VAULT_NAME" "$KEY_VAULT_NAME"
 }
 
 load_or_cache_managed_identity() {
@@ -126,7 +126,7 @@ load_or_cache_managed_identity() {
 
     if [[ -n "$MANAGED_IDENTITY_CLIENT_ID" ]]; then
         export LOGGLE_MANAGED_IDENTITY_CLIENT_ID="$MANAGED_IDENTITY_CLIENT_ID"
-        persist_runtime_var "LOGGLE_MANAGED_IDENTITY_CLIENT_ID" "$MANAGED_IDENTITY_CLIENT_ID"
+        persist_infra_var "LOGGLE_MANAGED_IDENTITY_CLIENT_ID" "$MANAGED_IDENTITY_CLIENT_ID"
     else
         echo "Managed identity client ID not provided and not cached."
     fi
