@@ -55,7 +55,7 @@ param assetRepoRef string = 'master'
 param assetRepoPath string = 'azure/vm-assets'
 
 @description('HTTPS endpoint that hosts setup.sh (fetched onto the VM before execution).')
-param setupScriptUrl string = 'https://stloggleprod.blob.${environment().suffixes.storage}/download/setup.sh'
+param setupScriptUrl string = 'https://stlogglepublicprod.blob.core.windows.net/download/setup.sh'
 
 @metadata({
   description: 'Internal date stamp appended to generated Key Vault names.'
@@ -89,68 +89,45 @@ var vmName = resourceNames.?virtualMachine ?? vmGeneratedName
 var identityName = resourceNames.?userAssignedIdentity ?? identityGeneratedName
 var keyVaultEffectiveName = resourceNames.?keyVault ?? keyVaultGeneratedName
 var osDiskName = resourceNames.?osDisk ?? osDiskGeneratedName
-var infraEnvCommand = format('''
-bash -c 'set -euo pipefail
-install -d -m 0755 /etc/loggle
-cat <<'EOF' >/etc/loggle/infra.env
-LOGGLE_KEY_VAULT_NAME="{0}"
-LOGGLE_MANAGED_IDENTITY_CLIENT_ID="{1}"
-EOF
-chmod 600 /etc/loggle/infra.env
-'
-''', keyVaultEffectiveName, userAssignedIdentity.properties.clientId)
-
 var bootstrapCommand = format('''
 bash -c 'set -euo pipefail
 SETUP_URL="{0}"
 REPO_URL="{1}"
 REPO_REF="{2}"
 REPO_PATH="{3}"
-ASSET_CACHE_DIR="/var/cache/loggle-assets"
-SRC_DIR="/tmp/loggle-src"
-BOOTSTRAP_SCRIPT="/usr/local/sbin/loggle-bootstrap.sh"
-STATE_FILE="/var/lib/loggle/bootstrap.completed"
+LOGGLE_HOME="/etc/loggle"
+ASSET_CACHE_DIR="$LOGGLE_HOME/assets"
+SRC_DIR="$LOGGLE_HOME/repo"
+BOOTSTRAP_SCRIPT="$LOGGLE_HOME/loggle-bootstrap.sh"
+STATE_FILE="$LOGGLE_HOME/bootstrap.completed"
+INFRA_ENV_PATH="$LOGGLE_HOME/infra.env"
 
-rm -rf "$SRC_DIR"
-rm -rf "$ASSET_CACHE_DIR"
+install -d -m 0755 "$LOGGLE_HOME"
 install -d -m 0755 "$ASSET_CACHE_DIR"
 install -d -m 0755 "$(dirname "$STATE_FILE")"
 
-if ! command -v git >/dev/null 2>&1 || ! command -v curl >/dev/null 2>&1; then
-  export DEBIAN_FRONTEND=noninteractive
-  apt-get update -y
-  apt-get install -y git curl
-fi
+cat <<'INFRAENV' >"$INFRA_ENV_PATH"
+LOGGLE_KEY_VAULT_NAME="{8}"
+LOGGLE_MANAGED_IDENTITY_CLIENT_ID="{6}"
+INFRAENV
+chmod 600 "$INFRA_ENV_PATH"
 
-git clone --depth 1 --filter=blob:none --branch "$REPO_REF" "$REPO_URL" "$SRC_DIR"
-if [ -n "$REPO_PATH" ] && [ "$REPO_PATH" != "." ]; then
-  git -C "$SRC_DIR" sparse-checkout init --cone
-  git -C "$SRC_DIR" sparse-checkout set "$REPO_PATH"
-else
-  REPO_PATH="."
-fi
-ASSETS_DIR="$SRC_DIR/$REPO_PATH"
-if [ ! -d "$ASSETS_DIR" ]; then
-  echo "Assets path $REPO_PATH not found in repository $REPO_URL"
-  exit 1
-fi
-shopt -s dotglob
-cp -R "$ASSETS_DIR"/* "$ASSET_CACHE_DIR"/
-shopt -u dotglob
-rm -rf "$SRC_DIR"
-
-curl -fsSL "$SETUP_URL" -o "$ASSET_CACHE_DIR/setup.sh"
-chmod +x "$ASSET_CACHE_DIR/setup.sh"
-
-install -d -m 0755 /usr/local/sbin
-cat <<'EOF' >"$BOOTSTRAP_SCRIPT"
+set +u
+cat <<'SCRIPT' >"$BOOTSTRAP_SCRIPT"
 #!/bin/bash
 set -euo pipefail
 
-ASSET_CACHE_DIR="/var/cache/loggle-assets"
-STATE_FILE="/var/lib/loggle/bootstrap.completed"
+SETUP_URL="{0}"
+REPO_URL="{1}"
+REPO_REF="{2}"
+REPO_PATH="{3}"
+LOGGLE_HOME="/etc/loggle"
+ASSET_CACHE_DIR="$LOGGLE_HOME/assets"
+SRC_DIR="$LOGGLE_HOME/repo"
+STATE_FILE="$LOGGLE_HOME/bootstrap.completed"
+SETUP_SRC="$ASSET_CACHE_DIR/setup.sh"
 
-if [[ -f "$STATE_FILE" ]]; then
+if [[ -n "$STATE_FILE" && -f "$STATE_FILE" ]]; then
     echo "Loggle bootstrap already completed; remove $STATE_FILE to rerun."
     exit 0
 fi
@@ -159,13 +136,48 @@ if command -v cloud-init >/dev/null 2>&1; then
     cloud-init status --wait
 fi
 
-rm -f /tmp/setup.sh /tmp/docker-compose.yml /tmp/otel-collector-config.yaml /tmp/kibana.yml /tmp/import-cert.ps1 /tmp/export-cert.ps1 /tmp/loggle.service
-rm -rf /tmp/init-es
+ensure_prereqs() {
+    if command -v git >/dev/null 2>&1 && command -v curl >/dev/null 2>&1; then
+        return
+    fi
 
-shopt -s dotglob
-cp -R "$ASSET_CACHE_DIR"/* /tmp/
-shopt -u dotglob
-chmod +x /tmp/setup.sh
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update -y
+    apt-get install -y git curl
+}
+
+refresh_assets() {
+    echo "Refreshing Loggle assets in $ASSET_CACHE_DIR"
+    rm -rf "$SRC_DIR"
+    git clone --depth 1 --filter=blob:none --branch "$REPO_REF" "$REPO_URL" "$SRC_DIR"
+    if [[ -n "$REPO_PATH" && "$REPO_PATH" != "." ]]; then
+        git -C "$SRC_DIR" sparse-checkout init --cone
+        git -C "$SRC_DIR" sparse-checkout set "$REPO_PATH"
+    else
+        REPO_PATH="."
+    fi
+
+    local assets_dir="$SRC_DIR/$REPO_PATH"
+    if [[ ! -d "$assets_dir" ]]; then
+        echo "Assets path $REPO_PATH not found in repository $REPO_URL"
+        exit 1
+    fi
+
+    rm -rf "$ASSET_CACHE_DIR"
+    install -d -m 0755 "$ASSET_CACHE_DIR"
+    shopt -s dotglob
+    cp -R "$assets_dir"/* "$ASSET_CACHE_DIR"/
+    shopt -u dotglob
+
+    curl -fsSL "$SETUP_URL" -o "$SETUP_SRC"
+    chmod +x "$SETUP_SRC"
+}
+
+ensure_prereqs
+
+if [[ ! -f "$SETUP_SRC" ]]; then
+    refresh_assets
+fi
 
 export LOGGLE_DOMAIN="{4}"
 export LOGGLE_CERT_EMAIL="{5}"
@@ -173,13 +185,21 @@ export LOGGLE_MANAGED_IDENTITY_CLIENT_ID="{6}"
 export LOGGLE_CERT_ENV="{7}"
 export LOGGLE_KEY_VAULT_NAME="{8}"
 export LOGGLE_BOOTSTRAP_STATE_FILE="$STATE_FILE"
+export LOGGLE_ASSET_DIR="$ASSET_CACHE_DIR"
+chmod +x "$SETUP_SRC"
 
-/tmp/setup.sh
+"$SETUP_SRC"
 
-EOF
+if [[ -n "$STATE_FILE" ]]; then
+    mkdir -p "$(dirname "$STATE_FILE")"
+    touch "$STATE_FILE"
+    chmod 600 "$STATE_FILE"
+fi
+SCRIPT
+set -u
 chmod +x "$BOOTSTRAP_SCRIPT"
 
-cat <<'EOF' >/etc/systemd/system/loggle-bootstrap.service
+cat <<'SERVICE' >/etc/systemd/system/loggle-bootstrap.service
 [Unit]
 Description=Loggle setup runner
 Wants=network-online.target cloud-final.service
@@ -187,16 +207,15 @@ After=network-online.target cloud-final.service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/sbin/loggle-bootstrap.sh
+ExecStart=/etc/loggle/loggle-bootstrap.sh
 RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target
-EOF
+SERVICE
 
 systemctl daemon-reload
 systemctl enable loggle-bootstrap.service
-systemctl start loggle-bootstrap.service
 '
 ''', setupScriptUrl, assetRepoUrl, assetRepoRef, assetRepoPath, domainName, certificateEmail, userAssignedIdentity.properties.clientId, letsEncryptEnvironment, keyVaultEffectiveName)
 
@@ -389,22 +408,6 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2023-09-01' = {
   }
 }
 
-resource infraEnvExtension 'Microsoft.Compute/virtualMachines/extensions@2023-09-01' = {
-  name: 'loggleInfraEnv'
-  parent: virtualMachine
-  location: location
-  properties: {
-    publisher: 'Microsoft.Azure.Extensions'
-    type: 'CustomScript'
-    typeHandlerVersion: '2.1'
-    autoUpgradeMinorVersion: true
-    protectedSettings: {
-      commandToExecute: infraEnvCommand
-    }
-    settings: {}
-  }
-}
-
 resource bootstrapExtension 'Microsoft.Compute/virtualMachines/extensions@2023-09-01' = {
   name: 'loggleBootstrap'
   parent: virtualMachine
@@ -419,9 +422,6 @@ resource bootstrapExtension 'Microsoft.Compute/virtualMachines/extensions@2023-0
     }
     settings: {}
   }
-  dependsOn: [
-    infraEnvExtension
-  ]
 }
 
 output publicIpAddress string = reference(resourceId('Microsoft.Network/publicIPAddresses', publicIpName), '2023-02-01').ipAddress

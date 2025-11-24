@@ -19,6 +19,7 @@ MANAGED_IDENTITY_CLIENT_ID="${LOGGLE_MANAGED_IDENTITY_CLIENT_ID:-}"
 CERT_ENV="${LOGGLE_CERT_ENV:-production}"
 KEY_VAULT_NAME="${LOGGLE_KEY_VAULT_NAME:-}"
 readonly BOOTSTRAP_STATE_FILE="${LOGGLE_BOOTSTRAP_STATE_FILE:-}"
+readonly ASSET_DIR="${LOGGLE_ASSET_DIR:-/tmp}"
 case "${CERT_ENV,,}" in
     staging|production) CERT_ENV="${CERT_ENV,,}" ;;
     *) CERT_ENV="production" ;;
@@ -87,22 +88,22 @@ persist_infra_var() {
 move_config_files() {
     local config_files=("docker-compose.yml" "otel-collector-config.yaml" "kibana.yml" "import-cert.ps1" "export-cert.ps1")
     for file in "${config_files[@]}"; do
-        local source="/tmp/$file"
+        local source="$ASSET_DIR/$file"
         if [[ -e "$source" ]]; then
-            mv -f "$source" "$LOGGLE_PATH/"
+            cp -f "$source" "$LOGGLE_PATH/"
         fi
     done
 
-    if [[ -f "/tmp/loggle.service" ]]; then
-        mv -f "/tmp/loggle.service" "/etc/systemd/system/loggle.service"
+    if [[ -f "$ASSET_DIR/loggle.service" ]]; then
+        cp -f "$ASSET_DIR/loggle.service" "/etc/systemd/system/loggle.service"
     fi
 
-    if [[ -d "/tmp/init-es" ]]; then
+    if [[ -d "$ASSET_DIR/init-es" ]]; then
         local target="$LOGGLE_PATH/init-es"
         if [[ -d "$target" ]]; then
             rm -rf "$target"
         fi
-        mv "/tmp/init-es" "$LOGGLE_PATH/"
+        cp -R "$ASSET_DIR/init-es" "$LOGGLE_PATH/"
     fi
 }
 

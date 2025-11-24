@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.39.26.7824",
-      "templateHash": "3585593537478222892"
+      "templateHash": "17586252126798440586"
     }
   },
   "parameters": {
@@ -127,7 +127,7 @@
     },
     "setupScriptUrl": {
       "type": "string",
-      "defaultValue": "[format('https://stloggleprod.blob.{0}/download/setup.sh', environment().suffixes.storage)]",
+      "defaultValue": "https://stlogglepublicprod.blob.core.windows.net/download/setup.sh",
       "metadata": {
         "description": "HTTPS endpoint that hosts setup.sh (fetched onto the VM before execution)."
       }
@@ -391,26 +391,6 @@
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "apiVersion": "2023-09-01",
-      "name": "[format('{0}/{1}', variables('vmName'), 'loggleInfraEnv')]",
-      "location": "[parameters('location')]",
-      "properties": {
-        "publisher": "Microsoft.Azure.Extensions",
-        "type": "CustomScript",
-        "typeHandlerVersion": "2.1",
-        "autoUpgradeMinorVersion": true,
-        "protectedSettings": {
-          "commandToExecute": "[format('bash -c ''set -euo pipefail\ninstall -d -m 0755 /etc/loggle\ncat <<''EOF'' >/etc/loggle/infra.env\nLOGGLE_KEY_VAULT_NAME=\"{0}\"\nLOGGLE_MANAGED_IDENTITY_CLIENT_ID=\"{1}\"\nEOF\nchmod 600 /etc/loggle/infra.env\n''\n', variables('keyVaultEffectiveName'), reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2023-01-31').clientId)]"
-        },
-        "settings": {}
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]",
-        "[resourceId('Microsoft.Compute/virtualMachines', variables('vmName'))]"
-      ]
-    },
-    {
-      "type": "Microsoft.Compute/virtualMachines/extensions",
-      "apiVersion": "2023-09-01",
       "name": "[format('{0}/{1}', variables('vmName'), 'loggleBootstrap')]",
       "location": "[parameters('location')]",
       "properties": {
@@ -419,12 +399,11 @@
         "typeHandlerVersion": "2.1",
         "autoUpgradeMinorVersion": true,
         "protectedSettings": {
-          "commandToExecute": "[format('bash -c ''set -euo pipefail\nSETUP_URL=\"{0}\"\nREPO_URL=\"{1}\"\nREPO_REF=\"{2}\"\nREPO_PATH=\"{3}\"\nASSET_CACHE_DIR=\"/var/cache/loggle-assets\"\nSRC_DIR=\"/tmp/loggle-src\"\nBOOTSTRAP_SCRIPT=\"/usr/local/sbin/loggle-bootstrap.sh\"\nSTATE_FILE=\"/var/lib/loggle/bootstrap.completed\"\n\nrm -rf \"$SRC_DIR\"\nrm -rf \"$ASSET_CACHE_DIR\"\ninstall -d -m 0755 \"$ASSET_CACHE_DIR\"\ninstall -d -m 0755 \"$(dirname \"$STATE_FILE\")\"\n\nif ! command -v git >/dev/null 2>&1 || ! command -v curl >/dev/null 2>&1; then\n  export DEBIAN_FRONTEND=noninteractive\n  apt-get update -y\n  apt-get install -y git curl\nfi\n\ngit clone --depth 1 --filter=blob:none --branch \"$REPO_REF\" \"$REPO_URL\" \"$SRC_DIR\"\nif [ -n \"$REPO_PATH\" ] && [ \"$REPO_PATH\" != \".\" ]; then\n  git -C \"$SRC_DIR\" sparse-checkout init --cone\n  git -C \"$SRC_DIR\" sparse-checkout set \"$REPO_PATH\"\nelse\n  REPO_PATH=\".\"\nfi\nASSETS_DIR=\"$SRC_DIR/$REPO_PATH\"\nif [ ! -d \"$ASSETS_DIR\" ]; then\n  echo \"Assets path $REPO_PATH not found in repository $REPO_URL\"\n  exit 1\nfi\nshopt -s dotglob\ncp -R \"$ASSETS_DIR\"/* \"$ASSET_CACHE_DIR\"/\nshopt -u dotglob\nrm -rf \"$SRC_DIR\"\n\ncurl -fsSL \"$SETUP_URL\" -o \"$ASSET_CACHE_DIR/setup.sh\"\nchmod +x \"$ASSET_CACHE_DIR/setup.sh\"\n\ninstall -d -m 0755 /usr/local/sbin\ncat <<''EOF'' >\"$BOOTSTRAP_SCRIPT\"\n#!/bin/bash\nset -euo pipefail\n\nASSET_CACHE_DIR=\"/var/cache/loggle-assets\"\nSTATE_FILE=\"/var/lib/loggle/bootstrap.completed\"\n\nif [[ -f \"$STATE_FILE\" ]]; then\n    echo \"Loggle bootstrap already completed; remove $STATE_FILE to rerun.\"\n    exit 0\nfi\n\nif command -v cloud-init >/dev/null 2>&1; then\n    cloud-init status --wait\nfi\n\nrm -f /tmp/setup.sh /tmp/docker-compose.yml /tmp/otel-collector-config.yaml /tmp/kibana.yml /tmp/import-cert.ps1 /tmp/export-cert.ps1 /tmp/loggle.service\nrm -rf /tmp/init-es\n\nshopt -s dotglob\ncp -R \"$ASSET_CACHE_DIR\"/* /tmp/\nshopt -u dotglob\nchmod +x /tmp/setup.sh\n\nexport LOGGLE_DOMAIN=\"{4}\"\nexport LOGGLE_CERT_EMAIL=\"{5}\"\nexport LOGGLE_MANAGED_IDENTITY_CLIENT_ID=\"{6}\"\nexport LOGGLE_CERT_ENV=\"{7}\"\nexport LOGGLE_KEY_VAULT_NAME=\"{8}\"\nexport LOGGLE_BOOTSTRAP_STATE_FILE=\"$STATE_FILE\"\n\n/tmp/setup.sh\n\nEOF\nchmod +x \"$BOOTSTRAP_SCRIPT\"\n\ncat <<''EOF'' >/etc/systemd/system/loggle-bootstrap.service\n[Unit]\nDescription=Loggle setup runner\nWants=network-online.target cloud-final.service\nAfter=network-online.target cloud-final.service\n\n[Service]\nType=oneshot\nExecStart=/usr/local/sbin/loggle-bootstrap.sh\nRemainAfterExit=yes\n\n[Install]\nWantedBy=multi-user.target\nEOF\n\nsystemctl daemon-reload\nsystemctl enable loggle-bootstrap.service\nsystemctl start loggle-bootstrap.service\n''\n', parameters('setupScriptUrl'), parameters('assetRepoUrl'), parameters('assetRepoRef'), parameters('assetRepoPath'), parameters('domainName'), parameters('certificateEmail'), reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2023-01-31').clientId, parameters('letsEncryptEnvironment'), variables('keyVaultEffectiveName'))]"
+          "commandToExecute": "[format('bash -c ''set -euo pipefail\nSETUP_URL=\"{0}\"\nREPO_URL=\"{1}\"\nREPO_REF=\"{2}\"\nREPO_PATH=\"{3}\"\nLOGGLE_HOME=\"/etc/loggle\"\nASSET_CACHE_DIR=\"$LOGGLE_HOME/assets\"\nSRC_DIR=\"$LOGGLE_HOME/repo\"\nBOOTSTRAP_SCRIPT=\"$LOGGLE_HOME/loggle-bootstrap.sh\"\nSTATE_FILE=\"$LOGGLE_HOME/bootstrap.completed\"\nINFRA_ENV_PATH=\"$LOGGLE_HOME/infra.env\"\n\ninstall -d -m 0755 \"$LOGGLE_HOME\"\ninstall -d -m 0755 \"$ASSET_CACHE_DIR\"\ninstall -d -m 0755 \"$(dirname \"$STATE_FILE\")\"\n\ncat <<''INFRAENV'' >\"$INFRA_ENV_PATH\"\nLOGGLE_KEY_VAULT_NAME=\"{8}\"\nLOGGLE_MANAGED_IDENTITY_CLIENT_ID=\"{6}\"\nINFRAENV\nchmod 600 \"$INFRA_ENV_PATH\"\n\nset +u\ncat <<''SCRIPT'' >\"$BOOTSTRAP_SCRIPT\"\n#!/bin/bash\nset -euo pipefail\n\nSETUP_URL=\"{0}\"\nREPO_URL=\"{1}\"\nREPO_REF=\"{2}\"\nREPO_PATH=\"{3}\"\nLOGGLE_HOME=\"/etc/loggle\"\nASSET_CACHE_DIR=\"$LOGGLE_HOME/assets\"\nSRC_DIR=\"$LOGGLE_HOME/repo\"\nSTATE_FILE=\"$LOGGLE_HOME/bootstrap.completed\"\nSETUP_SRC=\"$ASSET_CACHE_DIR/setup.sh\"\n\nif [[ -n \"$STATE_FILE\" && -f \"$STATE_FILE\" ]]; then\n    echo \"Loggle bootstrap already completed; remove $STATE_FILE to rerun.\"\n    exit 0\nfi\n\nif command -v cloud-init >/dev/null 2>&1; then\n    cloud-init status --wait\nfi\n\nensure_prereqs() {\n    if command -v git >/dev/null 2>&1 && command -v curl >/dev/null 2>&1; then\n        return\n    fi\n\n    export DEBIAN_FRONTEND=noninteractive\n    apt-get update -y\n    apt-get install -y git curl\n}\n\nrefresh_assets() {\n    echo \"Refreshing Loggle assets in $ASSET_CACHE_DIR\"\n    rm -rf \"$SRC_DIR\"\n    git clone --depth 1 --filter=blob:none --branch \"$REPO_REF\" \"$REPO_URL\" \"$SRC_DIR\"\n    if [[ -n \"$REPO_PATH\" && \"$REPO_PATH\" != \".\" ]]; then\n        git -C \"$SRC_DIR\" sparse-checkout init --cone\n        git -C \"$SRC_DIR\" sparse-checkout set \"$REPO_PATH\"\n    else\n        REPO_PATH=\".\"\n    fi\n\n    local assets_dir=\"$SRC_DIR/$REPO_PATH\"\n    if [[ ! -d \"$assets_dir\" ]]; then\n        echo \"Assets path $REPO_PATH not found in repository $REPO_URL\"\n        exit 1\n    fi\n\n    rm -rf \"$ASSET_CACHE_DIR\"\n    install -d -m 0755 \"$ASSET_CACHE_DIR\"\n    shopt -s dotglob\n    cp -R \"$assets_dir\"/* \"$ASSET_CACHE_DIR\"/\n    shopt -u dotglob\n\n    curl -fsSL \"$SETUP_URL\" -o \"$SETUP_SRC\"\n    chmod +x \"$SETUP_SRC\"\n}\n\nensure_prereqs\n\nif [[ ! -f \"$SETUP_SRC\" ]]; then\n    refresh_assets\nfi\n\nexport LOGGLE_DOMAIN=\"{4}\"\nexport LOGGLE_CERT_EMAIL=\"{5}\"\nexport LOGGLE_MANAGED_IDENTITY_CLIENT_ID=\"{6}\"\nexport LOGGLE_CERT_ENV=\"{7}\"\nexport LOGGLE_KEY_VAULT_NAME=\"{8}\"\nexport LOGGLE_BOOTSTRAP_STATE_FILE=\"$STATE_FILE\"\nexport LOGGLE_ASSET_DIR=\"$ASSET_CACHE_DIR\"\nchmod +x \"$SETUP_SRC\"\n\n\"$SETUP_SRC\"\n\nif [[ -n \"$STATE_FILE\" ]]; then\n    mkdir -p \"$(dirname \"$STATE_FILE\")\"\n    touch \"$STATE_FILE\"\n    chmod 600 \"$STATE_FILE\"\nfi\nSCRIPT\nset -u\nchmod +x \"$BOOTSTRAP_SCRIPT\"\n\ncat <<''SERVICE'' >/etc/systemd/system/loggle-bootstrap.service\n[Unit]\nDescription=Loggle setup runner\nWants=network-online.target cloud-final.service\nAfter=network-online.target cloud-final.service\n\n[Service]\nType=oneshot\nExecStart=/etc/loggle/loggle-bootstrap.sh\nRemainAfterExit=yes\n\n[Install]\nWantedBy=multi-user.target\nSERVICE\n\nsystemctl daemon-reload\nsystemctl enable loggle-bootstrap.service\n''\n', parameters('setupScriptUrl'), parameters('assetRepoUrl'), parameters('assetRepoRef'), parameters('assetRepoPath'), parameters('domainName'), parameters('certificateEmail'), reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2023-01-31').clientId, parameters('letsEncryptEnvironment'), variables('keyVaultEffectiveName'))]"
         },
         "settings": {}
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Compute/virtualMachines/extensions', variables('vmName'), 'loggleInfraEnv')]",
         "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]",
         "[resourceId('Microsoft.Compute/virtualMachines', variables('vmName'))]"
       ]
