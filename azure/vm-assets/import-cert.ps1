@@ -12,9 +12,9 @@
 param (
     [string]$KeyVaultName,
     [string]$CertificateName = "kibana",
-    [string]$Domain = "kibana.loggle.co",
-    [string]$FullchainPath = "/etc/letsencrypt/live/$Domain/fullchain.pem",
-    [string]$PrivkeyPath = "/etc/letsencrypt/live/$Domain/privkey.pem",
+    [string]$Domain,
+    [string]$FullchainPath,
+    [string]$PrivkeyPath,
     [string]$TempPfxPath = "/etc/loggle/certs/kv-import-kibana.pfx",
     [string]$ManagedIdentityClientId,
     [string]$InfraEnvPath = "/etc/loggle/infra.env"
@@ -104,7 +104,13 @@ function Get-InfraEnvValue {
 
             $parts = $line.Split('=', 2)
             if ($parts.Count -eq 2 -and $parts[0].Trim() -eq $Key) {
-                return $parts[1].Trim()
+                $rawValue = $parts[1].Trim()
+                if ($rawValue.Length -ge 2 -and (
+                        ($rawValue.StartsWith('"') -and $rawValue.EndsWith('"')) -or
+                        ($rawValue.StartsWith("'") -and $rawValue.EndsWith("'")))) {
+                    $rawValue = $rawValue.Substring(1, $rawValue.Length - 2)
+                }
+                return $rawValue
             }
         }
     }
@@ -113,6 +119,22 @@ function Get-InfraEnvValue {
     }
 
     return $null
+}
+
+# Resolve runtime defaults from infra.env when parameters are omitted
+if (-not $PSBoundParameters.ContainsKey('Domain') -or [string]::IsNullOrWhiteSpace($Domain)) {
+    $Domain = Get-InfraEnvValue -Key "LOGGLE_DOMAIN" -Path $InfraEnvPath
+    if ([string]::IsNullOrWhiteSpace($Domain)) {
+        $Domain = "kibana.loggle.co"
+    }
+}
+
+if (-not $PSBoundParameters.ContainsKey('FullchainPath') -or [string]::IsNullOrWhiteSpace($FullchainPath)) {
+    $FullchainPath = "/etc/letsencrypt/live/$Domain/fullchain.pem"
+}
+
+if (-not $PSBoundParameters.ContainsKey('PrivkeyPath') -or [string]::IsNullOrWhiteSpace($PrivkeyPath)) {
+    $PrivkeyPath = "/etc/letsencrypt/live/$Domain/privkey.pem"
 }
 
 # Check certificate files first

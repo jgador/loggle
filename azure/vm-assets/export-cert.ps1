@@ -101,7 +101,13 @@ function Get-InfraEnvValue {
 
             $parts = $line.Split('=', 2)
             if ($parts.Count -eq 2 -and $parts[0].Trim() -eq $Key) {
-                return $parts[1].Trim()
+                $rawValue = $parts[1].Trim()
+                if ($rawValue.Length -ge 2 -and (
+                        ($rawValue.StartsWith('"') -and $rawValue.EndsWith('"')) -or
+                        ($rawValue.StartsWith("'") -and $rawValue.EndsWith("'")))) {
+                    $rawValue = $rawValue.Substring(1, $rawValue.Length - 2)
+                }
+                return $rawValue
             }
         }
     }

@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.39.26.7824",
-      "templateHash": "17586252126798440586"
+      "templateHash": "4689485592246755096"
     }
   },
   "parameters": {
@@ -111,25 +111,11 @@
         "description": "Git repository that hosts the VM bootstrap assets (setup.sh, docker-compose.yml, etc.)."
       }
     },
-    "assetRepoRef": {
-      "type": "string",
-      "defaultValue": "master",
-      "metadata": {
-        "description": "Git branch or tag used to download the assetRepoPath contents (normally azure/vm-assets). Defaults to master; change only when testing assets from another ref."
-      }
-    },
     "assetRepoPath": {
       "type": "string",
       "defaultValue": "azure/vm-assets",
       "metadata": {
         "description": "Path inside the repository that contains the VM bootstrap assets."
-      }
-    },
-    "setupScriptUrl": {
-      "type": "string",
-      "defaultValue": "https://stlogglepublicprod.blob.core.windows.net/download/setup.sh",
-      "metadata": {
-        "description": "HTTPS endpoint that hosts setup.sh (fetched onto the VM before execution)."
       }
     },
     "keyVaultDateSuffix": {
@@ -163,7 +149,8 @@
     "vmName": "[coalesce(tryGet(parameters('resourceNames'), 'virtualMachine'), variables('vmGeneratedName'))]",
     "identityName": "[coalesce(tryGet(parameters('resourceNames'), 'userAssignedIdentity'), variables('identityGeneratedName'))]",
     "keyVaultEffectiveName": "[coalesce(tryGet(parameters('resourceNames'), 'keyVault'), variables('keyVaultGeneratedName'))]",
-    "osDiskName": "[coalesce(tryGet(parameters('resourceNames'), 'osDisk'), variables('osDiskGeneratedName'))]"
+    "osDiskName": "[coalesce(tryGet(parameters('resourceNames'), 'osDisk'), variables('osDiskGeneratedName'))]",
+    "infraEnvCommand": "[format('bash -c ''set -euo pipefail\nLOGGLE_HOME=\"/etc/loggle\"\nINFRA_ENV_PATH=\"$LOGGLE_HOME/infra.env\"\n\ninstall -d -m 0755 \"$LOGGLE_HOME\"\n\ncat <<''INFRAENV'' >\"$INFRA_ENV_PATH\"\nLOGGLE_DOMAIN=\"{0}\"\nLOGGLE_CERT_EMAIL=\"{1}\"\nLOGGLE_CERT_ENV=\"{2}\"\nLOGGLE_KEY_VAULT_NAME=\"{3}\"\nLOGGLE_ASSET_REPO_URL=\"{4}\"\nLOGGLE_ASSET_REPO_PATH=\"{5}\"\nINFRAENV\n\nchmod 600 \"$INFRA_ENV_PATH\"\n''\n', parameters('domainName'), parameters('certificateEmail'), parameters('letsEncryptEnvironment'), variables('keyVaultEffectiveName'), parameters('assetRepoUrl'), parameters('assetRepoPath'))]"
   },
   "resources": [
     {
@@ -399,12 +386,11 @@
         "typeHandlerVersion": "2.1",
         "autoUpgradeMinorVersion": true,
         "protectedSettings": {
-          "commandToExecute": "[format('bash -c ''set -euo pipefail\nSETUP_URL=\"{0}\"\nREPO_URL=\"{1}\"\nREPO_REF=\"{2}\"\nREPO_PATH=\"{3}\"\nLOGGLE_HOME=\"/etc/loggle\"\nASSET_CACHE_DIR=\"$LOGGLE_HOME/assets\"\nSRC_DIR=\"$LOGGLE_HOME/repo\"\nBOOTSTRAP_SCRIPT=\"$LOGGLE_HOME/loggle-bootstrap.sh\"\nSTATE_FILE=\"$LOGGLE_HOME/bootstrap.completed\"\nINFRA_ENV_PATH=\"$LOGGLE_HOME/infra.env\"\n\ninstall -d -m 0755 \"$LOGGLE_HOME\"\ninstall -d -m 0755 \"$ASSET_CACHE_DIR\"\ninstall -d -m 0755 \"$(dirname \"$STATE_FILE\")\"\n\ncat <<''INFRAENV'' >\"$INFRA_ENV_PATH\"\nLOGGLE_KEY_VAULT_NAME=\"{8}\"\nLOGGLE_MANAGED_IDENTITY_CLIENT_ID=\"{6}\"\nINFRAENV\nchmod 600 \"$INFRA_ENV_PATH\"\n\nset +u\ncat <<''SCRIPT'' >\"$BOOTSTRAP_SCRIPT\"\n#!/bin/bash\nset -euo pipefail\n\nSETUP_URL=\"{0}\"\nREPO_URL=\"{1}\"\nREPO_REF=\"{2}\"\nREPO_PATH=\"{3}\"\nLOGGLE_HOME=\"/etc/loggle\"\nASSET_CACHE_DIR=\"$LOGGLE_HOME/assets\"\nSRC_DIR=\"$LOGGLE_HOME/repo\"\nSTATE_FILE=\"$LOGGLE_HOME/bootstrap.completed\"\nSETUP_SRC=\"$ASSET_CACHE_DIR/setup.sh\"\n\nif [[ -n \"$STATE_FILE\" && -f \"$STATE_FILE\" ]]; then\n    echo \"Loggle bootstrap already completed; remove $STATE_FILE to rerun.\"\n    exit 0\nfi\n\nif command -v cloud-init >/dev/null 2>&1; then\n    cloud-init status --wait\nfi\n\nensure_prereqs() {\n    if command -v git >/dev/null 2>&1 && command -v curl >/dev/null 2>&1; then\n        return\n    fi\n\n    export DEBIAN_FRONTEND=noninteractive\n    apt-get update -y\n    apt-get install -y git curl\n}\n\nrefresh_assets() {\n    echo \"Refreshing Loggle assets in $ASSET_CACHE_DIR\"\n    rm -rf \"$SRC_DIR\"\n    git clone --depth 1 --filter=blob:none --branch \"$REPO_REF\" \"$REPO_URL\" \"$SRC_DIR\"\n    if [[ -n \"$REPO_PATH\" && \"$REPO_PATH\" != \".\" ]]; then\n        git -C \"$SRC_DIR\" sparse-checkout init --cone\n        git -C \"$SRC_DIR\" sparse-checkout set \"$REPO_PATH\"\n    else\n        REPO_PATH=\".\"\n    fi\n\n    local assets_dir=\"$SRC_DIR/$REPO_PATH\"\n    if [[ ! -d \"$assets_dir\" ]]; then\n        echo \"Assets path $REPO_PATH not found in repository $REPO_URL\"\n        exit 1\n    fi\n\n    rm -rf \"$ASSET_CACHE_DIR\"\n    install -d -m 0755 \"$ASSET_CACHE_DIR\"\n    shopt -s dotglob\n    cp -R \"$assets_dir\"/* \"$ASSET_CACHE_DIR\"/\n    shopt -u dotglob\n\n    curl -fsSL \"$SETUP_URL\" -o \"$SETUP_SRC\"\n    chmod +x \"$SETUP_SRC\"\n}\n\nensure_prereqs\n\nif [[ ! -f \"$SETUP_SRC\" ]]; then\n    refresh_assets\nfi\n\nexport LOGGLE_DOMAIN=\"{4}\"\nexport LOGGLE_CERT_EMAIL=\"{5}\"\nexport LOGGLE_MANAGED_IDENTITY_CLIENT_ID=\"{6}\"\nexport LOGGLE_CERT_ENV=\"{7}\"\nexport LOGGLE_KEY_VAULT_NAME=\"{8}\"\nexport LOGGLE_BOOTSTRAP_STATE_FILE=\"$STATE_FILE\"\nexport LOGGLE_ASSET_DIR=\"$ASSET_CACHE_DIR\"\nchmod +x \"$SETUP_SRC\"\n\n\"$SETUP_SRC\"\n\nif [[ -n \"$STATE_FILE\" ]]; then\n    mkdir -p \"$(dirname \"$STATE_FILE\")\"\n    touch \"$STATE_FILE\"\n    chmod 600 \"$STATE_FILE\"\nfi\nSCRIPT\nset -u\nchmod +x \"$BOOTSTRAP_SCRIPT\"\n\ncat <<''SERVICE'' >/etc/systemd/system/loggle-bootstrap.service\n[Unit]\nDescription=Loggle setup runner\nWants=network-online.target cloud-final.service\nAfter=network-online.target cloud-final.service\n\n[Service]\nType=oneshot\nExecStart=/etc/loggle/loggle-bootstrap.sh\nRemainAfterExit=yes\n\n[Install]\nWantedBy=multi-user.target\nSERVICE\n\nsystemctl daemon-reload\nsystemctl enable loggle-bootstrap.service\n''\n', parameters('setupScriptUrl'), parameters('assetRepoUrl'), parameters('assetRepoRef'), parameters('assetRepoPath'), parameters('domainName'), parameters('certificateEmail'), reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2023-01-31').clientId, parameters('letsEncryptEnvironment'), variables('keyVaultEffectiveName'))]"
+          "commandToExecute": "[variables('infraEnvCommand')]"
         },
         "settings": {}
       },
       "dependsOn": [
-        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]",
         "[resourceId('Microsoft.Compute/virtualMachines', variables('vmName'))]"
       ]
     }
