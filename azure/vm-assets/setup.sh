@@ -19,6 +19,8 @@ readonly DEFAULT_ASSET_REPO_URL="https://github.com/jgador/loggle.git"
 readonly DEFAULT_ASSET_REPO_PATH="azure/vm-assets"
 readonly ASSET_REPO_URL="${LOGGLE_ASSET_REPO_URL:-$DEFAULT_ASSET_REPO_URL}"
 readonly ASSET_REPO_PATH="${LOGGLE_ASSET_REPO_PATH:-$DEFAULT_ASSET_REPO_PATH}"
+readonly DEFAULT_ASSET_REPO_REF="master"
+readonly ASSET_REPO_REF="${LOGGLE_ASSET_REPO_REF:-$DEFAULT_ASSET_REPO_REF}"
 readonly ASSET_CLONE_DIR="${LOGGLE_ASSET_CLONE_DIR:-$LOGGLE_ROOT/repo}"
 readonly ASSET_DIR="${LOGGLE_ASSET_DIR:-$LOGGLE_ROOT/assets}"
 MANAGED_IDENTITY_CLIENT_ID="${LOGGLE_MANAGED_IDENTITY_CLIENT_ID:-}"
@@ -158,6 +160,7 @@ cache_bootstrap_configuration() {
     persist_infra_var "LOGGLE_KEY_VAULT_NAME" "$KEY_VAULT_NAME"
     persist_infra_var "LOGGLE_ASSET_REPO_URL" "$ASSET_REPO_URL"
     persist_infra_var "LOGGLE_ASSET_REPO_PATH" "$ASSET_REPO_PATH"
+    persist_infra_var "LOGGLE_ASSET_REPO_REF" "$ASSET_REPO_REF"
 }
 
 load_or_cache_managed_identity() {
@@ -195,8 +198,13 @@ refresh_assets_from_repo() {
 
     install -d -m 0755 "$(dirname "$ASSET_CLONE_DIR")"
     rm -rf "$ASSET_CLONE_DIR"
-    echo "Cloning assets from $ASSET_REPO_URL into $ASSET_CLONE_DIR..."
-    if ! git clone --depth 1 "$ASSET_REPO_URL" "$ASSET_CLONE_DIR"; then
+    echo "Cloning assets from $ASSET_REPO_URL (ref: ${ASSET_REPO_REF:-default}) into $ASSET_CLONE_DIR..."
+    local clone_args=(--depth 1)
+    if [[ -n "$ASSET_REPO_REF" ]]; then
+        clone_args+=(--branch "$ASSET_REPO_REF" --single-branch)
+    fi
+
+    if ! git clone "${clone_args[@]}" "$ASSET_REPO_URL" "$ASSET_CLONE_DIR"; then
         echo "Failed to clone $ASSET_REPO_URL"
         exit 1
     fi

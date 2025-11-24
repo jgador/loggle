@@ -48,6 +48,9 @@ param keyVaultName string = ''
 @description('Git repository that hosts the VM bootstrap assets (setup.sh, docker-compose.yml, etc.).')
 param assetRepoUrl string = 'https://github.com/jgador/loggle.git'
 
+@description('Git branch or tag used to download the assetRepoPath contents (normally azure/vm-assets). Defaults to master; change only when testing assets from another ref.')
+param assetRepoRef string = 'master'
+
 @description('Path inside the repository that contains the VM bootstrap assets.')
 param assetRepoPath string = 'azure/vm-assets'
 
@@ -97,11 +100,12 @@ LOGGLE_CERT_ENV="{2}"
 LOGGLE_KEY_VAULT_NAME="{3}"
 LOGGLE_ASSET_REPO_URL="{4}"
 LOGGLE_ASSET_REPO_PATH="{5}"
+LOGGLE_ASSET_REPO_REF="{6}"
 INFRAENV
 
 chmod 600 "$INFRA_ENV_PATH"
 '
-''', domainName, certificateEmail, letsEncryptEnvironment, keyVaultEffectiveName, assetRepoUrl, assetRepoPath)
+''', domainName, certificateEmail, letsEncryptEnvironment, keyVaultEffectiveName, assetRepoUrl, assetRepoPath, assetRepoRef)
 
 resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: identityName
