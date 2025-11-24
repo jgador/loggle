@@ -18,6 +18,7 @@ readonly EMAIL="${LOGGLE_CERT_EMAIL:-certbot@loggle.co}"
 MANAGED_IDENTITY_CLIENT_ID="${LOGGLE_MANAGED_IDENTITY_CLIENT_ID:-}"
 CERT_ENV="${LOGGLE_CERT_ENV:-production}"
 KEY_VAULT_NAME="${LOGGLE_KEY_VAULT_NAME:-}"
+readonly BOOTSTRAP_STATE_FILE="${LOGGLE_BOOTSTRAP_STATE_FILE:-}"
 case "${CERT_ENV,,}" in
     staging|production) CERT_ENV="${CERT_ENV,,}" ;;
     *) CERT_ENV="production" ;;
@@ -29,6 +30,27 @@ fi
 export LOGGLE_KEY_VAULT_NAME="$KEY_VAULT_NAME"
 
 # Function definitions
+bootstrap_already_completed() {
+    [[ -n "$BOOTSTRAP_STATE_FILE" && -f "$BOOTSTRAP_STATE_FILE" ]]
+}
+
+exit_if_bootstrap_completed() {
+    if bootstrap_already_completed; then
+        echo "Loggle bootstrap already completed per $BOOTSTRAP_STATE_FILE; exiting."
+        exit 0
+    fi
+}
+
+mark_bootstrap_completed() {
+    if [[ -z "$BOOTSTRAP_STATE_FILE" ]]; then
+        return
+    fi
+
+    mkdir -p "$(dirname "$BOOTSTRAP_STATE_FILE")"
+    touch "$BOOTSTRAP_STATE_FILE"
+    chmod 600 "$BOOTSTRAP_STATE_FILE"
+}
+
 setup_environment() {
     export DEBIAN_FRONTEND=noninteractive
     export NEEDRESTART_MODE=a
@@ -298,4 +320,6 @@ main() {
     fi
 }
 
+exit_if_bootstrap_completed
 main "$@"
+mark_bootstrap_completed

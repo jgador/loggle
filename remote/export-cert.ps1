@@ -18,7 +18,7 @@ param (
     [string]$FullchainPath = "$CertPath/fullchain.pem",
     [string]$PrivkeyPath = "$CertPath/privkey.pem",
     [string]$ManagedIdentityClientId,
-    [string]$RuntimeEnvPath = "/etc/loggle/runtime.env"
+    [string]$InfraEnvPath = "/etc/loggle/infra.env"
 )
 
 Set-StrictMode -Version Latest
@@ -82,11 +82,11 @@ function Get-ManagedIdentityClientId {
     return $null
 }
 
-function Get-RuntimeEnvValue {
+function Get-InfraEnvValue {
     param(
         [Parameter(Mandatory)]
         [string]$Key,
-        [string]$Path = "/etc/loggle/runtime.env"
+        [string]$Path = "/etc/loggle/infra.env"
     )
 
     if (-not (Test-Path -Path $Path -PathType Leaf)) {
@@ -106,7 +106,7 @@ function Get-RuntimeEnvValue {
         }
     }
     catch {
-        Write-Output "WARN: Unable to read runtime environment file ${Path}: $_"
+        Write-Output "WARN: Unable to read infra environment file ${Path}: $_"
     }
 
     return $null
@@ -196,7 +196,7 @@ try {
     }
 
     if (-not $ManagedIdentityClientId) {
-        $ManagedIdentityClientId = Get-RuntimeEnvValue -Key "LOGGLE_MANAGED_IDENTITY_CLIENT_ID" -Path $RuntimeEnvPath
+        $ManagedIdentityClientId = Get-InfraEnvValue -Key "LOGGLE_MANAGED_IDENTITY_CLIENT_ID" -Path $InfraEnvPath
     }
 
     if (-not $ManagedIdentityClientId) {
@@ -204,7 +204,7 @@ try {
     }
 
     if (-not $KeyVaultName) {
-        $KeyVaultName = Get-RuntimeEnvValue -Key "LOGGLE_KEY_VAULT_NAME" -Path $RuntimeEnvPath
+        $KeyVaultName = Get-InfraEnvValue -Key "LOGGLE_KEY_VAULT_NAME" -Path $InfraEnvPath
     }
 
     if (-not $KeyVaultName) {

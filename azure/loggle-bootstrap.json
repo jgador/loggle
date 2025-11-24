@@ -1,0 +1,123 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.39.26.7824",
+      "templateHash": "10836043209113026151"
+    }
+  },
+  "parameters": {
+    "namePrefix": {
+      "type": "string",
+      "defaultValue": "loggle",
+      "metadata": {
+        "description": "Prefix applied to resource names (keep short and alphanumeric). Used to derive the default VM name."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Azure location / region for the VM extension deployment."
+      }
+    },
+    "virtualMachineName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional explicit VM name. Leave empty to use the default prefix-based value."
+      }
+    },
+    "assetRepoUrl": {
+      "type": "string",
+      "defaultValue": "https://github.com/jgador/loggle.git",
+      "metadata": {
+        "description": "Git repository that hosts the VM bootstrap assets (setup.sh, docker-compose.yml, etc.)."
+      }
+    },
+    "assetRepoRef": {
+      "type": "string",
+      "defaultValue": "master",
+      "metadata": {
+        "description": "Git branch or tag used to download the assetRepoPath contents (normally azure/vm-assets). Defaults to master; change only when testing assets from another ref."
+      }
+    },
+    "assetRepoPath": {
+      "type": "string",
+      "defaultValue": "azure/vm-assets",
+      "metadata": {
+        "description": "Path inside the repository that contains the VM bootstrap assets."
+      }
+    },
+    "setupScriptUrl": {
+      "type": "string",
+      "defaultValue": "[format('https://stloggleprod.blob.{0}/download/setup.sh', environment().suffixes.storage)]",
+      "metadata": {
+        "description": "HTTPS endpoint that hosts setup.sh (fetched onto the VM before execution)."
+      }
+    },
+    "domainName": {
+      "type": "string",
+      "defaultValue": "kibana.loggle.co",
+      "metadata": {
+        "description": "Public hostname served by the stack (also used for TLS issuance)."
+      }
+    },
+    "certificateEmail": {
+      "type": "string",
+      "defaultValue": "certbot@loggle.co",
+      "metadata": {
+        "description": "Contact email used for Let's Encrypt requests."
+      }
+    },
+    "letsEncryptEnvironment": {
+      "type": "string",
+      "defaultValue": "production",
+      "allowedValues": [
+        "production",
+        "staging"
+      ],
+      "metadata": {
+        "description": "LetsEncrypt environment for certificate issuance. Leave at production for real deployments; switch to staging when repeatedly testing to avoid rate limits."
+      }
+    },
+    "managedIdentityClientId": {
+      "type": "string",
+      "metadata": {
+        "description": "Client ID of the user-assigned managed identity created by the infrastructure deployment."
+      }
+    },
+    "keyVaultName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Key Vault created by the infrastructure deployment."
+      }
+    }
+  },
+  "variables": {
+    "prefixSegment": "[if(empty(parameters('namePrefix')), '', format('{0}-', parameters('namePrefix')))]",
+    "defaultVmName": "[format('{0}vm', variables('prefixSegment'))]",
+    "vmName": "[if(empty(parameters('virtualMachineName')), variables('defaultVmName'), parameters('virtualMachineName'))]",
+    "commandToExecute": "[format('bash -c ''set -euo pipefail\nSETUP_URL=\"{0}\"\nREPO_URL=\"{1}\"\nREPO_REF=\"{2}\"\nREPO_PATH=\"{3}\"\nSRC_DIR=\"/tmp/loggle-src\"\n\nrm -rf \"$SRC_DIR\"\nrm -f /tmp/setup.sh /tmp/docker-compose.yml /tmp/otel-collector-config.yaml /tmp/kibana.yml /tmp/import-cert.ps1 /tmp/export-cert.ps1 /tmp/loggle.service\nrm -rf /tmp/init-es\n\nif ! command -v git >/dev/null 2>&1 || ! command -v curl >/dev/null 2>&1; then\n  export DEBIAN_FRONTEND=noninteractive\n  apt-get update -y\n  apt-get install -y git curl\nfi\n\ngit clone --depth 1 --filter=blob:none --branch \"$REPO_REF\" \"$REPO_URL\" \"$SRC_DIR\"\nif [ -n \"$REPO_PATH\" ] && [ \"$REPO_PATH\" != \".\" ]; then\n  git -C \"$SRC_DIR\" sparse-checkout init --cone\n  git -C \"$SRC_DIR\" sparse-checkout set \"$REPO_PATH\"\nelse\n  REPO_PATH=\".\"\nfi\nASSETS_DIR=\"$SRC_DIR/$REPO_PATH\"\nif [ ! -d \"$ASSETS_DIR\" ]; then\n  echo \"Assets path $REPO_PATH not found in repository $REPO_URL\"\n  exit 1\nfi\nshopt -s dotglob\ncp -R \"$ASSETS_DIR\"/* /tmp/\nshopt -u dotglob\nrm -rf \"$SRC_DIR\"\n\ncurl -fsSL \"$SETUP_URL\" -o /tmp/setup.sh\nchmod +x /tmp/setup.sh\n\nexport LOGGLE_DOMAIN=\"{4}\"\nexport LOGGLE_CERT_EMAIL=\"{5}\"\nexport LOGGLE_MANAGED_IDENTITY_CLIENT_ID=\"{6}\"\nexport LOGGLE_CERT_ENV=\"{7}\"\nexport LOGGLE_KEY_VAULT_NAME=\"{8}\"\n\n/tmp/setup.sh\n''\n', parameters('setupScriptUrl'), parameters('assetRepoUrl'), parameters('assetRepoRef'), parameters('assetRepoPath'), parameters('domainName'), parameters('certificateEmail'), parameters('managedIdentityClientId'), parameters('letsEncryptEnvironment'), parameters('keyVaultName'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "apiVersion": "2023-09-01",
+      "name": "[format('{0}/{1}', variables('vmName'), 'loggleProvisioning')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "publisher": "Microsoft.Azure.Extensions",
+        "type": "CustomScript",
+        "typeHandlerVersion": "2.1",
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {
+          "commandToExecute": "[variables('commandToExecute')]"
+        },
+        "settings": {}
+      }
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # Loggle Azure Template
 
-This folder holds the Bicep template that mirrors the Terraform stack under `terraform/azure`. The VM Custom Script extension now clones this repository, copies the contents of `azure/vm-assets/` into `/tmp`, and executes `setup.sh`, so operators can inspect every file without having to trust a pre-built archive.
+This folder holds the Bicep template that mirrors the Terraform stack under `terraform/azure`. The VM Custom Script extension clones this repository, stages the contents of `azure/vm-assets/` into `/var/cache/loggle-assets/`, downloads `setup.sh` from Azure Storage (via the `setupScriptUrl` parameter), and drops a `loggle-bootstrap.service` unit that runs after `cloud-final.service` to execute the script. Operators can still inspect every asset on-disk before the installer runs.
 
 ## 1. Keep the VM assets in sync
 
@@ -41,6 +41,7 @@ This produces an Azure Resource Manager template (`loggle.json`) that you can di
 | `assetRepoUrl` | Git repository that hosts the `vm-assets` folder. | `https://github.com/jgador/loggle.git` |
 | `assetRepoRef` | Branch or tag used to download `assetRepoPath` (usually `azure/vm-assets`). Leave at `master` unless testing another ref. | `master` |
 | `assetRepoPath` | Repository-relative path that contains the VM assets. | `azure/vm-assets` |
+| `setupScriptUrl` | Azure Storage URL that serves the authoritative `setup.sh`. Update this when publishing a new installer build. | `https://stloggleprod.blob.${environment().suffixes.storage}/download/setup.sh` |
 | `publicIpName` | **Required** name of the pre-created public IP that already lives in the chosen resource group. The template only attaches to this IP. | *(none)* |
 
 > Purge protection is disabled by default so the Key Vault can be deleted (and purged) during environment teardown. Toggle it manually if your compliance posture requires it.  

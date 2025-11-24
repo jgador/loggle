@@ -15,6 +15,19 @@ param adminUsername string = 'loggle'
 @description('SSH public key in OpenSSH format (single line).')
 param sshPublicKey string
 
+@description('Public hostname served by the stack (also used for TLS issuance).')
+param domainName string = 'kibana.loggle.co'
+
+@description('Contact email used for Let\'s Encrypt requests.')
+param certificateEmail string = 'certbot@loggle.co'
+
+@allowed([
+  'production'
+  'staging'
+])
+@description('LetsEncrypt environment for certificate issuance. Leave at production for real deployments; switch to staging when repeatedly testing to avoid rate limits.')
+param letsEncryptEnvironment string = 'production'
+
 @description('IPv4 addresses or CIDR ranges allowed to reach Kibana / HTTPS. Default 0.0.0.0/0 leaves Kibana open to the entire internet - override this to restrict access.')
 param kibanaAllowedIps array = [
   '0.0.0.0/0'
@@ -31,6 +44,18 @@ param publicIpName string
 
 @description('Optional explicit Key Vault name. Leave empty to use the default prefix+date naming pattern.')
 param keyVaultName string = ''
+
+@description('Git repository that hosts the VM bootstrap assets (setup.sh, docker-compose.yml, etc.).')
+param assetRepoUrl string = 'https://github.com/jgador/loggle.git'
+
+@description('Git branch or tag used to download the assetRepoPath contents (normally azure/vm-assets). Defaults to master; change only when testing assets from another ref.')
+param assetRepoRef string = 'master'
+
+@description('Path inside the repository that contains the VM bootstrap assets.')
+param assetRepoPath string = 'azure/vm-assets'
+
+@description('HTTPS endpoint that hosts setup.sh (fetched onto the VM before execution).')
+param setupScriptUrl string = 'https://stloggleprod.blob.${environment().suffixes.storage}/download/setup.sh'
 
 @metadata({
   description: 'Internal date stamp appended to generated Key Vault names.'
@@ -74,6 +99,106 @@ EOF
 chmod 600 /etc/loggle/infra.env
 '
 ''', keyVaultEffectiveName, userAssignedIdentity.properties.clientId)
+
+var bootstrapCommand = format('''
+bash -c 'set -euo pipefail
+SETUP_URL="{0}"
+REPO_URL="{1}"
+REPO_REF="{2}"
+REPO_PATH="{3}"
+ASSET_CACHE_DIR="/var/cache/loggle-assets"
+SRC_DIR="/tmp/loggle-src"
+BOOTSTRAP_SCRIPT="/usr/local/sbin/loggle-bootstrap.sh"
+STATE_FILE="/var/lib/loggle/bootstrap.completed"
+
+rm -rf "$SRC_DIR"
+rm -rf "$ASSET_CACHE_DIR"
+install -d -m 0755 "$ASSET_CACHE_DIR"
+install -d -m 0755 "$(dirname "$STATE_FILE")"
+
+if ! command -v git >/dev/null 2>&1 || ! command -v curl >/dev/null 2>&1; then
+  export DEBIAN_FRONTEND=noninteractive
+  apt-get update -y
+  apt-get install -y git curl
+fi
+
+git clone --depth 1 --filter=blob:none --branch "$REPO_REF" "$REPO_URL" "$SRC_DIR"
+if [ -n "$REPO_PATH" ] && [ "$REPO_PATH" != "." ]; then
+  git -C "$SRC_DIR" sparse-checkout init --cone
+  git -C "$SRC_DIR" sparse-checkout set "$REPO_PATH"
+else
+  REPO_PATH="."
+fi
+ASSETS_DIR="$SRC_DIR/$REPO_PATH"
+if [ ! -d "$ASSETS_DIR" ]; then
+  echo "Assets path $REPO_PATH not found in repository $REPO_URL"
+  exit 1
+fi
+shopt -s dotglob
+cp -R "$ASSETS_DIR"/* "$ASSET_CACHE_DIR"/
+shopt -u dotglob
+rm -rf "$SRC_DIR"
+
+curl -fsSL "$SETUP_URL" -o "$ASSET_CACHE_DIR/setup.sh"
+chmod +x "$ASSET_CACHE_DIR/setup.sh"
+
+install -d -m 0755 /usr/local/sbin
+cat <<'EOF' >"$BOOTSTRAP_SCRIPT"
+#!/bin/bash
+set -euo pipefail
+
+ASSET_CACHE_DIR="/var/cache/loggle-assets"
+STATE_FILE="/var/lib/loggle/bootstrap.completed"
+
+if [[ -f "$STATE_FILE" ]]; then
+    echo "Loggle bootstrap already completed; remove $STATE_FILE to rerun."
+    exit 0
+fi
+
+if command -v cloud-init >/dev/null 2>&1; then
+    cloud-init status --wait
+fi
+
+rm -f /tmp/setup.sh /tmp/docker-compose.yml /tmp/otel-collector-config.yaml /tmp/kibana.yml /tmp/import-cert.ps1 /tmp/export-cert.ps1 /tmp/loggle.service
+rm -rf /tmp/init-es
+
+shopt -s dotglob
+cp -R "$ASSET_CACHE_DIR"/* /tmp/
+shopt -u dotglob
+chmod +x /tmp/setup.sh
+
+export LOGGLE_DOMAIN="{4}"
+export LOGGLE_CERT_EMAIL="{5}"
+export LOGGLE_MANAGED_IDENTITY_CLIENT_ID="{6}"
+export LOGGLE_CERT_ENV="{7}"
+export LOGGLE_KEY_VAULT_NAME="{8}"
+export LOGGLE_BOOTSTRAP_STATE_FILE="$STATE_FILE"
+
+/tmp/setup.sh
+
+EOF
+chmod +x "$BOOTSTRAP_SCRIPT"
+
+cat <<'EOF' >/etc/systemd/system/loggle-bootstrap.service
+[Unit]
+Description=Loggle setup runner
+Wants=network-online.target cloud-final.service
+After=network-online.target cloud-final.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/loggle-bootstrap.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable loggle-bootstrap.service
+systemctl start loggle-bootstrap.service
+'
+''', setupScriptUrl, assetRepoUrl, assetRepoRef, assetRepoPath, domainName, certificateEmail, userAssignedIdentity.properties.clientId, letsEncryptEnvironment, keyVaultEffectiveName)
 
 resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: identityName
@@ -278,6 +403,25 @@ resource infraEnvExtension 'Microsoft.Compute/virtualMachines/extensions@2023-09
     }
     settings: {}
   }
+}
+
+resource bootstrapExtension 'Microsoft.Compute/virtualMachines/extensions@2023-09-01' = {
+  name: 'loggleBootstrap'
+  parent: virtualMachine
+  location: location
+  properties: {
+    publisher: 'Microsoft.Azure.Extensions'
+    type: 'CustomScript'
+    typeHandlerVersion: '2.1'
+    autoUpgradeMinorVersion: true
+    protectedSettings: {
+      commandToExecute: bootstrapCommand
+    }
+    settings: {}
+  }
+  dependsOn: [
+    infraEnvExtension
+  ]
 }
 
 output publicIpAddress string = reference(resourceId('Microsoft.Network/publicIPAddresses', publicIpName), '2023-02-01').ipAddress
