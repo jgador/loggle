@@ -153,16 +153,6 @@ ensure_certificate_placeholders() {
     done
 }
 
-cache_bootstrap_configuration() {
-    persist_infra_var "LOGGLE_DOMAIN" "$DOMAIN"
-    persist_infra_var "LOGGLE_CERT_EMAIL" "$EMAIL"
-    persist_infra_var "LOGGLE_CERT_ENV" "$CERT_ENV"
-    persist_infra_var "LOGGLE_KEY_VAULT_NAME" "$KEY_VAULT_NAME"
-    persist_infra_var "LOGGLE_ASSET_REPO_URL" "$ASSET_REPO_URL"
-    persist_infra_var "LOGGLE_ASSET_REPO_PATH" "$ASSET_REPO_PATH"
-    persist_infra_var "LOGGLE_ASSET_REPO_REF" "$ASSET_REPO_REF"
-}
-
 load_or_cache_managed_identity() {
     if [[ -z "$MANAGED_IDENTITY_CLIENT_ID" && -n "${LOGGLE_MANAGED_IDENTITY_CLIENT_ID:-}" ]]; then
         MANAGED_IDENTITY_CLIENT_ID="$LOGGLE_MANAGED_IDENTITY_CLIENT_ID"
@@ -316,7 +306,6 @@ wait_for_elasticsearch() {
 main() {
     setup_environment
     ensure_directories
-    cache_bootstrap_configuration
     load_or_cache_managed_identity
 
     enable_universe_repo
