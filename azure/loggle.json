@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.39.26.7824",
-      "templateHash": "4103246083034471191"
+      "templateHash": "5328082100278855001"
     }
   },
   "parameters": {
@@ -157,7 +157,7 @@
     "identityName": "[coalesce(tryGet(parameters('resourceNames'), 'userAssignedIdentity'), variables('identityGeneratedName'))]",
     "keyVaultEffectiveName": "[coalesce(tryGet(parameters('resourceNames'), 'keyVault'), variables('keyVaultGeneratedName'))]",
     "osDiskName": "[coalesce(tryGet(parameters('resourceNames'), 'osDisk'), variables('osDiskGeneratedName'))]",
-    "infraEnvCommand": "[format('bash -c ''set -euo pipefail\nLOGGLE_HOME=\"/etc/loggle\"\nINFRA_ENV_PATH=\"$LOGGLE_HOME/infra.env\"\n\ninstall -d -m 0755 \"$LOGGLE_HOME\"\n\ncat <<''INFRAENV'' >\"$INFRA_ENV_PATH\"\nLOGGLE_DOMAIN=\"{0}\"\nLOGGLE_CERT_EMAIL=\"{1}\"\nLOGGLE_CERT_ENV=\"{2}\"\nLOGGLE_KEY_VAULT_NAME=\"{3}\"\nLOGGLE_ASSET_REPO_URL=\"{4}\"\nLOGGLE_ASSET_REPO_PATH=\"{5}\"\nLOGGLE_ASSET_REPO_REF=\"{6}\"\nINFRAENV\n\nchmod 600 \"$INFRA_ENV_PATH\"\n''\n', parameters('domainName'), parameters('certificateEmail'), parameters('letsEncryptEnvironment'), variables('keyVaultEffectiveName'), parameters('assetRepoUrl'), parameters('assetRepoPath'), parameters('assetRepoRef'))]"
+    "postdeployScript": "#!/bin/bash\nset -euo pipefail\n\nLOGGLE_HOME=\"/etc/loggle\"\nINFRA_ENV_PATH=\"$LOGGLE_HOME/infra.env\"\n\nif [[ -f \"$INFRA_ENV_PATH\" ]]; then\n    # shellcheck disable=SC1090\n    source \"$INFRA_ENV_PATH\"\nfi\n\nrepo_url=\"$${LOGGLE_ASSET_REPO_URL:-}\"\nrepo_ref=\"$${LOGGLE_ASSET_REPO_REF:-master}\"\nrepo_path=\"$${LOGGLE_ASSET_REPO_PATH:-azure/vm-assets}\"\n\nif [[ -z \"$repo_url\" ]]; then\n    echo \"LOGGLE_ASSET_REPO_URL unset; skipping setup download.\"\n    exit 0\nfi\n\nraw_base=\"$${repo_url%.git}\"\nraw_base=\"$${raw_base/https:\\/\\/github.com/https://raw.githubusercontent.com}\"\nraw_url=\"$${raw_base}/$${repo_ref}/$${repo_path}/setup.sh\"\n\ncurl -fsSL \"$raw_url\" -o \"$LOGGLE_HOME/setup.sh\"\nchmod 755 \"$LOGGLE_HOME/setup.sh\"\n"
   },
   "resources": [
     {
@@ -393,11 +393,12 @@
         "typeHandlerVersion": "2.1",
         "autoUpgradeMinorVersion": true,
         "protectedSettings": {
-          "commandToExecute": "[variables('infraEnvCommand')]"
+          "commandToExecute": "[format('bash -c ''set -euo pipefail\nLOGGLE_HOME=\"/etc/loggle\"\nINFRA_ENV_PATH=\"$LOGGLE_HOME/infra.env\"\n\ninstall -d -m 0755 \"$LOGGLE_HOME\"\n\ncat <<''INFRAENV'' >\"$INFRA_ENV_PATH\"\nLOGGLE_DOMAIN=\"{0}\"\nLOGGLE_CERT_EMAIL=\"{1}\"\nLOGGLE_CERT_ENV=\"{2}\"\nLOGGLE_KEY_VAULT_NAME=\"{3}\"\nLOGGLE_ASSET_REPO_URL=\"{4}\"\nLOGGLE_ASSET_REPO_PATH=\"{5}\"\nLOGGLE_ASSET_REPO_REF=\"{6}\"\nLOGGLE_MANAGED_IDENTITY_CLIENT_ID=\"{7}\"\nINFRAENV\n\nchmod 600 \"$INFRA_ENV_PATH\"\n\nPOSTDEPLOY_SCRIPT=\"$LOGGLE_HOME/postdeploy.sh\"\ncat <<''POSTDEPLOY'' >\"$POSTDEPLOY_SCRIPT\"\n{8}\nPOSTDEPLOY\n\nchmod 755 \"$POSTDEPLOY_SCRIPT\"\n\"$POSTDEPLOY_SCRIPT\"\n''\n', parameters('domainName'), parameters('certificateEmail'), parameters('letsEncryptEnvironment'), variables('keyVaultEffectiveName'), parameters('assetRepoUrl'), parameters('assetRepoPath'), parameters('assetRepoRef'), reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2023-01-31').clientId, variables('postdeployScript'))]"
         },
         "settings": {}
       },
       "dependsOn": [
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]",
         "[resourceId('Microsoft.Compute/virtualMachines', variables('vmName'))]"
       ]
     }

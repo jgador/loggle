@@ -86,6 +86,34 @@ var vmName = resourceNames.?virtualMachine ?? vmGeneratedName
 var identityName = resourceNames.?userAssignedIdentity ?? identityGeneratedName
 var keyVaultEffectiveName = resourceNames.?keyVault ?? keyVaultGeneratedName
 var osDiskName = resourceNames.?osDisk ?? osDiskGeneratedName
+var postdeployScript = '''#!/bin/bash
+set -euo pipefail
+
+LOGGLE_HOME="/etc/loggle"
+INFRA_ENV_PATH="$LOGGLE_HOME/infra.env"
+
+if [[ -f "$INFRA_ENV_PATH" ]]; then
+    # shellcheck disable=SC1090
+    source "$INFRA_ENV_PATH"
+fi
+
+repo_url="$${LOGGLE_ASSET_REPO_URL:-}"
+repo_ref="$${LOGGLE_ASSET_REPO_REF:-master}"
+repo_path="$${LOGGLE_ASSET_REPO_PATH:-azure/vm-assets}"
+
+if [[ -z "$repo_url" ]]; then
+    echo "LOGGLE_ASSET_REPO_URL unset; skipping setup download."
+    exit 0
+fi
+
+raw_base="$${repo_url%.git}"
+raw_base="$${raw_base/https:\/\/github.com/https://raw.githubusercontent.com}"
+raw_url="$${raw_base}/$${repo_ref}/$${repo_path}/setup.sh"
+
+curl -fsSL "$raw_url" -o "$LOGGLE_HOME/setup.sh"
+chmod 755 "$LOGGLE_HOME/setup.sh"
+'''
+
 var infraEnvCommand = format('''
 bash -c 'set -euo pipefail
 LOGGLE_HOME="/etc/loggle"
@@ -105,8 +133,16 @@ LOGGLE_MANAGED_IDENTITY_CLIENT_ID="{7}"
 INFRAENV
 
 chmod 600 "$INFRA_ENV_PATH"
+
+POSTDEPLOY_SCRIPT="$LOGGLE_HOME/postdeploy.sh"
+cat <<'POSTDEPLOY' >"$POSTDEPLOY_SCRIPT"
+{8}
+POSTDEPLOY
+
+chmod 755 "$POSTDEPLOY_SCRIPT"
+"$POSTDEPLOY_SCRIPT"
 '
-''', domainName, certificateEmail, letsEncryptEnvironment, keyVaultEffectiveName, assetRepoUrl, assetRepoPath, assetRepoRef, userAssignedIdentity.properties.clientId)
+''', domainName, certificateEmail, letsEncryptEnvironment, keyVaultEffectiveName, assetRepoUrl, assetRepoPath, assetRepoRef, userAssignedIdentity.properties.clientId, postdeployScript)
 
 resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: identityName
