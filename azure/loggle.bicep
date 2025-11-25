@@ -101,11 +101,12 @@ LOGGLE_KEY_VAULT_NAME="{3}"
 LOGGLE_ASSET_REPO_URL="{4}"
 LOGGLE_ASSET_REPO_PATH="{5}"
 LOGGLE_ASSET_REPO_REF="{6}"
+LOGGLE_MANAGED_IDENTITY_CLIENT_ID="{7}"
 INFRAENV
 
 chmod 600 "$INFRA_ENV_PATH"
 '
-''', domainName, certificateEmail, letsEncryptEnvironment, keyVaultEffectiveName, assetRepoUrl, assetRepoPath, assetRepoRef)
+''', domainName, certificateEmail, letsEncryptEnvironment, keyVaultEffectiveName, assetRepoUrl, assetRepoPath, assetRepoRef, userAssignedIdentity.properties.clientId)
 
 resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: identityName
