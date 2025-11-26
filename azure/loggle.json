@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.39.26.7824",
-      "templateHash": "16329512939521703096"
+      "templateHash": "2047328326953705686"
     }
   },
   "parameters": {
@@ -392,7 +392,7 @@
         "typeHandlerVersion": "2.1",
         "autoUpgradeMinorVersion": true,
         "protectedSettings": {
-          "commandToExecute": "[format('bash -c ''set -eo pipefail\nLOGGLE_HOME=\"/etc/loggle\"\nINFRA_ENV_PATH=\"$LOGGLE_HOME/infra.env\"\n\ninstall -d -m 0755 \"$LOGGLE_HOME\"\n\ncat <<''INFRAENV'' >\"$INFRA_ENV_PATH\"\nLOGGLE_DOMAIN=\"{0}\"\nLOGGLE_CERT_EMAIL=\"{1}\"\nLOGGLE_CERT_ENV=\"{2}\"\nLOGGLE_KEY_VAULT_NAME=\"{3}\"\nLOGGLE_ASSET_REPO_URL=\"{4}\"\nLOGGLE_ASSET_REPO_PATH=\"{5}\"\nLOGGLE_ASSET_REPO_REF=\"{6}\"\nLOGGLE_MANAGED_IDENTITY_CLIENT_ID=\"{7}\"\nINFRAENV\n\nchmod 600 \"$INFRA_ENV_PATH\"\n''\n', parameters('domainName'), parameters('certificateEmail'), parameters('letsEncryptEnvironment'), variables('keyVaultEffectiveName'), parameters('assetRepoUrl'), parameters('assetRepoPath'), parameters('assetRepoRef'), reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2023-01-31').clientId)]"
+          "commandToExecute": "[replace(format('bash -c ''set -eo pipefail\nLOGGLE_HOME=\"/etc/loggle\"\nINFRA_ENV_PATH=\"$LOGGLE_HOME/infra.env\"\n\ninstall -d -m 0755 \"$LOGGLE_HOME\"\n\ncat <<''INFRAENV'' >\"$INFRA_ENV_PATH\"\nLOGGLE_DOMAIN=\"{0}\"\nLOGGLE_CERT_EMAIL=\"{1}\"\nLOGGLE_CERT_ENV=\"{2}\"\nLOGGLE_KEY_VAULT_NAME=\"{3}\"\nLOGGLE_ASSET_REPO_URL=\"{4}\"\nLOGGLE_ASSET_REPO_PATH=\"{5}\"\nLOGGLE_ASSET_REPO_REF=\"{6}\"\nLOGGLE_MANAGED_IDENTITY_CLIENT_ID=\"{7}\"\nINFRAENV\n\nchmod 600 \"$INFRA_ENV_PATH\"\n''\n', parameters('domainName'), parameters('certificateEmail'), parameters('letsEncryptEnvironment'), variables('keyVaultEffectiveName'), parameters('assetRepoUrl'), parameters('assetRepoPath'), parameters('assetRepoRef'), reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2023-01-31').clientId), '\r', '')]"
         },
         "settings": {}
       },

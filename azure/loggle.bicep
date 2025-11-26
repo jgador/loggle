@@ -86,7 +86,7 @@ var vmName = resourceNames.?virtualMachine ?? vmGeneratedName
 var identityName = resourceNames.?userAssignedIdentity ?? identityGeneratedName
 var keyVaultEffectiveName = resourceNames.?keyVault ?? keyVaultGeneratedName
 var osDiskName = resourceNames.?osDisk ?? osDiskGeneratedName
-var infraEnvCommand = format('''
+var infraEnvCommand = replace(format('''
 bash -c 'set -eo pipefail
 LOGGLE_HOME="/etc/loggle"
 INFRA_ENV_PATH="$LOGGLE_HOME/infra.env"
@@ -106,7 +106,7 @@ INFRAENV
 
 chmod 600 "$INFRA_ENV_PATH"
 '
-''', domainName, certificateEmail, letsEncryptEnvironment, keyVaultEffectiveName, assetRepoUrl, assetRepoPath, assetRepoRef, userAssignedIdentity.properties.clientId)
+''', domainName, certificateEmail, letsEncryptEnvironment, keyVaultEffectiveName, assetRepoUrl, assetRepoPath, assetRepoRef, userAssignedIdentity.properties.clientId), '\r', '')
 
 resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: identityName
