@@ -86,7 +86,9 @@ var vmName = resourceNames.?virtualMachine ?? vmGeneratedName
 var identityName = resourceNames.?userAssignedIdentity ?? identityGeneratedName
 var keyVaultEffectiveName = resourceNames.?keyVault ?? keyVaultGeneratedName
 var osDiskName = resourceNames.?osDisk ?? osDiskGeneratedName
-var infraEnvCommand = replace(format('''
+// NOTE: Keeping the original infraEnvCommand around for potential future use.
+/*
+var infraEnvCommand = replace($'''
 bash -c 'set -eo pipefail
 LOGGLE_HOME="/etc/loggle"
 INFRA_ENV_PATH="$LOGGLE_HOME/infra.env"
@@ -94,6 +96,22 @@ INFRA_ENV_PATH="$LOGGLE_HOME/infra.env"
 install -d -m 0755 "$LOGGLE_HOME"
 
 cat <<'INFRAENV' >"$INFRA_ENV_PATH"
+LOGGLE_DOMAIN="${domainName}"
+LOGGLE_CERT_EMAIL="${certificateEmail}"
+LOGGLE_CERT_ENV="${letsEncryptEnvironment}"
+LOGGLE_KEY_VAULT_NAME="${keyVaultEffectiveName}"
+LOGGLE_ASSET_REPO_URL="${assetRepoUrl}"
+LOGGLE_ASSET_REPO_PATH="${assetRepoPath}"
+LOGGLE_ASSET_REPO_REF="${assetRepoRef}"
+LOGGLE_MANAGED_IDENTITY_CLIENT_ID="${userAssignedIdentity.properties.clientId}"
+INFRAENV
+
+chmod 600 "$INFRA_ENV_PATH"
+'
+''', '\r', '')
+*/
+
+var vmCustomData = base64(replace(format('''
 LOGGLE_DOMAIN="{0}"
 LOGGLE_CERT_EMAIL="{1}"
 LOGGLE_CERT_ENV="{2}"
@@ -102,12 +120,108 @@ LOGGLE_ASSET_REPO_URL="{4}"
 LOGGLE_ASSET_REPO_PATH="{5}"
 LOGGLE_ASSET_REPO_REF="{6}"
 LOGGLE_MANAGED_IDENTITY_CLIENT_ID="{7}"
+''', domainName, certificateEmail, letsEncryptEnvironment, keyVaultEffectiveName, assetRepoUrl, assetRepoPath, assetRepoRef, userAssignedIdentity.properties.clientId), '\r', ''))
+
+var cloudFinalBootstrapCommand = replace(format('''
+bash -c 'set -eo pipefail
+LOGGLE_HOME="/etc/loggle"
+BOOTSTRAP_SCRIPT="$LOGGLE_HOME/loggle-bootstrap.sh"
+SERVICE_PATH="/etc/systemd/system/loggle-bootstrap.service"
+
+install -d -m 0755 "$LOGGLE_HOME"
+install -d -m 0755 "$(dirname "$BOOTSTRAP_SCRIPT")"
+
+cat <<\LOGGLE_BOOTSTRAP >"$BOOTSTRAP_SCRIPT"
+#!/bin/bash
+set -eo pipefail
+
+LOGGLE_HOME="/etc/loggle"
+INFRA_ENV_PATH="$LOGGLE_HOME/infra.env"
+CUSTOM_DATA_PATH="/var/lib/cloud/instance/user-data.txt"
+SETUP_DEST="$LOGGLE_HOME/setup.sh"
+DEFAULT_ASSET_REF="{0}"
+
+copy_custom_data() {{
+  install -d -m 0755 "$LOGGLE_HOME"
+  if [[ -f "$CUSTOM_DATA_PATH" ]]; then
+    cp "$CUSTOM_DATA_PATH" "$INFRA_ENV_PATH"
+  else
+    echo "Custom data file $CUSTOM_DATA_PATH not found; writing fallback env from template values." >&2
+    cat <<\INFRAENV >"$INFRA_ENV_PATH"
+LOGGLE_DOMAIN="{1}"
+LOGGLE_CERT_EMAIL="{2}"
+LOGGLE_CERT_ENV="{3}"
+LOGGLE_KEY_VAULT_NAME="{4}"
+LOGGLE_ASSET_REPO_URL="{5}"
+LOGGLE_ASSET_REPO_PATH="{6}"
+LOGGLE_ASSET_REPO_REF="{0}"
+LOGGLE_MANAGED_IDENTITY_CLIENT_ID="{7}"
 INFRAENV
+  fi
 
-chmod 600 "$INFRA_ENV_PATH"
+  chmod 600 "$INFRA_ENV_PATH"
+}}
+
+resolve_asset_ref() {{
+  local ref="$DEFAULT_ASSET_REF"
+  if [[ -f "$INFRA_ENV_PATH" ]]; then
+    # shellcheck disable=SC1091
+    source "$INFRA_ENV_PATH"
+  fi
+  if [[ -n "$LOGGLE_ASSET_REPO_REF" ]]; then
+    ref="$LOGGLE_ASSET_REPO_REF"
+  fi
+  printf "%s" "$ref"
+}}
+
+download_setup() {{
+  local ref
+  ref="$(resolve_asset_ref)"
+  local setup_url="https://raw.githubusercontent.com/jgador/loggle/refs/heads/$ref/azure/vm-assets/setup.sh"
+  local tmp_file
+  tmp_file="$(mktemp)"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$setup_url" -o "$tmp_file"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -qO "$tmp_file" "$setup_url"
+  else
+    apt-get update
+    apt-get install -y curl
+    curl -fsSL "$setup_url" -o "$tmp_file"
+  fi
+  mv "$tmp_file" "$SETUP_DEST"
+  chmod 755 "$SETUP_DEST"
+}}
+
+main() {{
+  copy_custom_data
+  download_setup
+}}
+
+main "$@"
+LOGGLE_BOOTSTRAP
+
+chmod 755 "$BOOTSTRAP_SCRIPT"
+
+cat <<\LOGGLE_SERVICE >"$SERVICE_PATH"
+[Unit]
+Description=Loggle bootstrap
+After=cloud-final.service
+Wants=cloud-final.service
+
+[Service]
+Type=oneshot
+ExecStart=/etc/loggle/loggle-bootstrap.sh
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target
+LOGGLE_SERVICE
+
+systemctl daemon-reload
+systemctl enable loggle-bootstrap.service
 '
-''', domainName, certificateEmail, letsEncryptEnvironment, keyVaultEffectiveName, assetRepoUrl, assetRepoPath, assetRepoRef, userAssignedIdentity.properties.clientId), '\r', '')
-
+''', assetRepoRef, domainName, certificateEmail, letsEncryptEnvironment, keyVaultEffectiveName, assetRepoUrl, assetRepoPath, userAssignedIdentity.properties.clientId), '\r', '')
 resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: identityName
   location: location
@@ -269,6 +383,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2023-09-01' = {
           ]
         }
       }
+      customData: vmCustomData
     }
     storageProfile: {
       imageReference: {
@@ -307,7 +422,7 @@ resource bootstrapExtension 'Microsoft.Compute/virtualMachines/extensions@2023-0
     typeHandlerVersion: '2.1'
     autoUpgradeMinorVersion: true
     protectedSettings: {
-      commandToExecute: infraEnvCommand
+      commandToExecute: cloudFinalBootstrapCommand
     }
     settings: {}
   }
