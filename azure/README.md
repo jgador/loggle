@@ -57,3 +57,12 @@ The deployment outputs the VM public IP, the managed identity client ID, and the
 ### Naming
 
 Every resource name is derived from the `namePrefix` parameter (e.g., `loggle-vnet`, `loggle-nsg`). If you set `namePrefix` to an empty string, the template falls back to simple names like `vnet` and `nsg`. For per-resource overrides you now need to fork or extend the template.
+
+### Verifying the VM bootstrap
+
+To confirm the setup script finished successfully:
+1. Open the provisioned VM in the Azure Portal.
+2. Under **Operations**, choose **Run command** (see [Microsoft Docs](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/run-command) for background).
+3. Select **RunShellScript** and execute `sudo cat /etc/loggle/setup.log`.
+
+The tail of the log should include `Loggle setup complete.` along with the container status summary printed by `setup.sh`.
