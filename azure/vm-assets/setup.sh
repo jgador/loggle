@@ -15,12 +15,9 @@ readonly LOGGLE_PATH="$LOGGLE_ROOT"
 readonly CERT_PATH="${LOGGLE_CERT_PATH:-$LOGGLE_PATH/certs}"
 readonly DOMAIN="${LOGGLE_DOMAIN:-kibana.loggle.co}"
 readonly EMAIL="${LOGGLE_CERT_EMAIL:-certbot@loggle.co}"
-readonly DEFAULT_ASSET_REPO_URL="https://github.com/jgador/loggle.git"
-readonly DEFAULT_ASSET_REPO_PATH="azure/vm-assets"
-readonly ASSET_REPO_URL="${LOGGLE_ASSET_REPO_URL:-$DEFAULT_ASSET_REPO_URL}"
-readonly ASSET_REPO_PATH="${LOGGLE_ASSET_REPO_PATH:-$DEFAULT_ASSET_REPO_PATH}"
-readonly DEFAULT_ASSET_REPO_REF="master"
-readonly ASSET_REPO_REF="${LOGGLE_ASSET_REPO_REF:-$DEFAULT_ASSET_REPO_REF}"
+readonly ASSET_REPO_URL="${LOGGLE_ASSET_REPO_URL:-https://github.com/jgador/loggle.git}"
+readonly ASSET_REPO_REF="${LOGGLE_ASSET_REPO_REF:-master}"
+readonly ASSET_PAYLOAD_PATH="azure/vm-assets"
 readonly ASSET_CLONE_DIR="${LOGGLE_ASSET_CLONE_DIR:-$LOGGLE_ROOT/repo}"
 readonly ASSET_DIR="${LOGGLE_ASSET_DIR:-$LOGGLE_ROOT/assets}"
 MANAGED_IDENTITY_CLIENT_ID="${LOGGLE_MANAGED_IDENTITY_CLIENT_ID:-}"
@@ -199,13 +196,10 @@ refresh_assets_from_repo() {
         exit 1
     fi
 
-    local repo_asset_dir="$ASSET_CLONE_DIR"
-    if [[ -n "$ASSET_REPO_PATH" && "$ASSET_REPO_PATH" != "." ]]; then
-        repo_asset_dir="$ASSET_CLONE_DIR/$ASSET_REPO_PATH"
-    fi
+    local repo_asset_dir="$ASSET_CLONE_DIR/$ASSET_PAYLOAD_PATH"
 
     if [[ ! -d "$repo_asset_dir" ]]; then
-        echo "Asset path $ASSET_REPO_PATH not found inside $ASSET_REPO_URL"
+        echo "Asset path $ASSET_PAYLOAD_PATH not found inside $ASSET_REPO_URL"
         exit 1
     fi
 

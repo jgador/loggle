@@ -46,13 +46,10 @@ param publicIpName string
 param keyVaultName string = ''
 
 @description('Git repository that hosts the VM bootstrap assets (setup.sh, docker-compose.yml, etc.).')
-param assetRepoUrl string = 'https://github.com/jgador/loggle.git'
+param repositoryUrl string = 'https://github.com/jgador/loggle.git'
 
-@description('Git branch or tag used to download the assetRepoPath contents (normally azure/vm-assets). Defaults to master; change only when testing assets from another ref.')
-param assetRepoRef string = 'master'
-
-@description('Path inside the repository that contains the VM bootstrap assets.')
-param assetRepoPath string = 'azure/vm-assets'
+@description('Git branch or tag used to download the repositoryUrl contents. Defaults to master; override when testing another ref.')
+param repositoryBranch string = 'master'
 
 @metadata({
   description: 'Internal date stamp appended to generated Key Vault names.'
@@ -60,6 +57,11 @@ param assetRepoPath string = 'azure/vm-assets'
 })
 param keyVaultDateSuffix string = utcNow('yyyyMMdd')
 
+var repositoryUrlTrimmed = trim(repositoryUrl)
+var repositoryUrlWithoutGit = replace(repositoryUrlTrimmed, '.git', '')
+var rawRepositoryBaseUrl = replace(repositoryUrlWithoutGit, 'https://github.com/', 'https://raw.githubusercontent.com/')
+var setupScriptRelativePath = 'azure/vm-assets/setup.sh'
+var setupScriptUrl = format('{0}/{1}/{2}', rawRepositoryBaseUrl, repositoryBranch, setupScriptRelativePath)
 var tags = union({
   workload: 'loggle'
 }, extraTags)
@@ -100,9 +102,9 @@ LOGGLE_DOMAIN="${domainName}"
 LOGGLE_CERT_EMAIL="${certificateEmail}"
 LOGGLE_CERT_ENV="${letsEncryptEnvironment}"
 LOGGLE_KEY_VAULT_NAME="${keyVaultEffectiveName}"
-LOGGLE_ASSET_REPO_URL="${assetRepoUrl}"
-LOGGLE_ASSET_REPO_PATH="${assetRepoPath}"
-LOGGLE_ASSET_REPO_REF="${assetRepoRef}"
+LOGGLE_ASSET_REPO_URL="${repositoryUrl}"
+LOGGLE_ASSET_REPO_REF="${repositoryBranch}"
+LOGGLE_SETUP_SCRIPT_URL="${setupScriptUrl}"
 LOGGLE_MANAGED_IDENTITY_CLIENT_ID="${userAssignedIdentity.properties.clientId}"
 INFRAENV
 
@@ -117,10 +119,10 @@ LOGGLE_CERT_EMAIL="{1}"
 LOGGLE_CERT_ENV="{2}"
 LOGGLE_KEY_VAULT_NAME="{3}"
 LOGGLE_ASSET_REPO_URL="{4}"
-LOGGLE_ASSET_REPO_PATH="{5}"
-LOGGLE_ASSET_REPO_REF="{6}"
+LOGGLE_ASSET_REPO_REF="{5}"
+LOGGLE_SETUP_SCRIPT_URL="{6}"
 LOGGLE_MANAGED_IDENTITY_CLIENT_ID="{7}"
-''', domainName, certificateEmail, letsEncryptEnvironment, keyVaultEffectiveName, assetRepoUrl, assetRepoPath, assetRepoRef, userAssignedIdentity.properties.clientId), '\r', ''))
+''', domainName, certificateEmail, letsEncryptEnvironment, keyVaultEffectiveName, repositoryUrl, repositoryBranch, setupScriptUrl, userAssignedIdentity.properties.clientId), '\r', ''))
 
 var cloudFinalBootstrapCommand = replace(format('''
 bash -c 'set -eo pipefail
@@ -139,7 +141,6 @@ LOGGLE_HOME="/etc/loggle"
 INFRA_ENV_PATH="$LOGGLE_HOME/infra.env"
 CUSTOM_DATA_PATH="/var/lib/cloud/instance/user-data.txt"
 SETUP_DEST="$LOGGLE_HOME/setup.sh"
-DEFAULT_ASSET_REF="{0}"
 
 copy_custom_data() {{
   install -d -m 0755 "$LOGGLE_HOME"
@@ -153,31 +154,24 @@ LOGGLE_CERT_EMAIL="{2}"
 LOGGLE_CERT_ENV="{3}"
 LOGGLE_KEY_VAULT_NAME="{4}"
 LOGGLE_ASSET_REPO_URL="{5}"
-LOGGLE_ASSET_REPO_PATH="{6}"
-LOGGLE_ASSET_REPO_REF="{0}"
-LOGGLE_MANAGED_IDENTITY_CLIENT_ID="{7}"
+LOGGLE_ASSET_REPO_REF="{7}"
+LOGGLE_SETUP_SCRIPT_URL="{0}"
+LOGGLE_MANAGED_IDENTITY_CLIENT_ID="{6}"
 INFRAENV
   fi
 
   chmod 600 "$INFRA_ENV_PATH"
 }}
 
-resolve_asset_ref() {{
-  local ref="$DEFAULT_ASSET_REF"
+download_setup() {{
+  local setup_url="{0}"
   if [[ -f "$INFRA_ENV_PATH" ]]; then
     # shellcheck disable=SC1091
     source "$INFRA_ENV_PATH"
   fi
-  if [[ -n "$LOGGLE_ASSET_REPO_REF" ]]; then
-    ref="$LOGGLE_ASSET_REPO_REF"
+  if [[ -n "$LOGGLE_SETUP_SCRIPT_URL" ]]; then
+    setup_url="$LOGGLE_SETUP_SCRIPT_URL"
   fi
-  printf "%s" "$ref"
-}}
-
-download_setup() {{
-  local ref
-  ref="$(resolve_asset_ref)"
-  local setup_url="https://raw.githubusercontent.com/jgador/loggle/refs/heads/$ref/azure/vm-assets/setup.sh"
   local tmp_file
   tmp_file="$(mktemp)"
   if command -v curl >/dev/null 2>&1; then
@@ -236,7 +230,7 @@ LOGGLE_SERVICE
 systemctl daemon-reload
 systemctl enable --now loggle-bootstrap.service
 '
-''', assetRepoRef, domainName, certificateEmail, letsEncryptEnvironment, keyVaultEffectiveName, assetRepoUrl, assetRepoPath, userAssignedIdentity.properties.clientId), '\r', '')
+''', setupScriptUrl, domainName, certificateEmail, letsEncryptEnvironment, keyVaultEffectiveName, repositoryUrl, userAssignedIdentity.properties.clientId, repositoryBranch), '\r', '')
 resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: identityName
   location: location

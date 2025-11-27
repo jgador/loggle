@@ -38,10 +38,8 @@ This produces an Azure Resource Manager template (`loggle.json`) that you can di
 | `extraTags` | Additional resource tags merged with `{ workload = "loggle" }`. | `{}` |
 | `resourceNames` | Object that overrides auto-generated names (keys: `virtualNetwork`, `subnet`, `networkSecurityGroup`, `networkInterface`, `virtualMachine`, `userAssignedIdentity`, `keyVault`, `osDisk`). | `{}` |
 | `keyVaultName` | Optional explicit Key Vault name. Leave empty to use the prefix + date pattern. | `""` |
-| `assetRepoUrl` | Git repository that hosts the `vm-assets` folder. | `https://github.com/jgador/loggle.git` |
-| `assetRepoRef` | Branch or tag used to download `assetRepoPath` (usually `azure/vm-assets`). Leave at `master` unless testing another ref. | `master` |
-| `assetRepoPath` | Repository-relative path that contains the VM assets. | `azure/vm-assets` |
-| `setupScriptUrl` | Azure Storage URL that serves the authoritative `setup.sh`. Update this when publishing a new installer build. | `https://stloggleprod.blob.${environment().suffixes.storage}/download/setup.sh` |
+| `repositoryUrl` | Git repository that hosts the `vm-assets` folder. | `https://github.com/jgador/loggle.git` |
+| `setupScriptUrl` | Raw HTTPS URL for `setup.sh` (point it at another branch/ref when testing). | `https://raw.githubusercontent.com/jgador/loggle/refs/heads/master/azure/vm-assets/setup.sh` |
 | `publicIpName` | **Required** name of the pre-created public IP that already lives in the chosen resource group. The template only attaches to this IP. | *(none)* |
 
 > Purge protection is disabled by default so the Key Vault can be deleted (and purged) during environment teardown. Toggle it manually if your compliance posture requires it.  
