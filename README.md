@@ -203,10 +203,10 @@ flowchart TB
 
 ### Re-run the provisioning script inside the VM
 
-The VM stores the managed identity in `/etc/loggle/identity.env`, so `/etc/loggle/setup.sh` can be run repeatedly without additional parameters. After SSH-ing into the host:
+The VM stores the managed identity in `/etc/loggle/identity.env`, so `/etc/loggle/install.sh` can be run repeatedly without additional parameters. After SSH-ing into the host:
 
 ```bash
-sudo /bin/bash /etc/loggle/setup.sh
+sudo /bin/bash /etc/loggle/install.sh
 ```
 
 This replays package installs, certificate sync, and service configuration in an idempotent manner.

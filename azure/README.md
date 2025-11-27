@@ -1,6 +1,6 @@
 # Loggle Azure Template
 
-This folder holds the Bicep template that mirrors the Terraform stack under `terraform/azure`. The VM Custom Script extension clones this repository, stages the contents of `azure/vm-assets/` into `/var/cache/loggle-assets/`, downloads `setup.sh` directly from GitHub based on the configured repository URL and branch, and drops a `loggle-bootstrap.service` unit that runs after `cloud-final.service` to execute the script. Operators can still inspect every asset on-disk before the installer runs.
+This folder holds the Bicep template that mirrors the Terraform stack under `terraform/azure`. The VM Custom Script extension clones this repository, stages the contents of `azure/vm-assets/` into `/var/cache/loggle-assets/`, downloads `install.sh` directly from GitHub based on the configured repository URL and branch, and drops a `loggle-bootstrap.service` unit that runs after `cloud-final.service` to execute the script. Operators can still inspect every asset on-disk before the installer runs.
 
 ## 1. Keep the VM assets in sync
 
@@ -65,4 +65,4 @@ To confirm the setup script finished successfully:
 2. Under **Operations**, choose **Run command** (see [Microsoft Docs](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/run-command) for background).
 3. Select **RunShellScript** and execute `sudo cat /etc/loggle/setup.log`.
 
-The tail of the log should include `Loggle setup complete.` along with the container status summary printed by `setup.sh`.
+The tail of the log should include `Loggle setup complete.` along with the container status summary printed by `install.sh`.

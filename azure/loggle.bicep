@@ -36,7 +36,7 @@ param publicIpName string
 @description('Optional explicit Key Vault name. Leave empty to use the prefix-based naming pattern.')
 param keyVaultName string = 'logglekv'
 
-@description('Git repository that hosts the VM bootstrap assets (setup.sh, docker-compose.yml, etc.).')
+@description('Git repository that hosts the VM bootstrap assets (install.sh, docker-compose.yml, etc.).')
 param repositoryUrl string = 'https://github.com/jgador/loggle.git'
 
 @description('Git branch or tag used to download the repositoryUrl contents. Defaults to master; override when testing another ref.')
@@ -46,7 +46,7 @@ var location = resourceGroup().location
 var repositoryUrlTrimmed = trim(repositoryUrl)
 var repositoryUrlWithoutGit = replace(repositoryUrlTrimmed, '.git', '')
 var rawRepositoryBaseUrl = replace(repositoryUrlWithoutGit, 'https://github.com/', 'https://raw.githubusercontent.com/')
-var setupScriptRelativePath = 'azure/vm-assets/setup.sh'
+var setupScriptRelativePath = 'azure/vm-assets/install.sh'
 var setupScriptUrl = format('{0}/{1}/{2}', rawRepositoryBaseUrl, repositoryBranch, setupScriptRelativePath)
 var tags = {
   workload: 'loggle'
@@ -126,7 +126,7 @@ set -eo pipefail
 LOGGLE_HOME="/etc/loggle"
 INFRA_ENV_PATH="$LOGGLE_HOME/infra.env"
 CUSTOM_DATA_PATH="/var/lib/cloud/instance/user-data.txt"
-SETUP_DEST="$LOGGLE_HOME/setup.sh"
+SETUP_DEST="$LOGGLE_HOME/install.sh"
 
 copy_custom_data() {{
   install -d -m 0755 "$LOGGLE_HOME"

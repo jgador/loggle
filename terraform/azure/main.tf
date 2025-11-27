@@ -206,9 +206,9 @@ resource "azurerm_virtual_machine" "vm" {
       "sudo mkdir -p /etc/loggle/certs",
       "sudo mkdir -p /etc/loggle/elasticsearch-data",
       "sudo mkdir -p /etc/loggle/kibana-data",
-      "sudo mv /tmp/setup.sh /etc/loggle/",
-      "sudo chmod +x /etc/loggle/setup.sh",
-      "sudo LOGGLE_MANAGED_IDENTITY_CLIENT_ID=${azurerm_user_assigned_identity.auth_id.client_id} /etc/loggle/setup.sh"
+      "sudo mv /tmp/install.sh /etc/loggle/",
+      "sudo chmod +x /etc/loggle/install.sh",
+      "sudo LOGGLE_MANAGED_IDENTITY_CLIENT_ID=${azurerm_user_assigned_identity.auth_id.client_id} /etc/loggle/install.sh"
     ]
   }
   depends_on = [azurerm_user_assigned_identity.auth_id, azurerm_key_vault.kv]
