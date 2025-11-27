@@ -15,6 +15,11 @@ readonly LOGGLE_PATH="$LOGGLE_ROOT"
 readonly CERT_PATH="${LOGGLE_CERT_PATH:-$LOGGLE_PATH/certs}"
 readonly DOMAIN="${LOGGLE_DOMAIN:-kibana.loggle.co}"
 readonly EMAIL="${LOGGLE_CERT_EMAIL:-certbot@loggle.co}"
+readonly ASSET_REPO_URL="${LOGGLE_ASSET_REPO_URL:-https://github.com/jgador/loggle.git}"
+readonly ASSET_REPO_REF="${LOGGLE_ASSET_REPO_REF:-master}"
+readonly ASSET_PAYLOAD_PATH="azure/vm-assets"
+readonly ASSET_CLONE_DIR="${LOGGLE_ASSET_CLONE_DIR:-$LOGGLE_ROOT/repo}"
+readonly ASSET_DIR="${LOGGLE_ASSET_DIR:-$LOGGLE_ROOT/assets}"
 MANAGED_IDENTITY_CLIENT_ID="${LOGGLE_MANAGED_IDENTITY_CLIENT_ID:-}"
 CERT_ENV="${LOGGLE_CERT_ENV:-production}"
 KEY_VAULT_NAME="${LOGGLE_KEY_VAULT_NAME:-}"
@@ -68,41 +73,51 @@ persist_infra_var() {
 
     mkdir -p "$(dirname "$INFRA_ENV_PATH")"
 
-    if [[ -f "$INFRA_ENV_PATH" ]] && grep -qx "${key}=${value}" "$INFRA_ENV_PATH"; then
-        return
+    local tmp_file="${INFRA_ENV_PATH}.tmp"
+    local sanitized="${value//\"/\\\"}"
+    local current_value=""
+    if [[ -f "$INFRA_ENV_PATH" ]]; then
+        current_value="$(grep -m 1 "^${key}=" "$INFRA_ENV_PATH" || true)"
+        if [[ "$current_value" == "${key}=\"${sanitized}\"" ]]; then
+            return
+        fi
     fi
 
-    local tmp_file="${INFRA_ENV_PATH}.tmp"
     if [[ -f "$INFRA_ENV_PATH" ]]; then
         grep -v "^${key}=" "$INFRA_ENV_PATH" > "$tmp_file" || true
     else
         : > "$tmp_file"
     fi
 
-    printf '%s=%s\n' "$key" "$value" >> "$tmp_file"
+    printf '%s="%s"\n' "$key" "$sanitized" >> "$tmp_file"
     mv "$tmp_file" "$INFRA_ENV_PATH"
     chmod 600 "$INFRA_ENV_PATH"
 }
 
 move_config_files() {
+    if [[ ! -d "$ASSET_DIR" ]]; then
+        echo "Asset directory $ASSET_DIR not found; cannot copy configuration files."
+        exit 1
+    fi
+
     local config_files=("docker-compose.yml" "otel-collector-config.yaml" "kibana.yml" "import-cert.ps1" "export-cert.ps1")
     for file in "${config_files[@]}"; do
-        local source="/tmp/$file"
+        local source="$ASSET_DIR/$file"
         if [[ -e "$source" ]]; then
-            mv -f "$source" "$LOGGLE_PATH/"
+            cp -f "$source" "$LOGGLE_PATH/"
         fi
     done
 
-    if [[ -f "/tmp/loggle.service" ]]; then
-        mv -f "/tmp/loggle.service" "/etc/systemd/system/loggle.service"
+    if [[ -f "$ASSET_DIR/loggle.service" ]]; then
+        cp -f "$ASSET_DIR/loggle.service" "/etc/systemd/system/loggle.service"
     fi
 
-    if [[ -d "/tmp/init-es" ]]; then
+    if [[ -d "$ASSET_DIR/init-es" ]]; then
         local target="$LOGGLE_PATH/init-es"
         if [[ -d "$target" ]]; then
             rm -rf "$target"
         fi
-        mv "/tmp/init-es" "$LOGGLE_PATH/"
+        cp -R "$ASSET_DIR/init-es" "$LOGGLE_PATH/"
     fi
 }
 
@@ -112,6 +127,7 @@ ensure_directories() {
     mkdir -p "$LOGGLE_PATH/elasticsearch-data"
     mkdir -p "$LOGGLE_PATH/kibana-data"
     mkdir -p "$LOGGLE_PATH/certs"
+    mkdir -p "$ASSET_DIR"
 }
 
 set_permissions() {
@@ -134,13 +150,6 @@ ensure_certificate_placeholders() {
     done
 }
 
-cache_bootstrap_configuration() {
-    persist_infra_var "LOGGLE_DOMAIN" "$DOMAIN"
-    persist_infra_var "LOGGLE_CERT_EMAIL" "$EMAIL"
-    persist_infra_var "LOGGLE_CERT_ENV" "$CERT_ENV"
-    persist_infra_var "LOGGLE_KEY_VAULT_NAME" "$KEY_VAULT_NAME"
-}
-
 load_or_cache_managed_identity() {
     if [[ -z "$MANAGED_IDENTITY_CLIENT_ID" && -n "${LOGGLE_MANAGED_IDENTITY_CLIENT_ID:-}" ]]; then
         MANAGED_IDENTITY_CLIENT_ID="$LOGGLE_MANAGED_IDENTITY_CLIENT_ID"
@@ -152,6 +161,52 @@ load_or_cache_managed_identity() {
     else
         echo "Managed identity client ID not provided and not cached."
     fi
+}
+
+assets_present_locally() {
+    [[ -f "$ASSET_DIR/docker-compose.yml" && -f "$ASSET_DIR/import-cert.ps1" && -d "$ASSET_DIR/init-es" ]]
+}
+
+refresh_assets_from_repo() {
+    if [[ -n "${LOGGLE_SKIP_ASSET_SYNC:-}" ]]; then
+        echo "LOGGLE_SKIP_ASSET_SYNC is set; skipping asset synchronization."
+        return
+    fi
+
+    if assets_present_locally; then
+        echo "Asset payload already available in $ASSET_DIR; skipping clone."
+        return
+    fi
+
+    if [[ -z "$ASSET_REPO_URL" ]]; then
+        echo "Asset repository URL is not defined. Update LOGGLE_ASSET_REPO_URL or infra.env."
+        exit 1
+    fi
+
+    install -d -m 0755 "$(dirname "$ASSET_CLONE_DIR")"
+    rm -rf "$ASSET_CLONE_DIR"
+    echo "Cloning assets from $ASSET_REPO_URL (ref: ${ASSET_REPO_REF:-default}) into $ASSET_CLONE_DIR..."
+    local clone_args=(--depth 1)
+    if [[ -n "$ASSET_REPO_REF" ]]; then
+        clone_args+=(--branch "$ASSET_REPO_REF" --single-branch)
+    fi
+
+    if ! git clone "${clone_args[@]}" "$ASSET_REPO_URL" "$ASSET_CLONE_DIR"; then
+        echo "Failed to clone $ASSET_REPO_URL"
+        exit 1
+    fi
+
+    local repo_asset_dir="$ASSET_CLONE_DIR/$ASSET_PAYLOAD_PATH"
+
+    if [[ ! -d "$repo_asset_dir" ]]; then
+        echo "Asset path $ASSET_PAYLOAD_PATH not found inside $ASSET_REPO_URL"
+        exit 1
+    fi
+
+    echo "Staging assets into $ASSET_DIR..."
+    rm -rf "$ASSET_DIR"
+    install -d -m 0755 "$ASSET_DIR"
+    cp -R "$repo_asset_dir"/. "$ASSET_DIR"/
 }
 
 apt_get() {
@@ -241,24 +296,50 @@ wait_for_elasticsearch() {
     return 1
 }
 
+log_container_status() {
+    if ! command -v docker >/dev/null 2>&1; then
+        echo "Docker CLI not available; skipping container status check."
+        return
+    fi
+
+    local containers=(elasticsearch kibana loggle-web otelcol)
+    echo "Container status summary:"
+    local any_found=0
+    for name in "${containers[@]}"; do
+        local status
+        status="$(docker ps --filter "name=${name}$" --format '{{.Names}} ({{.Status}})')"
+        if [[ -n "$status" ]]; then
+            printf '  %s\n' "$status"
+            any_found=1
+        else
+            printf '  %s not running\n' "$name"
+        fi
+    done
+
+    if [[ $any_found -eq 0 ]]; then
+        echo "No Loggle containers are running yet."
+    fi
+}
+
 # Main script execution
 main() {
     setup_environment
     ensure_directories
-    cache_bootstrap_configuration
     load_or_cache_managed_identity
-    move_config_files
-    set_permissions
-    ensure_certificate_placeholders
-    
+
     enable_universe_repo
     apt_get update
     apt_get upgrade -y
-    apt_get install -y ca-certificates curl wget python3 python3-venv libaugeas0
-    
+    apt_get install -y ca-certificates curl wget python3 python3-venv libaugeas0 git
+
     install_powershell
     install_docker
-    
+
+    refresh_assets_from_repo
+    move_config_files
+    set_permissions
+    ensure_certificate_placeholders
+
     if [[ ! -f /etc/sysctl.conf ]] || ! grep -q '^vm.max_map_count=262144$' /etc/sysctl.conf; then
         echo 'vm.max_map_count=262144' | sudo tee -a /etc/sysctl.conf >/dev/null
     fi
@@ -318,6 +399,9 @@ main() {
     else
         exit 1
     fi
+
+    log_container_status
+    echo "Loggle setup complete."
 }
 
 exit_if_bootstrap_completed

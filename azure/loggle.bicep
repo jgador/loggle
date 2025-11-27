@@ -46,8 +46,8 @@ var location = resourceGroup().location
 var repositoryUrlTrimmed = trim(repositoryUrl)
 var repositoryUrlWithoutGit = replace(repositoryUrlTrimmed, '.git', '')
 var rawRepositoryBaseUrl = replace(repositoryUrlWithoutGit, 'https://github.com/', 'https://raw.githubusercontent.com/')
-var setupScriptRelativePath = 'azure/vm-assets/install.sh'
-var setupScriptUrl = format('{0}/{1}/{2}', rawRepositoryBaseUrl, repositoryBranch, setupScriptRelativePath)
+var installScriptRelativePath = 'azure/vm-assets/install.sh'
+var installScriptUrl = format('{0}/{1}/{2}', rawRepositoryBaseUrl, repositoryBranch, installScriptRelativePath)
 var tags = {
   workload: 'loggle'
 }
@@ -90,7 +90,7 @@ LOGGLE_CERT_ENV="${letsEncryptEnvironment}"
 LOGGLE_KEY_VAULT_NAME="${keyVaultEffectiveName}"
 LOGGLE_ASSET_REPO_URL="${repositoryUrl}"
 LOGGLE_ASSET_REPO_REF="${repositoryBranch}"
-LOGGLE_SETUP_SCRIPT_URL="${setupScriptUrl}"
+LOGGLE_INSTALL_SCRIPT_URL="${installScriptUrl}"
 LOGGLE_MANAGED_IDENTITY_CLIENT_ID="${userAssignedIdentity.properties.clientId}"
 INFRAENV
 
@@ -106,9 +106,9 @@ LOGGLE_CERT_ENV="{2}"
 LOGGLE_KEY_VAULT_NAME="{3}"
 LOGGLE_ASSET_REPO_URL="{4}"
 LOGGLE_ASSET_REPO_REF="{5}"
-LOGGLE_SETUP_SCRIPT_URL="{6}"
+LOGGLE_INSTALL_SCRIPT_URL="{6}"
 LOGGLE_MANAGED_IDENTITY_CLIENT_ID="{7}"
-''', domainName, certificateEmail, letsEncryptEnvironment, keyVaultEffectiveName, repositoryUrl, repositoryBranch, setupScriptUrl, userAssignedIdentity.properties.clientId), '\r', ''))
+''', domainName, certificateEmail, letsEncryptEnvironment, keyVaultEffectiveName, repositoryUrl, repositoryBranch, installScriptUrl, userAssignedIdentity.properties.clientId), '\r', ''))
 
 var cloudFinalBootstrapCommand = replace(format('''
 bash -c 'set -eo pipefail
@@ -141,7 +141,7 @@ LOGGLE_CERT_ENV="{3}"
 LOGGLE_KEY_VAULT_NAME="{4}"
 LOGGLE_ASSET_REPO_URL="{5}"
 LOGGLE_ASSET_REPO_REF="{7}"
-LOGGLE_SETUP_SCRIPT_URL="{0}"
+LOGGLE_INSTALL_SCRIPT_URL="{0}"
 LOGGLE_MANAGED_IDENTITY_CLIENT_ID="{6}"
 INFRAENV
   fi
@@ -149,47 +149,47 @@ INFRAENV
   chmod 600 "$INFRA_ENV_PATH"
 }}
 
-download_setup() {{
-  local setup_url="{0}"
+download_install_script() {{
+  local install_url="{0}"
   if [[ -f "$INFRA_ENV_PATH" ]]; then
     # shellcheck disable=SC1091
     source "$INFRA_ENV_PATH"
   fi
-  if [[ -n "$LOGGLE_SETUP_SCRIPT_URL" ]]; then
-    setup_url="$LOGGLE_SETUP_SCRIPT_URL"
+  if [[ -n "$LOGGLE_INSTALL_SCRIPT_URL" ]]; then
+    install_url="$LOGGLE_INSTALL_SCRIPT_URL"
   fi
   local tmp_file
   tmp_file="$(mktemp)"
   if command -v curl >/dev/null 2>&1; then
-    curl -fsSL "$setup_url" -o "$tmp_file"
+    curl -fsSL "$install_url" -o "$tmp_file"
   elif command -v wget >/dev/null 2>&1; then
-    wget -qO "$tmp_file" "$setup_url"
+    wget -qO "$tmp_file" "$install_url"
   else
     apt-get update
     apt-get install -y curl
-    curl -fsSL "$setup_url" -o "$tmp_file"
+    curl -fsSL "$install_url" -o "$tmp_file"
   fi
   mv "$tmp_file" "$SETUP_DEST"
   chmod 755 "$SETUP_DEST"
 }}
 
-run_setup() {{
+run_install_script() {{
   if [[ ! -x "$SETUP_DEST" ]]; then
-    echo "Setup script $SETUP_DEST not found or not executable; skipping launch." >&2
+    echo "Install script $SETUP_DEST not found or not executable; skipping launch." >&2
     return
   fi
   if [[ -z "${{HOME:-}}" ]]; then
     export HOME=/root
   fi
-  local log_file="$LOGGLE_HOME/setup.log"
+  local log_file="$LOGGLE_HOME/install.log"
   echo "Launching $SETUP_DEST in background; follow logs via $log_file"
   nohup "$SETUP_DEST" >"$log_file" 2>&1 &
 }}
 
 main() {{
   copy_custom_data
-  download_setup
-  run_setup
+  download_install_script
+  run_install_script
 }}
 
 main "$@"
@@ -216,7 +216,7 @@ LOGGLE_SERVICE
 systemctl daemon-reload
 systemctl enable --now loggle-bootstrap.service
 '
-''', setupScriptUrl, domainName, certificateEmail, letsEncryptEnvironment, keyVaultEffectiveName, repositoryUrl, userAssignedIdentity.properties.clientId, repositoryBranch), '\r', '')
+''', installScriptUrl, domainName, certificateEmail, letsEncryptEnvironment, keyVaultEffectiveName, repositoryUrl, userAssignedIdentity.properties.clientId, repositoryBranch), '\r', '')
 resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: identityName
   location: location
