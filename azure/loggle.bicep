@@ -3,9 +3,6 @@ targetScope = 'resourceGroup'
 @description('Prefix applied to resource names (keep short and alphanumeric).')
 param namePrefix string = 'loggle'
 
-@description('Azure location / region for all resources in this deployment.')
-param location string = resourceGroup().location
-
 @description('VM SKU for the Loggle host.')
 param vmSize string = 'Standard_D2s_v3'
 
@@ -33,17 +30,11 @@ param kibanaAllowedIps array = [
   '0.0.0.0/0'
 ]
 
-@description('Optional tags merged with the default workload tag.')
-param extraTags object = {}
-
-@description('Optional explicit names for resources to override prefix-based defaults. Keys: virtualNetwork, subnet, networkSecurityGroup, networkInterface, virtualMachine, userAssignedIdentity, keyVault, osDisk.')
-param resourceNames object = {}
-
 @description('IMPORTANT: Name of the pre-existing public IP address that already exists in this resource group. The template only attaches to it; it will not create a new public IP.')
 param publicIpName string
 
-@description('Optional explicit Key Vault name. Leave empty to use the default prefix+date naming pattern.')
-param keyVaultName string = ''
+@description('Optional explicit Key Vault name. Leave empty to use the prefix-based naming pattern.')
+param keyVaultName string = 'logglekv'
 
 @description('Git repository that hosts the VM bootstrap assets (setup.sh, docker-compose.yml, etc.).')
 param repositoryUrl string = 'https://github.com/jgador/loggle.git'
@@ -51,20 +42,15 @@ param repositoryUrl string = 'https://github.com/jgador/loggle.git'
 @description('Git branch or tag used to download the repositoryUrl contents. Defaults to master; override when testing another ref.')
 param repositoryBranch string = 'master'
 
-@metadata({
-  description: 'Internal date stamp appended to generated Key Vault names.'
-  'x-ms-visibility': 'internal'
-})
-param keyVaultDateSuffix string = utcNow('yyyyMMdd')
-
+var location = resourceGroup().location
 var repositoryUrlTrimmed = trim(repositoryUrl)
 var repositoryUrlWithoutGit = replace(repositoryUrlTrimmed, '.git', '')
 var rawRepositoryBaseUrl = replace(repositoryUrlWithoutGit, 'https://github.com/', 'https://raw.githubusercontent.com/')
 var setupScriptRelativePath = 'azure/vm-assets/setup.sh'
 var setupScriptUrl = format('{0}/{1}/{2}', rawRepositoryBaseUrl, repositoryBranch, setupScriptRelativePath)
-var tags = union({
+var tags = {
   workload: 'loggle'
-}, extraTags)
+}
 
 var prefixSegment = empty(namePrefix) ? '' : '${namePrefix}-'
 var sanitizedNamePrefix = toLower(replace(namePrefix, '-', ''))
@@ -76,18 +62,18 @@ var nsgGeneratedName = '${prefixSegment}nsg'
 var nicGeneratedName = '${prefixSegment}nic'
 var vmGeneratedName = '${prefixSegment}vm'
 var identityGeneratedName = '${prefixSegment}id'
-var keyVaultNameSeed = empty(keyVaultName) ? '${defaultKeyVaultBaseName}${keyVaultDateSuffix}' : providedKeyVaultName
+var keyVaultNameSeed = empty(keyVaultName) ? defaultKeyVaultBaseName : providedKeyVaultName
 var keyVaultGeneratedName = substring(keyVaultNameSeed, 0, min(24, length(keyVaultNameSeed)))
 var osDiskGeneratedName = '${prefixSegment}osdisk'
 
-var vnetName = resourceNames.?virtualNetwork ?? vnetGeneratedName
-var subnetName = resourceNames.?subnet ?? subnetGeneratedName
-var nsgName = resourceNames.?networkSecurityGroup ?? nsgGeneratedName
-var nicName = resourceNames.?networkInterface ?? nicGeneratedName
-var vmName = resourceNames.?virtualMachine ?? vmGeneratedName
-var identityName = resourceNames.?userAssignedIdentity ?? identityGeneratedName
-var keyVaultEffectiveName = resourceNames.?keyVault ?? keyVaultGeneratedName
-var osDiskName = resourceNames.?osDisk ?? osDiskGeneratedName
+var vnetName = vnetGeneratedName
+var subnetName = subnetGeneratedName
+var nsgName = nsgGeneratedName
+var nicName = nicGeneratedName
+var vmName = vmGeneratedName
+var identityName = identityGeneratedName
+var keyVaultEffectiveName = keyVaultGeneratedName
+var osDiskName = osDiskGeneratedName
 // NOTE: Keeping the original infraEnvCommand around for potential future use.
 /*
 var infraEnvCommand = replace($'''

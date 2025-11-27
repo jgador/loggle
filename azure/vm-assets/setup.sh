@@ -296,6 +296,31 @@ wait_for_elasticsearch() {
     return 1
 }
 
+log_container_status() {
+    if ! command -v docker >/dev/null 2>&1; then
+        echo "Docker CLI not available; skipping container status check."
+        return
+    fi
+
+    local containers=(elasticsearch kibana loggle-web otelcol)
+    echo "Container status summary:"
+    local any_found=0
+    for name in "${containers[@]}"; do
+        local status
+        status="$(docker ps --filter "name=${name}$" --format '{{.Names}} ({{.Status}})')"
+        if [[ -n "$status" ]]; then
+            printf '  %s\n' "$status"
+            any_found=1
+        else
+            printf '  %s not running\n' "$name"
+        fi
+    done
+
+    if [[ $any_found -eq 0 ]]; then
+        echo "No Loggle containers are running yet."
+    fi
+}
+
 # Main script execution
 main() {
     setup_environment
@@ -374,6 +399,9 @@ main() {
     else
         exit 1
     fi
+
+    log_container_status
+    echo "Loggle setup complete."
 }
 
 exit_if_bootstrap_completed
