@@ -1,6 +1,6 @@
 server.port: 5601
 server.host: 0.0.0.0
-server.publicBaseUrl: "https://kibana.loggle.co"
+server.publicBaseUrl: "__PUBLIC_BASE_URL__"
 server.ssl.enabled: true
 server.ssl.certificate: /usr/share/kibana/fullchain.pem
 server.ssl.key: /usr/share/kibana/privkey.pem

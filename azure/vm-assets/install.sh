@@ -100,7 +100,7 @@ move_config_files() {
         exit 1
     fi
 
-    local config_files=("docker-compose.yml" "otel-collector-config.yaml" "kibana.yml" "import-cert.ps1" "export-cert.ps1")
+    local config_files=("docker-compose.yml" "otel-collector-config.yaml" "kibana.yml.template" "import-cert.ps1" "export-cert.ps1")
     for file in "${config_files[@]}"; do
         local source="$ASSET_DIR/$file"
         if [[ -e "$source" ]]; then
@@ -119,6 +119,39 @@ move_config_files() {
         fi
         cp -R "$ASSET_DIR/init-es" "$LOGGLE_PATH/"
     fi
+}
+
+render_kibana_config() {
+    local template_path="$LOGGLE_PATH/kibana.yml.template"
+    local output_path="$LOGGLE_PATH/kibana.yml"
+    if [[ ! -f "$template_path" ]]; then
+        echo "Kibana template $template_path not found; cannot render kibana.yml."
+        exit 1
+    fi
+
+    local default_public_url="https://${DOMAIN}"
+    local public_base_url="${LOGGLE_PUBLIC_BASE_URL:-$default_public_url}"
+    local tmp_file
+    tmp_file="$(mktemp)"
+
+    if ! python3 - "$template_path" "$tmp_file" "$public_base_url" <<'PY'; then
+import pathlib
+import sys
+
+template_path, output_path, public_url = sys.argv[1:]
+template = pathlib.Path(template_path).read_text()
+placeholder = "__PUBLIC_BASE_URL__"
+if placeholder not in template:
+    raise SystemExit(f"Placeholder {placeholder} not found in {template_path}")
+pathlib.Path(output_path).write_text(template.replace(placeholder, public_url))
+PY
+        echo "Failed to render Kibana configuration."
+        rm -f "$tmp_file"
+        exit 1
+    fi
+
+    mv "$tmp_file" "$output_path"
+    chmod 644 "$output_path"
 }
 
 ensure_directories() {
@@ -337,6 +370,7 @@ main() {
 
     refresh_assets_from_repo
     move_config_files
+    render_kibana_config
     set_permissions
     ensure_certificate_placeholders
 
