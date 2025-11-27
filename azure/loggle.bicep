@@ -193,9 +193,23 @@ download_setup() {{
   chmod 755 "$SETUP_DEST"
 }}
 
+run_setup() {{
+  if [[ ! -x "$SETUP_DEST" ]]; then
+    echo "Setup script $SETUP_DEST not found or not executable; skipping launch." >&2
+    return
+  fi
+  if [[ -z "${{HOME:-}}" ]]; then
+    export HOME=/root
+  fi
+  local log_file="$LOGGLE_HOME/setup.log"
+  echo "Launching $SETUP_DEST in background; follow logs via $log_file"
+  nohup "$SETUP_DEST" >"$log_file" 2>&1 &
+}}
+
 main() {{
   copy_custom_data
   download_setup
+  run_setup
 }}
 
 main "$@"
@@ -212,6 +226,7 @@ Wants=cloud-final.service
 [Service]
 Type=oneshot
 ExecStart=/etc/loggle/loggle-bootstrap.sh
+ExecStartPost=/bin/systemctl disable loggle-bootstrap.service
 RemainAfterExit=true
 
 [Install]
@@ -219,7 +234,7 @@ WantedBy=multi-user.target
 LOGGLE_SERVICE
 
 systemctl daemon-reload
-systemctl enable loggle-bootstrap.service
+systemctl enable --now loggle-bootstrap.service
 '
 ''', assetRepoRef, domainName, certificateEmail, letsEncryptEnvironment, keyVaultEffectiveName, assetRepoUrl, assetRepoPath, userAssignedIdentity.properties.clientId), '\r', '')
 resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
