@@ -201,7 +201,6 @@ cat <<\LOGGLE_SERVICE >"$SERVICE_PATH"
 [Unit]
 Description=Loggle bootstrap
 After=cloud-final.service
-Wants=cloud-final.service
 
 [Service]
 Type=oneshot
