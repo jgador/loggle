@@ -48,9 +48,18 @@ Key Vault names are deterministic by default: the template lowercases the `nameP
 ## 3. Azure Portal deployment workflow
 
 **Resource-group scoped (`azure/arm/loggle.json`)**
-- In the portal, go to **Create a resource** -> search for **Template deployment (deploy using custom templates)**.
-- Select your subscription, then pick an existing resource group or use the **Create new** button in the scope picker. The portal handles both flows so the template itself only needs to target the chosen RG.
-- Choose **Build your own template in the editor**, load `azure/arm/loggle.json`, then fill in the parameters (the SSH public key is mandatory).
+
+### Portal custom template quickstart
+1. **Find the deployment blade.** In the Azure Portal search bar, type **template deployment** and open **Deploy a custom template**.  
+   ![Search for the custom template experience](../../media/arm/search-custom-template.png)
+2. **Launch the editor.** Click **Build your own template in the editor** so you can paste or upload Loggle's ARM template.  
+   ![Open the custom template editor](../../media/arm/build-custom-template.png)
+3. **Upload `loggle.json`.** Use **Load file**, select `azure/arm/loggle.json` from your local clone (or any downloaded copy), then click **Save**. You should now see the parameters form for Loggle.  
+   ![Upload the Loggle ARM template](../../media/arm/upload-custom-template.png)
+
+Once the template loads:
+- Select your subscription, pick an existing resource group (or create one), and complete the parameters—the SSH public key is mandatory.
+- Choose **Review + create**, confirm the summary, then submit the deployment.
 
 The deployment outputs the VM public IP, the managed identity client ID, and the Key Vault resource ID.
 
