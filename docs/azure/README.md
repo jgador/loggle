@@ -4,15 +4,46 @@ The `azure/arm` folder holds the Bicep template (`loggle.bicep`) and its generat
 
 ## 1. Azure Portal deployment workflow
 
-**Resource-group scoped (`azure/arm/loggle.json`)**
+**Resource-group scoped (`azure/arm/loggle.json`)**  
+This ARM template must be deployed at the resource-group level (via portal custom template or `az deployment group create`). It does not create or manage subscriptions or management groups—just the resources that live inside the target RG.
 
 ### Portal custom template quickstart
-1. **Find the deployment blade.** In the Azure Portal search bar, type **template deployment** and open **Deploy a custom template**.  
+1. **Find the deployment blade.** In the Azure Portal search bar, type **template deployment** and open **Deploy a custom template**.
+
    ![Search for the custom template experience](../../media/arm/search-custom-template.png)
-2. **Launch the editor.** Click **Build your own template in the editor** so you can paste or upload Loggle's ARM template.  
+
+2. **Launch the editor.** Click **Build your own template in the editor** so you can paste or upload Loggle's ARM template.
+
    ![Open the custom template editor](../../media/arm/build-custom-template.png)
-3. **Upload `loggle.json`.** Use **Load file**, select `azure/arm/loggle.json` from your local clone (or any downloaded copy), then click **Save**. You should now see the parameters form for Loggle.  
+
+3. **Upload `loggle.json`.** Use **Load file**, select `azure/arm/loggle.json` from your local clone (or any downloaded copy), then click **Save**. You should now see the parameters form for Loggle.
+
    ![Upload the Loggle ARM template](../../media/arm/upload-custom-template.png)
+
+4. **Review the parameter form.** The portal renders every parameter from `loggle.json`; use the highlighted inputs in the screenshot below as a guide while you fill in `sshPublicKey`, `publicIpName`, `domainName`, and any overrides you need.
+
+   ![Fill in the Loggle parameters](../../media/arm/build-own-template.png)
+
+**Parameter reference**
+
+| Azure portal label | Description | Default |
+|--------------------|-------------|---------|
+| Name prefix | Short prefix applied to every resource (affects VM, NIC, NSG, etc.). | `loggle` |
+| VM size | VM SKU for the Loggle host. | `Standard_D2s_v3` |
+| Admin username | SSH admin user created on the VM. | `loggle` |
+| SSH public key | **Required** OpenSSH public key used for SSH access. | *(none)* |
+| Domain name | Hostname served by the stack and used for TLS. | `kibana.loggle.co` |
+| Certificate email | Let's Encrypt contact email for certificate lifecycle notifications. | `certbot@loggle.co` |
+| Let's Encrypt environment | Choose `production` for real certs or `staging` when testing repeatedly (avoids rate limits with test certificates). | `production` |
+| Kibana allowed IPs | Array of CIDR ranges allowed through the NSG for HTTPS (443). | `["0.0.0.0/0"]` |
+| Key Vault name | Optional explicit Key Vault name; leave empty to use the prefix-based pattern. | `logglekv` |
+| Repository URL | Git repository that hosts the VM bootstrap assets. | `https://github.com/jgador/loggle.git` |
+| Repository branch | Git branch or tag pulled from the repository URL. | `master` |
+| Existing public IP name | **Required** name of the pre-created public IP that already exists in the target resource group. | *(none)* |
+
+> Purge protection is disabled by default so the Key Vault can be deleted (and purged) during environment teardown. Toggle it manually if your compliance posture requires it.  
+> **Important:** The `Existing public IP name` you provide must reference an existing public IP resource inside the same resource group you deploy to; the template will fail if it cannot find that IP.  
+> **Testing tip:** Switch the Let's Encrypt environment to `staging` while iterating, then back to `production` before go-live.
 
 Once the template loads:
 - Select your subscription, pick an existing resource group (or create one), and complete the parameters—the SSH public key is mandatory.
@@ -53,25 +84,6 @@ Install/refresh the bundled CLI through Azure CLI (`az bicep install`). Then bui
 az bicep build --file azure/arm/loggle.bicep --outfile azure/arm/loggle.json
 ```
 
-This produces an Azure Resource Manager template (`azure/arm/loggle.json`) that you can distribute to consumers. **Prerequisites:** create (or select) the resource group up front and provision a public IP inside that group; the deployment only attaches to an existing IP and will not create one for you. The template exposes the following key parameters:
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `namePrefix` | Short prefix applied to every resource (affects VM, NIC, NSG, etc.). | `loggle` |
-| `vmSize` | VM SKU. | `Standard_D2s_v3` |
-| `adminUsername` | SSH admin user. | `loggle` |
-| `sshPublicKey` | **Required** OpenSSH public key. | *(none)* |
-| `domainName` | Hostname served by the stack and used for TLS. | `kibana.loggle.co` |
-| `certificateEmail` | Let's Encrypt contact email. | `certbot@loggle.co` |
-| `letsEncryptEnvironment` | Choose `production` for real certs or `staging` when testing repeatedly (avoids rate limits with test certificates). | `production` |
-| `kibanaAllowedIps` | Array of CIDR ranges allowed through the NSG for HTTP/S. | `["0.0.0.0/0"]` |
-| `keyVaultName` | Optional explicit Key Vault name. Leave empty to use the prefix-based pattern. | `logglekv` |
-| `repositoryUrl` | Git repository that hosts the `vm-assets` folder. | `https://github.com/jgador/loggle.git` |
-| `repositoryBranch` | Git branch or tag to pull from `repositoryUrl`. | `master` |
-| `publicIpName` | **Required** name of the pre-created public IP that already lives in the chosen resource group. The template only attaches to this IP. | *(none)* |
-
-> Purge protection is disabled by default so the Key Vault can be deleted (and purged) during environment teardown. Toggle it manually if your compliance posture requires it.  
-> **Important:** The `publicIpName` you provide must reference an existing public IP resource inside the same resource group you deploy to; the template will fail if it cannot find that IP.  
-> **Testing tip:** switch `letsEncryptEnvironment` to `staging` while iterating, then back to `production` before go-live.
+This produces an Azure Resource Manager template (`azure/arm/loggle.json`) that you can distribute to consumers. **Prerequisites:** create (or select) the resource group up front and provision a public IP inside that group; the deployment only attaches to an existing IP and will not create one for you. Parameter descriptions and defaults are summarized in the quickstart table above.
 
 Key Vault names are deterministic by default: the template lowercases the `namePrefix`, strips dashes, and appends `kv` (falling back to `kvstore` when no prefix is provided). You can override this behavior by setting the `keyVaultName` parameter, which defaults to `logglekv`.
