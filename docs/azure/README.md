@@ -1,14 +1,14 @@
 # Loggle Azure Template
 
-The `azure/arm` folder holds the Bicep template (`loggle.bicep`) and its generated ARM JSON (`loggle.json`) that mirrors the Terraform stack under `terraform/azure`. The VM Custom Script extension clones this repository, stages the contents of `azure/vm-assets/` into `/etc/loggle/assets`, downloads `install.sh` directly from GitHub based on the configured repository URL and branch, and drops a `loggle-bootstrap.service` unit that runs after `cloud-final.service` to execute the script. Operators can still inspect every asset on-disk before the installer runs.
+To deploy Loggle on Azure, download the ready-to-use ARM template at [`azure/arm/loggle.json`](../../azure/arm/loggle.json) (generated from `loggle.bicep`), then follow the portal workflow below to upload it. The VM bootstrap logic pulls the assets from `azure/vm-assets/` and runs `install.sh` for you, so no manual provisioning steps are required.
 
 ## Azure Portal deployment workflow
 
 **Resource-group scoped (`azure/arm/loggle.json`)**  
-This ARM template must be deployed at the resource-group level (via portal custom template or `az deployment group create`). It does not create or manage subscriptions or management groups-just the resources that live inside the target RG.
+This ARM template is deployed at the resource group level using the Azure Portal custom template experience. It only creates resources inside that resource group and does not modify anything at the subscription or management group level.
 
 > ⚠️ **Prerequisites before opening the template**
-> - **Resource group ready:** Create (or select) the resource group that will host Loggle plus its networking assets.
+> - **Resource group ready:** Use the resource group that already contains your Standard static public IP. The template looks up the IP by name inside that same resource group, so creating the group at deploy-time without also pre-loading the IP will fail.
 > - **Static public IP allocated:** Provision a Standard *static* public IP inside that resource group. Certbot depends on this IP already existing because the template only attaches to it.
 > - **DNS A record in place:** Point your Loggle hostname (for example `logs.example.com`) to the public IP via an **A** record before you deploy. Certbot validation runs during provisioning and fails unless the DNS name already resolves to the VM’s IP.
 
