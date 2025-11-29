@@ -79,7 +79,3 @@ Install/refresh the bundled CLI through Azure CLI (`az bicep install`). Then bui
 ```pwsh
 az bicep build --file azure/arm/loggle.bicep --outfile azure/arm/loggle.json
 ```
-
-This produces an Azure Resource Manager template (`azure/arm/loggle.json`) that you can distribute to consumers. **Prerequisites:** create (or select) the resource group up front and provision a public IP inside that group; the deployment only attaches to an existing IP and will not create one for you. Parameter descriptions and defaults are summarized in the quickstart table above.
-
-Key Vault names are deterministic by default: the template lowercases the `namePrefix`, strips dashes, and appends `kv` (falling back to `kvstore` when no prefix is provided). You can override this behavior by setting the `keyVaultName` parameter, which defaults to `logglekv`.
