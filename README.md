@@ -153,7 +153,101 @@ flowchart TB
     elastic --> aspire[".NET Aspire Dashboard"]
 ```
 
-## Cloud Deployment Guide
+## Cloud deployment - Azure (ARM templates)
+
+Loggle now ships an Azure Resource Manager template as the primary way to deploy the stack in Azure. The template lives at `azure/arm/loggle.json` (authored in `azure/arm/loggle.bicep`) and already contains every parameter definition—no separate `parameters.json` file is required. The VM bootstrapper pulls the assets that live under `azure/vm-assets`, runs `install.sh`, and configures the containers automatically.
+
+### Prerequisites
+- Azure subscription with Contributor rights to the destination resource group.
+- Azure CLI 2.61+ (optional if you use only the Portal) and the **Template deployment** blade enabled.
+- Ability to create a Standard static public IP in your chosen region.
+- SSH key pair (public key in OpenSSH format) dedicated to this VM.
+- DNS control for the hostname you will map to Loggle (`kibana.loggle.co` by default).
+- Outbound access to `github.com` from the VM so it can fetch `install.sh` and the asset bundle.
+
+### Step 1. Clone the repo and review template parameters
+```pwsh
+git clone https://github.com/jgador/loggle.git
+cd loggle
+```
+Open `azure/arm/loggle.json` and adjust any default values you want to bake in before sharing the file. You can also leave the defaults untouched and provide overrides during deployment. Key parameters to review:
+
+| Parameter | Purpose | Default |
+|-----------|---------|---------|
+| `namePrefix` | Prefix applied to every Azure resource name. | `loggle` |
+| `sshPublicKey` | **Required** public key that unlocks SSH. | *(none)* |
+| `domainName` | FQDN served by the stack and used for TLS. | `kibana.loggle.co` |
+| `certificateEmail` | LetsEncrypt contact email. | `certbot@loggle.co` |
+| `kibanaAllowedIps` | Array of IPv4 CIDR blocks allowed to reach Kibana (443). | `["0.0.0.0/0"]` |
+| `publicIpName` | **Required** name of the pre-created static public IP in your resource group. | *(none)* |
+| `letsEncryptEnvironment` | `production` for real certs, `staging` for repeated dry-runs. | `production` |
+
+> Tip: if you want to source the template directly from GitHub, use the raw URL `https://raw.githubusercontent.com/jgador/loggle/<branch>/azure/arm/loggle.json`.
+
+### Step 2. Prepare the resource group and static IP
+- Create (or select) a resource group in the Azure region you want to run Loggle.
+- Provision a Standard static public IP inside that group. The ARM template only attaches to an existing IP so this step is required.
+- Record the IP resource name; you will pass it as `publicIpName`.
+
+```pwsh
+az group create --name loggle-rg --location eastus
+az network public-ip create `
+  --resource-group loggle-rg `
+  --name loggle-ip `
+  --sku Standard `
+  --allocation-method Static
+```
+
+![Placeholder - Resource group and IP](./docs/images/arm/portal-resource-group.png)
+
+### Step 3. Deploy with the Azure Portal (recommended)
+1. In the Azure Portal, search for **Deploy a custom template**.
+2. Choose your subscription and resource group, then select **Build your own template in the editor**.
+3. Paste the contents of `azure/arm/loggle.json` or upload the file directly.
+4. Fill in the parameters—make sure `sshPublicKey`, `publicIpName`, `domainName`, and `kibanaAllowedIps` reflect your environment.
+5. Validate, then press **Review + create** to kick off the deployment.
+
+![Placeholder - Portal custom deployment](./docs/images/arm/portal-custom-deployment.png)
+![Placeholder - Portal parameter blade](./docs/images/arm/portal-parameters.png)
+
+When the deployment completes you will see outputs for the VM public IP, managed identity client ID, and Key Vault resource ID.
+
+### Step 4. Deploy with Azure CLI (automated option)
+If you prefer scripting or CI/CD, run the same template with `az deployment group create`:
+
+```pwsh
+$sshKey = Get-Content $env:USERPROFILE/.ssh/loggle.pub -Raw
+az deployment group create `
+  --resource-group loggle-rg `
+  --name loggle-arm `
+  --template-file azure/arm/loggle.json `
+  --parameters `
+    sshPublicKey="$sshKey" `
+    publicIpName="loggle-ip" `
+    domainName="logs.contoso.com" `
+    kibanaAllowedIps="['203.0.113.24/32']"
+```
+
+Azure CLI accepts array parameters as JSON strings (note the single quotes inside the double-quoted argument). Add more overrides as needed; every parameter from the table can be passed on the command line.
+
+### Step 5. Monitor the VM bootstrap
+- After deployment, open the VM -> **Run command** -> **RunShellScript**, then inspect `/etc/loggle/install.log`.
+- Alternatively, use Azure CLI:  
+  `az vm run-command invoke -g loggle-rg -n loggle-vm --command-id RunShellScript --scripts "sudo tail -n 50 /etc/loggle/install.log"`
+- Wait for `Loggle setup complete` along with the container status summary before inviting traffic.
+
+![Placeholder - Bootstrap log viewer](./docs/images/arm/bootstrap-log.png)
+
+### Step 6. Wire up DNS and verify endpoints
+- Point your chosen hostname (e.g., `logs.contoso.com`) at the static public IP using an **A** record with a low TTL while testing.
+- Update `kibanaAllowedIps` to restrict access to trusted admin IPs; redeploy the template if you need to tighten the NSG later.
+- Browse to `https://<domain>` for Kibana and `http://<domain>:4318/v1/logs` for the OTLP collector after the certificates finish provisioning (can take a few minutes).
+- Keep the `azure/arm/loggle.json` file under version control—every update to your infra defaults should be reviewed just like application code.
+
+Need to customize or extend the deployment further? Modify `azure/arm/loggle.bicep`, regenerate `azure/arm/loggle.json` with `az bicep build`, and redeploy.
+
+## Legacy Terraform deployment (advanced)
+> **Heads up:** Terraform remains in `terraform/azure` for teams that prefer IaC modules or already have automation built around it. The ARM template described above is the recommended path for new deployments.
 > **Prerequisite:**  
 > Ensure you have Terraform with Azure CLI working. For more information, refer to [this guide](https://learn.microsoft.com/en-us/azure/developer/terraform/get-started-windows-bash).
 

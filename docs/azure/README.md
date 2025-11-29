@@ -1,6 +1,6 @@
 # Loggle Azure Template
 
-This folder holds the Bicep template that mirrors the Terraform stack under `terraform/azure`. The VM Custom Script extension clones this repository, stages the contents of `azure/vm-assets/` into `/var/cache/loggle-assets/`, downloads `install.sh` directly from GitHub based on the configured repository URL and branch, and drops a `loggle-bootstrap.service` unit that runs after `cloud-final.service` to execute the script. Operators can still inspect every asset on-disk before the installer runs.
+The `azure/arm` folder holds the Bicep template (`loggle.bicep`) and its generated ARM JSON (`loggle.json`) that mirrors the Terraform stack under `terraform/azure`. The VM Custom Script extension clones this repository, stages the contents of `azure/vm-assets/` into `/var/cache/loggle-assets/`, downloads `install.sh` directly from GitHub based on the configured repository URL and branch, and drops a `loggle-bootstrap.service` unit that runs after `cloud-final.service` to execute the script. Operators can still inspect every asset on-disk before the installer runs.
 
 ## 1. Keep the VM assets in sync
 
@@ -19,10 +19,10 @@ This keeps the Azure artifacts readable in-tree and guarantees the deployment bu
 Install/refresh the bundled CLI through Azure CLI (`az bicep install`). Then build the ARM template with:
 
 ```pwsh
-az bicep build --file azure/loggle.bicep --outfile azure/loggle.json
+az bicep build --file azure/arm/loggle.bicep --outfile azure/arm/loggle.json
 ```
 
-This produces an Azure Resource Manager template (`loggle.json`) that you can distribute to consumers. **Prerequisites:** create (or select) the resource group up front and provision a public IP inside that group; the deployment only attaches to an existing IP and will not create one for you. The template exposes the following key parameters:
+This produces an Azure Resource Manager template (`azure/arm/loggle.json`) that you can distribute to consumers. **Prerequisites:** create (or select) the resource group up front and provision a public IP inside that group; the deployment only attaches to an existing IP and will not create one for you. The template exposes the following key parameters:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
@@ -47,10 +47,10 @@ Key Vault names are deterministic by default: the template lowercases the `nameP
 
 ## 3. Azure Portal deployment workflow
 
-**Resource-group scoped (`loggle.json`)**
+**Resource-group scoped (`azure/arm/loggle.json`)**
 - In the portal, go to **Create a resource** -> search for **Template deployment (deploy using custom templates)**.
 - Select your subscription, then pick an existing resource group or use the **Create new** button in the scope picker. The portal handles both flows so the template itself only needs to target the chosen RG.
-- Choose **Build your own template in the editor**, load `azure/loggle.json`, then fill in the parameters (the SSH public key is mandatory).
+- Choose **Build your own template in the editor**, load `azure/arm/loggle.json`, then fill in the parameters (the SSH public key is mandatory).
 
 The deployment outputs the VM public IP, the managed identity client ID, and the Key Vault resource ID.
 
