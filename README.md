@@ -18,7 +18,6 @@ Before diving into cloud deployment, try Loggle locally:
    This will provision:
    - Elasticsearch
    - Kibana
-   - .NET Aspire Dashboard
    - OpenTelemetry Collector
    - Loggle.Web
 
@@ -29,7 +28,6 @@ Before diving into cloud deployment, try Loggle locally:
 
 4. **View Your Logs:**
    - Open [Kibana Log Explorer](http://localhost:5601/app/observability-logs-explorer/)
-   - Open [.NET Aspire Dashboard](http://localhost:18888/) for an Aspire-first log browsing experience
    - Watch your logs flow in real-time
 
 5. **Cleanup:**
@@ -96,21 +94,6 @@ cd examples
 
 Each sample now ships with its own configuration (`config.json`, `.env`, or `appsettings.json`). Adjust those files to point at your collector or change service metadata. The runner simply installs per-language dependencies (for example `pip install` or `npm install --legacy-peer-deps`) and loops the program until you stop it.
 
-## .NET Aspire Dashboard
-
-When you run the local Docker stack, Loggle ships a self-contained `.NET Aspire` dashboard that reads directly from the same Elasticsearch data stream as Kibana.
-- Access the dashboard UI at `http://localhost:18888/` (default local setup does not require authentication).
-- Ports `18889` and `18890` stay exposed for OTLP and gRPC endpoints, matching Aspire defaults.
-- Update `examples/aspire-dashboard/appsettings.Development.json` if you need the dashboard to target a different Elasticsearch host or data stream.
-- ⚠️ **Experimental integration:** the current Aspire dashboard work is a persistence experiment. Active development happens in the fork at [jgador/loggle_aspire](https://github.com/jgador/loggle_aspire), where the Aspire-specific updates will continue to evolve.
-
-## Video Tutorial
-
-Watch this short video on Google Drive for a walkthrough of setting up and using Loggle:  
-[![Loggle Setup Video](https://drive.google.com/thumbnail?sz=w720&id=1uOmeeH3Hq63jPdic1IZwZl8jC4rPobLj)](https://drive.google.com/file/d/1uOmeeH3Hq63jPdic1IZwZl8jC4rPobLj/view?usp=drive_link)
-
-This video provides a concise overview of deploying Loggle, configuring log forwarding, and accessing Kibana for log visualization.
-
 ## What It Does
 
 - **Self-Hosted Monitoring:** Manage your logs on your own server.
@@ -118,7 +101,6 @@ This video provides a concise overview of deploying Loggle, configuring log forw
   - **OpenTelemetry Collector:** Collects your logs.
   - **Elasticsearch:** Stores your logs.  
   - **Kibana:** Visualizes your logs.  
-  - **.NET Aspire Dashboard:** Offers an Aspire-native observability view backed by Elasticsearch.
 - **Easy Deployment:**  
   - Provision a virtual machine with Terraform on Azure (support for AWS and GCP coming soon).  
   - Automatically obtain and renew SSL/TLS certificates using Certbot with Let's Encrypt.
@@ -150,7 +132,6 @@ flowchart TB
     collector --> ingestion["Log Ingestion API"]
     ingestion --> elastic["Elasticsearch"]
     elastic --> kibana["Kibana"]
-    elastic --> aspire[".NET Aspire Dashboard"]
 ```
 
 ## Cloud deployment - Azure (ARM templates)
@@ -160,69 +141,11 @@ flowchart TB
 
 [Open the Azure deployment guide →](./docs/azure/README.md)
 
-## Legacy Terraform deployment (advanced)
-> **Heads up:** Terraform remains in `terraform/azure` for teams that prefer IaC modules or already have automation built around it. The ARM template described above is the recommended path for new deployments.
-> **Prerequisite:**  
-> Ensure you have Terraform with Azure CLI working. For more information, refer to [this guide](https://learn.microsoft.com/en-us/azure/developer/terraform/get-started-windows-bash).
+## Send Your Logs
 
-> **Important Note:** The SSL certificate generation is currently hardcoded to use "kibana.example.com". Since you'll be using your own domain, you'll need to manually update the deployment scripts to reflect that. This will be made configurable in future updates.
-
-1. **Generate an SSH Key:**  
-   The SSH key will be used to authenticate your virtual machine.  
-   If you're using PowerShell, run:
-    ```powershell
-    ssh-keygen -t ed25519 -C "loggle" -f "$env:USERPROFILE\.ssh\loggle" -N ""
-    ```
-
-2. **Clone the Repository:**  
-    ```bash
-    git clone https://github.com/jgador/loggle
-    cd terraform\azure
-    ```
-
-   > **Multiple Azure subscriptions?**  
-   > List your available subscriptions and set the one Terraform should use:
-   > ```bash
-   > az account list -o table
-   > az account set --subscription "<subscription name or id>"
-   > ```
-   > Replace the placeholder with the subscription you want to target before running any Terraform commands.
-
-3. **Provision the Public IP:**  
-    This will allocate a public IP for your VM.
-    ```bash
-    terraform apply -target="azurerm_public_ip.public_ip" -auto-approve
-    ```
-
-4. **Update Your Domain Registrar:**  
-    Configure your domain's DNS settings by adding an **A record** that points to your public IP address with a TTL of 600 seconds. For example, in GoDaddy, go to your domain's DNS management panel, create a new **A** record with the host set to "@" (or your preferred subdomain), enter your public IP address, and set the TTL to 600.
-
-5. **Deploy with Terraform:**  
-    This step deploys all the necessary resources including the resource group, virtual network, subnet, public IP, network security group, network interface, and the virtual machine.
-    ```bash
-    terraform apply -auto-approve
-    ```
-    > **Note:** If you rebuild the VM while reusing the same static public IP, clear the old SSH host fingerprint before reconnecting:
-    > ```powershell
-    > ssh-keygen -R 52.230.2.122
-    > ```
-    > Replace the IP if you change it. This prevents host key warnings when you SSH back in.
-    > Kibana is locked down to a default allow list. Update `kibana_allowed_ips` in `terraform/azure/variables.tf` (or override via `terraform.tfvars`) with your own public IPs before applying if `34.126.86.243` is not yours.
-
-### Re-run the provisioning script inside the VM
-
-The VM stores the managed identity in `/etc/loggle/identity.env`, so `/etc/loggle/install.sh` can be run repeatedly without additional parameters. After SSH-ing into the host:
-
-```bash
-sudo /bin/bash /etc/loggle/install.sh
-```
-
-This replays package installs, certificate sync, and service configuration in an idempotent manner.
-
-6. **Send Your Logs:**  
-    Configure your application to forward logs using the following steps:
-    1. Add configuration to `appsettings.json`:
-    ```json
+Configure your application to forward logs using the following steps:
+1. Add configuration to `appsettings.json`:
+```json
     {
       "Logging": {
         "OpenTelemetry": {
@@ -252,15 +175,9 @@ This replays package installs, certificate sync, and service configuration in an
     ```
 
 
-7. **Access Kibana:**  
-    Kibana is automatically set up as part of the deployment and exposed on standard HTTPS. Open your browser and navigate to `https://kibana.example.com` (replace with your domain) to view your logs. Remember: the OpenTelemetry Collector listens on port **4318** and Kibana is now published on port **443**.
+## Access Kibana
 
-8. **Tear Down (Optional):**  
-    A helper script keeps the resource group and static public IP while destroying everything else:
-    ```powershell
-    pwsh .\destroy.ps1          # Use -AutoApprove:$false if you want to confirm the destroy
-    ```
-    Run it from `terraform\azure`. The wrapper builds a `terraform destroy` call that targets every managed resource except the protected resource group, public IP, and Key Vault, so those stay in place while the rest is removed.
+    Kibana is automatically set up as part of the deployment and exposed on standard HTTPS. Open your browser and navigate to `https://kibana.example.com` (replace with your domain) to view your logs. Remember: the OpenTelemetry Collector listens on port **4318** and Kibana is now published on port **443**.
 
 ## For older versions, see:
 
