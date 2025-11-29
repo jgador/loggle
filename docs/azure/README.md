@@ -33,13 +33,15 @@ This ARM template is deployed at the resource group level using the Azure Portal
 
 | Azure portal label | Description | Default |
 |--------------------|-------------|---------|
+| Resource group | Scope for every resource the template deploys. Select the group that already contains your static public IP. | *(choose in portal)* |
 | Name prefix | Short prefix applied to every resource (affects VM, NIC, NSG, etc.). | `loggle` |
 | VM size | VM SKU for the Loggle host. | `Standard_D2s_v3` |
 | Admin username | SSH admin user created on the VM. | `loggle` |
-| SSH public key | **Required** Ed25519 OpenSSH public key used for SSH access. Generate it ahead of time (for example `ssh-keygen -t ed25519 -f ~/.ssh/loggle`) and keep the private key safe locally so you can SSH into the VM later. Only the `.pub` content goes into this field. | *(none)* |
-| Domain name | Hostname served by the stack and used for TLS. | `kibana.example.co` |
-| Certificate email | Let's Encrypt contact email for certificate lifecycle notifications. | `certbot@loggle.co` |
-| Let's Encrypt environment | Choose `production` for real certs or `staging` when testing repeatedly (avoids rate limits with test certificates). | `production` |
+| SSH public key source | Choose **Generate new key pair** if you want Azure to create one (download the private key before you leave the portal), or **Use existing public key** if you generated the key pair ahead of time with `ssh-keygen -t ed25519 -C "loggle" -f "$env:USERPROFILE\.ssh\loggle" -N ""`. | *(choose in portal)* |
+| SSH public key | If you chose **Use existing public key**, paste the Ed25519 `.pub` content you generated ahead of time. Leave blank when you select **Generate new key pair** because Azure supplies the value automatically. | *(none)* |
+| Domain Name | Public hostname clients use to reach Kibana with HTTPS. Certbot uses it to issue the Let's Encrypt TLS certificate, so create the DNS A record before deploying. | `kibana.example.co` |
+| Certificate Email | Let's Encrypt contact email for certificate lifecycle notifications. | `certbot@loggle.co` |
+| Let's Encrypt Environment | Choose `production` for real certs or `staging` when testing repeatedly (avoids rate limits with test certificates). | `production` |
 | Kibana allowed IPs | Array of CIDR ranges allowed through the NSG for HTTPS (443). | `["0.0.0.0/0"]` |
 | Key Vault name | Optional explicit Key Vault name; leave empty to use the prefix-based pattern. | `logglekv` |
 | Repository URL | Git repository that hosts the VM bootstrap assets. | `https://github.com/jgador/loggle.git` |
@@ -49,10 +51,9 @@ This ARM template is deployed at the resource group level using the Azure Portal
 > Purge protection is disabled by default so the Key Vault can be deleted (and purged) during environment teardown. Toggle it manually if your compliance posture requires it.  
 > **Important:** The `Existing public IP name` you provide must reference an existing public IP resource inside the same resource group you deploy to; the template will fail if it cannot find that IP.  
 > **Testing tip:** Switch the Let's Encrypt environment to `staging` while iterating, then back to `production` before go-live.
-> **SSH public key source:** For the quickest setup, you can choose **Generate new key pair** in the portal; be sure to download the private key file before completing the deployment so you can SSH into the VM later. If you prefer to manage your own keys, pick **Use existing public key** and paste the `.pub` content from a key you generated ahead of time (for example `ssh-keygen -t ed25519 -C "loggle" -f "$env:USERPROFILE\.ssh\loggle" -N ""`).
 
 Once the template loads:
-- Select your subscription, pick an existing resource group (or create one), and complete the parameters—the SSH public key is mandatory.
+- Select your subscription, pick an existing resource group (or create one), and complete the parameters—fill in the SSH key fields according to the option you chose earlier.
 - Choose **Review + create**, confirm the summary, then submit the deployment.
 
 The deployment outputs the VM public IP, the managed identity client ID, and the Key Vault resource ID.
