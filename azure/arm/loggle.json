@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.39.26.7824",
-      "templateHash": "16945913484539238086"
+      "templateHash": "8917150720928873843"
     }
   },
   "parameters": {
@@ -33,12 +33,12 @@
     "sshPublicKey": {
       "type": "string",
       "metadata": {
-        "description": "SSH public key in OpenSSH format (single line)."
+        "description": "Ed25519 SSH public key in OpenSSH format (single line)."
       }
     },
     "domainName": {
       "type": "string",
-      "defaultValue": "kibana.loggle.co",
+      "defaultValue": "kibana.example.co",
       "metadata": {
         "description": "Public hostname served by the stack (also used for TLS issuance)."
       }

@@ -12,7 +12,7 @@
 param (
     [string]$KeyVaultName,
     [string]$CertificateName = "kibana",
-    [string]$Domain = "kibana.loggle.co",
+    [string]$Domain = "kibana.example.co",
     [string]$FullchainPath = "/etc/letsencrypt/live/$Domain/fullchain.pem",
     [string]$PrivkeyPath = "/etc/letsencrypt/live/$Domain/privkey.pem",
     [string]$TempPfxPath = "/etc/loggle/certs/kv-import-kibana.pfx",

@@ -25,7 +25,7 @@ This ARM template is deployed at the resource group level using the Azure Portal
 
    ![Upload the Loggle ARM template](../../media/arm/upload-custom-template.png)
 
-4. **Review the parameter form.** The portal shows all parameters from `loggle.json`. Use the screenshot below to see which fields you need to fill in before you continue.
+4. **Review the parameter form.** The portal shows all parameters from `loggle.json`. Use the screenshot below to see which fields you need to fill in before you continue. The **Region** value is taken from the resource group you selected, so there’s nothing to edit there.
 
    ![Fill in the Loggle parameters](../../media/arm/build-own-template.png)
 
@@ -36,8 +36,8 @@ This ARM template is deployed at the resource group level using the Azure Portal
 | Name prefix | Short prefix applied to every resource (affects VM, NIC, NSG, etc.). | `loggle` |
 | VM size | VM SKU for the Loggle host. | `Standard_D2s_v3` |
 | Admin username | SSH admin user created on the VM. | `loggle` |
-| SSH public key | **Required** OpenSSH public key used for SSH access. | *(none)* |
-| Domain name | Hostname served by the stack and used for TLS. | `kibana.loggle.co` |
+| SSH public key | **Required** Ed25519 OpenSSH public key used for SSH access. | *(none)* |
+| Domain name | Hostname served by the stack and used for TLS. | `kibana.example.co` |
 | Certificate email | Let's Encrypt contact email for certificate lifecycle notifications. | `certbot@loggle.co` |
 | Let's Encrypt environment | Choose `production` for real certs or `staging` when testing repeatedly (avoids rate limits with test certificates). | `production` |
 | Kibana allowed IPs | Array of CIDR ranges allowed through the NSG for HTTPS (443). | `["0.0.0.0/0"]` |

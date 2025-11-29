@@ -9,11 +9,11 @@ param vmSize string = 'Standard_D2s_v3'
 @description('Admin username for SSH access.')
 param adminUsername string = 'loggle'
 
-@description('SSH public key in OpenSSH format (single line).')
+@description('Ed25519 SSH public key in OpenSSH format (single line).')
 param sshPublicKey string
 
 @description('Public hostname served by the stack (also used for TLS issuance).')
-param domainName string = 'kibana.loggle.co'
+param domainName string = 'kibana.example.co'
 
 @description('Contact email used for Let\'s Encrypt requests.')
 param certificateEmail string = 'certbot@loggle.co'
