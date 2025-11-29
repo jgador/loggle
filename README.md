@@ -256,6 +256,4 @@ This replays package installs, certificate sync, and service configuration in an
 
 ## For older versions, see:
 
-For older versions, see:
-
 - [README for v0.99.5-rc8](./docs/legacy/README-v0.99.5-rc8.md)
