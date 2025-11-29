@@ -1,6 +1,10 @@
 # Loggle
 
-Loggle is a self-hosted log monitoring solution that stitches together the best available tools for log management. If you're looking to take control of your logs without relying on third-party services, Loggle is for you. This is a fun project intended for experimentation and learning, and it is not recommended for production use.
+Loggle is a self-hosted log monitoring solution that stitches together the best available tools for log management. This README focuses on two things:
+- **Run it locally in minutes** (Docker + sample apps) so you can see Kibana dashboards immediately.
+- **Deploy it to Azure with ARM templates** once you’re satisfied with the local experience.
+
+If you're looking to take control of your logs without relying on third-party services, Loggle is for you. This is a fun project intended for experimentation and learning, and it is not recommended for production use.
 
 ## Quick Start - Local Development
 
