@@ -36,7 +36,7 @@ This ARM template is deployed at the resource group level using the Azure Portal
 | Name prefix | Short prefix applied to every resource (affects VM, NIC, NSG, etc.). | `loggle` |
 | VM size | VM SKU for the Loggle host. | `Standard_D2s_v3` |
 | Admin username | SSH admin user created on the VM. | `loggle` |
-| SSH public key | **Required** Ed25519 OpenSSH public key used for SSH access. | *(none)* |
+| SSH public key | **Required** Ed25519 OpenSSH public key used for SSH access. Generate it ahead of time (for example `ssh-keygen -t ed25519 -f ~/.ssh/loggle`) and keep the private key safe locally so you can SSH into the VM later. Only the `.pub` content goes into this field. | *(none)* |
 | Domain name | Hostname served by the stack and used for TLS. | `kibana.example.co` |
 | Certificate email | Let's Encrypt contact email for certificate lifecycle notifications. | `certbot@loggle.co` |
 | Let's Encrypt environment | Choose `production` for real certs or `staging` when testing repeatedly (avoids rate limits with test certificates). | `production` |
@@ -49,6 +49,7 @@ This ARM template is deployed at the resource group level using the Azure Portal
 > Purge protection is disabled by default so the Key Vault can be deleted (and purged) during environment teardown. Toggle it manually if your compliance posture requires it.  
 > **Important:** The `Existing public IP name` you provide must reference an existing public IP resource inside the same resource group you deploy to; the template will fail if it cannot find that IP.  
 > **Testing tip:** Switch the Let's Encrypt environment to `staging` while iterating, then back to `production` before go-live.
+> **SSH public key source:** For the quickest setup, you can choose **Generate new key pair** in the portal; be sure to download the private key file before completing the deployment so you can SSH into the VM later. If you prefer to manage your own keys, pick **Use existing public key** and paste the `.pub` content from a key you generated ahead of time (for example `ssh-keygen -t ed25519 -C "loggle" -f "$env:USERPROFILE\.ssh\loggle" -N ""`).
 
 Once the template loads:
 - Select your subscription, pick an existing resource group (or create one), and complete the parameters—the SSH public key is mandatory.
