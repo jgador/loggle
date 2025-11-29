@@ -26,6 +26,14 @@ x86/
 [Ww][Ii][Nn]32/
 [Aa][Rr][Mm]/
 [Aa][Rr][Mm]64/
+
+# Allow the checked-in Azure ARM templates
+!azure/arm/
+!azure/arm/**
+# Allow shared media assets that happen to live in "arm" subfolders
+!media/arm/
+!media/arm/**
+
 bld/
 [Bb]in/
 [Oo]bj/

@@ -1,0 +1,392 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.39.26.7824",
+      "templateHash": "3385380748203485783"
+    }
+  },
+  "parameters": {
+    "namePrefix": {
+      "type": "string",
+      "defaultValue": "loggle",
+      "metadata": {
+        "description": "Prefix applied to resource names (keep short and alphanumeric)."
+      }
+    },
+    "vmSize": {
+      "type": "string",
+      "defaultValue": "Standard_D2s_v3",
+      "metadata": {
+        "description": "VM SKU for the Loggle host."
+      }
+    },
+    "adminUsername": {
+      "type": "string",
+      "defaultValue": "loggle",
+      "metadata": {
+        "description": "Admin username for SSH access."
+      }
+    },
+    "sshPublicKey": {
+      "type": "string",
+      "metadata": {
+        "description": "Ed25519 SSH public key in OpenSSH format (single line)."
+      }
+    },
+    "domainName": {
+      "type": "string",
+      "defaultValue": "kibana.example.com",
+      "metadata": {
+        "description": "Public hostname served by the stack (also used for TLS issuance)."
+      }
+    },
+    "certificateEmail": {
+      "type": "string",
+      "defaultValue": "certbot@example.com",
+      "metadata": {
+        "description": "Contact email used for Let's Encrypt requests."
+      }
+    },
+    "letsEncryptEnvironment": {
+      "type": "string",
+      "defaultValue": "production",
+      "allowedValues": [
+        "production",
+        "staging"
+      ],
+      "metadata": {
+        "description": "LetsEncrypt environment for certificate issuance. Leave at production for real deployments; switch to staging when repeatedly testing to avoid rate limits."
+      }
+    },
+    "kibanaAllowedIps": {
+      "type": "array",
+      "defaultValue": [
+        "0.0.0.0/0"
+      ],
+      "metadata": {
+        "description": "IPv4 addresses or CIDR ranges allowed to reach Kibana / HTTPS. Default 0.0.0.0/0 leaves Kibana open to the entire internet - override this to restrict access."
+      }
+    },
+    "publicIpName": {
+      "type": "string",
+      "metadata": {
+        "description": "IMPORTANT: Name of the pre-existing public IP address that already exists in this resource group. The template only attaches to it; it will not create a new public IP."
+      }
+    },
+    "keyVaultName": {
+      "type": "string",
+      "defaultValue": "logglekv",
+      "metadata": {
+        "description": "Optional explicit Key Vault name. Leave empty to use the prefix-based naming pattern."
+      }
+    },
+    "repositoryUrl": {
+      "type": "string",
+      "defaultValue": "https://github.com/jgador/loggle.git",
+      "metadata": {
+        "description": "Git repository that hosts the VM bootstrap assets (install.sh, docker-compose.yml, etc.)."
+      }
+    },
+    "repositoryBranch": {
+      "type": "string",
+      "defaultValue": "master",
+      "metadata": {
+        "description": "Git branch or tag used to download the repositoryUrl contents. Defaults to master; override when testing another ref."
+      }
+    }
+  },
+  "variables": {
+    "location": "[resourceGroup().location]",
+    "repositoryUrlTrimmed": "[trim(parameters('repositoryUrl'))]",
+    "repositoryUrlWithoutGit": "[replace(variables('repositoryUrlTrimmed'), '.git', '')]",
+    "rawRepositoryBaseUrl": "[replace(variables('repositoryUrlWithoutGit'), 'https://github.com/', 'https://raw.githubusercontent.com/')]",
+    "installScriptRelativePath": "azure/vm-assets/install.sh",
+    "installScriptUrl": "[format('{0}/{1}/{2}', variables('rawRepositoryBaseUrl'), parameters('repositoryBranch'), variables('installScriptRelativePath'))]",
+    "tags": {
+      "workload": "loggle"
+    },
+    "prefixSegment": "[if(empty(parameters('namePrefix')), '', format('{0}-', parameters('namePrefix')))]",
+    "sanitizedNamePrefix": "[toLower(replace(parameters('namePrefix'), '-', ''))]",
+    "defaultKeyVaultBaseName": "[if(empty(variables('sanitizedNamePrefix')), 'kvstore', format('{0}kv', variables('sanitizedNamePrefix')))]",
+    "providedKeyVaultName": "[toLower(parameters('keyVaultName'))]",
+    "vnetGeneratedName": "[format('{0}vnet', variables('prefixSegment'))]",
+    "subnetGeneratedName": "default",
+    "nsgGeneratedName": "[format('{0}nsg', variables('prefixSegment'))]",
+    "nicGeneratedName": "[format('{0}nic', variables('prefixSegment'))]",
+    "vmGeneratedName": "[format('{0}vm', variables('prefixSegment'))]",
+    "identityGeneratedName": "[format('{0}id', variables('prefixSegment'))]",
+    "keyVaultNameSeed": "[if(empty(parameters('keyVaultName')), variables('defaultKeyVaultBaseName'), variables('providedKeyVaultName'))]",
+    "keyVaultGeneratedName": "[substring(variables('keyVaultNameSeed'), 0, min(24, length(variables('keyVaultNameSeed'))))]",
+    "osDiskGeneratedName": "[format('{0}osdisk', variables('prefixSegment'))]",
+    "vnetName": "[variables('vnetGeneratedName')]",
+    "subnetName": "[variables('subnetGeneratedName')]",
+    "nsgName": "[variables('nsgGeneratedName')]",
+    "nicName": "[variables('nicGeneratedName')]",
+    "vmName": "[variables('vmGeneratedName')]",
+    "identityName": "[variables('identityGeneratedName')]",
+    "keyVaultEffectiveName": "[variables('keyVaultGeneratedName')]",
+    "osDiskName": "[variables('osDiskGeneratedName')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+      "apiVersion": "2023-01-31",
+      "name": "[variables('identityName')]",
+      "location": "[variables('location')]",
+      "tags": "[variables('tags')]"
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults",
+      "apiVersion": "2023-07-01",
+      "name": "[variables('keyVaultEffectiveName')]",
+      "location": "[variables('location')]",
+      "tags": "[variables('tags')]",
+      "properties": {
+        "tenantId": "[tenant().tenantId]",
+        "enableRbacAuthorization": true,
+        "softDeleteRetentionInDays": 7,
+        "publicNetworkAccess": "Enabled",
+        "sku": {
+          "name": "standard",
+          "family": "A"
+        },
+        "networkAcls": {
+          "defaultAction": "Allow",
+          "bypass": "AzureServices"
+        },
+        "accessPolicies": []
+      }
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.KeyVault/vaults/{0}', variables('keyVaultEffectiveName'))]",
+      "name": "[guid(resourceId('Microsoft.KeyVault/vaults', variables('keyVaultEffectiveName')), 'cert-officer')]",
+      "properties": {
+        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2023-01-31').principalId]",
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'a4417e6f-fecd-4de8-b567-7b0420556985')]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultEffectiveName'))]",
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.KeyVault/vaults/{0}', variables('keyVaultEffectiveName'))]",
+      "name": "[guid(resourceId('Microsoft.KeyVault/vaults', variables('keyVaultEffectiveName')), 'secret-user')]",
+      "properties": {
+        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2023-01-31').principalId]",
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultEffectiveName'))]",
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2023-02-01",
+      "name": "[variables('vnetName')]",
+      "location": "[variables('location')]",
+      "tags": "[variables('tags')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "10.0.0.0/16"
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "apiVersion": "2023-02-01",
+      "name": "[format('{0}/{1}', variables('vnetName'), variables('subnetName'))]",
+      "properties": {
+        "addressPrefix": "10.0.1.0/24"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2023-02-01",
+      "name": "[variables('nsgName')]",
+      "location": "[variables('location')]",
+      "tags": "[variables('tags')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "SSH",
+            "properties": {
+              "priority": 100,
+              "direction": "Inbound",
+              "access": "Allow",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*"
+            }
+          },
+          {
+            "name": "Loggle",
+            "properties": {
+              "copy": [
+                {
+                  "name": "sourceAddressPrefixes",
+                  "count": "[length(parameters('kibanaAllowedIps'))]",
+                  "input": "[parameters('kibanaAllowedIps')[copyIndex('sourceAddressPrefixes')]]"
+                }
+              ],
+              "priority": 110,
+              "direction": "Inbound",
+              "access": "Allow",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRanges": [
+                "80",
+                "443",
+                "4318"
+              ],
+              "destinationAddressPrefix": "*"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2023-02-01",
+      "name": "[variables('nicName')]",
+      "location": "[variables('location')]",
+      "tags": "[variables('tags')]",
+      "properties": {
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
+        },
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('subnetName'))]"
+              },
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIpName'))]"
+              }
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('subnetName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('vmName')]",
+      "location": "[variables('location')]",
+      "tags": "[variables('tags')]",
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[format('{0}', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')))]": {}
+        }
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('vmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[variables('vmName')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": true,
+            "ssh": {
+              "publicKeys": [
+                {
+                  "path": "[format('/home/{0}/.ssh/authorized_keys', parameters('adminUsername'))]",
+                  "keyData": "[parameters('sshPublicKey')]"
+                }
+              ]
+            }
+          },
+          "customData": "[base64(replace(format('LOGGLE_DOMAIN=\"{0}\"\r\nLOGGLE_CERT_EMAIL=\"{1}\"\r\nLOGGLE_CERT_ENV=\"{2}\"\r\nLOGGLE_KEY_VAULT_NAME=\"{3}\"\r\nLOGGLE_ASSET_REPO_URL=\"{4}\"\r\nLOGGLE_ASSET_REPO_REF=\"{5}\"\r\nLOGGLE_INSTALL_SCRIPT_URL=\"{6}\"\r\nLOGGLE_MANAGED_IDENTITY_CLIENT_ID=\"{7}\"\r\n', parameters('domainName'), parameters('certificateEmail'), parameters('letsEncryptEnvironment'), variables('keyVaultEffectiveName'), parameters('repositoryUrl'), parameters('repositoryBranch'), variables('installScriptUrl'), reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2023-01-31').clientId), '\r', ''))]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "canonical",
+            "offer": "0001-com-ubuntu-minimal-jammy",
+            "sku": "minimal-22_04-lts-gen2",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "[variables('osDiskName')]",
+            "createOption": "FromImage",
+            "caching": "ReadWrite",
+            "deleteOption": "Delete",
+            "managedDisk": {
+              "storageAccountType": "Standard_LRS"
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]",
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "apiVersion": "2023-09-01",
+      "name": "[format('{0}/{1}', variables('vmName'), 'loggleBootstrap')]",
+      "location": "[variables('location')]",
+      "properties": {
+        "publisher": "Microsoft.Azure.Extensions",
+        "type": "CustomScript",
+        "typeHandlerVersion": "2.1",
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {
+          "commandToExecute": "[replace(format('bash -c ''set -eo pipefail\r\nLOGGLE_HOME=\"/etc/loggle\"\r\nBOOTSTRAP_SCRIPT=\"$LOGGLE_HOME/loggle-bootstrap.sh\"\r\nSERVICE_PATH=\"/etc/systemd/system/loggle-bootstrap.service\"\r\n\r\ninstall -d -m 0755 \"$LOGGLE_HOME\"\r\ninstall -d -m 0755 \"$(dirname \"$BOOTSTRAP_SCRIPT\")\"\r\n\r\ncat <<\\LOGGLE_BOOTSTRAP >\"$BOOTSTRAP_SCRIPT\"\r\n#!/bin/bash\r\nset -eo pipefail\r\n\r\nLOGGLE_HOME=\"/etc/loggle\"\r\nINFRA_ENV_PATH=\"$LOGGLE_HOME/infra.env\"\r\nCUSTOM_DATA_PATH=\"/var/lib/cloud/instance/user-data.txt\"\r\nSETUP_DEST=\"$LOGGLE_HOME/install.sh\"\r\n\r\ncopy_custom_data() {{\r\n  install -d -m 0755 \"$LOGGLE_HOME\"\r\n  if [[ -f \"$CUSTOM_DATA_PATH\" ]]; then\r\n    cp \"$CUSTOM_DATA_PATH\" \"$INFRA_ENV_PATH\"\r\n  else\r\n    echo \"Custom data file $CUSTOM_DATA_PATH not found; writing fallback env from template values.\" >&2\r\n    cat <<\\INFRAENV >\"$INFRA_ENV_PATH\"\r\nLOGGLE_DOMAIN=\"{1}\"\r\nLOGGLE_CERT_EMAIL=\"{2}\"\r\nLOGGLE_CERT_ENV=\"{3}\"\r\nLOGGLE_KEY_VAULT_NAME=\"{4}\"\r\nLOGGLE_ASSET_REPO_URL=\"{5}\"\r\nLOGGLE_ASSET_REPO_REF=\"{7}\"\r\nLOGGLE_INSTALL_SCRIPT_URL=\"{0}\"\r\nLOGGLE_MANAGED_IDENTITY_CLIENT_ID=\"{6}\"\r\nINFRAENV\r\n  fi\r\n\r\n  chmod 600 \"$INFRA_ENV_PATH\"\r\n}}\r\n\r\ndownload_install_script() {{\r\n  local install_url=\"{0}\"\r\n  if [[ -f \"$INFRA_ENV_PATH\" ]]; then\r\n    # shellcheck disable=SC1091\r\n    source \"$INFRA_ENV_PATH\"\r\n  fi\r\n  if [[ -n \"$LOGGLE_INSTALL_SCRIPT_URL\" ]]; then\r\n    install_url=\"$LOGGLE_INSTALL_SCRIPT_URL\"\r\n  fi\r\n  local tmp_file\r\n  tmp_file=\"$(mktemp)\"\r\n  if command -v curl >/dev/null 2>&1; then\r\n    curl -fsSL \"$install_url\" -o \"$tmp_file\"\r\n  elif command -v wget >/dev/null 2>&1; then\r\n    wget -qO \"$tmp_file\" \"$install_url\"\r\n  else\r\n    apt-get update\r\n    apt-get install -y curl\r\n    curl -fsSL \"$install_url\" -o \"$tmp_file\"\r\n  fi\r\n  mv \"$tmp_file\" \"$SETUP_DEST\"\r\n  chmod 755 \"$SETUP_DEST\"\r\n}}\r\n\r\nrun_install_script() {{\r\n  if [[ ! -x \"$SETUP_DEST\" ]]; then\r\n    echo \"Install script $SETUP_DEST not found or not executable; skipping launch.\" >&2\r\n    return\r\n  fi\r\n  if [[ -z \"${{HOME:-}}\" ]]; then\r\n    export HOME=/root\r\n  fi\r\n  local log_file=\"$LOGGLE_HOME/install.log\"\r\n  echo \"Launching $SETUP_DEST in background; follow logs via $log_file\"\r\n  nohup \"$SETUP_DEST\" >\"$log_file\" 2>&1 &\r\n}}\r\n\r\nmain() {{\r\n  copy_custom_data\r\n  download_install_script\r\n  run_install_script\r\n}}\r\n\r\nmain \"$@\"\r\nLOGGLE_BOOTSTRAP\r\n\r\nchmod 755 \"$BOOTSTRAP_SCRIPT\"\r\n\r\ncat <<\\LOGGLE_SERVICE >\"$SERVICE_PATH\"\r\n[Unit]\r\nDescription=Loggle bootstrap\r\nAfter=cloud-final.service\r\n\r\n[Service]\r\nType=oneshot\r\nExecStart=/etc/loggle/loggle-bootstrap.sh\r\nExecStartPost=/bin/systemctl disable loggle-bootstrap.service\r\nRemainAfterExit=true\r\n\r\n[Install]\r\nWantedBy=multi-user.target\r\nLOGGLE_SERVICE\r\n\r\nsystemctl daemon-reload\r\nsystemctl enable --now loggle-bootstrap.service\r\n''\r\n', variables('installScriptUrl'), parameters('domainName'), parameters('certificateEmail'), parameters('letsEncryptEnvironment'), variables('keyVaultEffectiveName'), parameters('repositoryUrl'), reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2023-01-31').clientId, parameters('repositoryBranch')), '\r', '')]"
+        },
+        "settings": {}
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]",
+        "[resourceId('Microsoft.Compute/virtualMachines', variables('vmName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "publicIpAddress": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIpName')), '2023-02-01').ipAddress]"
+    },
+    "managedIdentityClientId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2023-01-31').clientId]"
+    },
+    "keyVaultResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultEffectiveName'))]"
+    }
+  }
+}
