@@ -9,7 +9,7 @@ This ARM template is deployed at the resource group level using the Azure Portal
 
 > ⚠️ **Prerequisites before opening the template**
 > - **Resource group ready:** Use the resource group that already contains your Standard static public IP. The template looks up the IP by name inside that same resource group, so creating the group at deploy-time without also pre-loading the IP will fail.
-> - **Static public IP allocated:** Provision a Standard *static* public IP inside that resource group. Certbot depends on this IP already existing because the template only attaches to it.
+> - **Static public IP allocated:** Provision a Standard *static* public IP inside that resource group. Certbot uses this IP to issue a free TLS certificate, and the template only attaches to an existing IP.
 > - **DNS A record in place:** Point your Loggle hostname (for example `logs.example.com`) to the public IP via an **A** record before you deploy. Certbot validation runs during provisioning and fails unless the DNS name already resolves to the VM’s IP.
 
 ### Portal custom template quickstart
@@ -21,11 +21,11 @@ This ARM template is deployed at the resource group level using the Azure Portal
 
    ![Open the custom template editor](../../media/arm/build-custom-template.png)
 
-3. **Upload `loggle.json`.** Use **Load file**, select `azure/arm/loggle.json` from your local clone (or any downloaded copy), then click **Save**. You should now see the parameters form for Loggle.
+3. **Upload `loggle.json`.** Use **Load file**, select [`azure/arm/loggle.json`](../../azure/arm/loggle.json) from your local clone (or download it fresh), then click **Save**. You should now see the parameters form for Loggle.
 
    ![Upload the Loggle ARM template](../../media/arm/upload-custom-template.png)
 
-4. **Review the parameter form.** The portal renders every parameter from `loggle.json`; use the highlighted inputs in the screenshot below as a guide while you fill in `sshPublicKey`, `publicIpName`, `domainName`, and any overrides you need.
+4. **Review the parameter form.** The portal shows all parameters from `loggle.json`. Use the screenshot below to see which fields you need to fill in before you continue.
 
    ![Fill in the Loggle parameters](../../media/arm/build-own-template.png)
 
