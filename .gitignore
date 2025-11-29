@@ -30,6 +30,9 @@ x86/
 # Allow the checked-in Azure ARM templates
 !azure/arm/
 !azure/arm/**
+# Allow shared media assets that happen to live in "arm" subfolders
+!media/arm/
+!media/arm/**
 
 bld/
 [Bb]in/

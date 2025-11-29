@@ -198,7 +198,7 @@ az network public-ip create `
   --allocation-method Static
 ```
 
-![Placeholder - Resource group and IP](./docs/images/arm/portal-resource-group.png)
+![Placeholder - Resource group and IP](./media/arm/portal-resource-group.png)
 
 ### Step 3. Deploy with the Azure Portal (recommended)
 1. In the Azure Portal, search for **Deploy a custom template**.
@@ -207,8 +207,8 @@ az network public-ip create `
 4. Fill in the parameters—make sure `sshPublicKey`, `publicIpName`, `domainName`, and `kibanaAllowedIps` reflect your environment.
 5. Validate, then press **Review + create** to kick off the deployment.
 
-![Placeholder - Portal custom deployment](./docs/images/arm/portal-custom-deployment.png)
-![Placeholder - Portal parameter blade](./docs/images/arm/portal-parameters.png)
+![Placeholder - Portal custom deployment](./media/arm/portal-custom-deployment.png)
+![Placeholder - Portal parameter blade](./media/arm/portal-parameters.png)
 
 When the deployment completes you will see outputs for the VM public IP, managed identity client ID, and Key Vault resource ID.
 
@@ -236,7 +236,7 @@ Azure CLI accepts array parameters as JSON strings (note the single quotes insid
   `az vm run-command invoke -g loggle-rg -n loggle-vm --command-id RunShellScript --scripts "sudo tail -n 50 /etc/loggle/install.log"`
 - Wait for `Loggle setup complete` along with the container status summary before inviting traffic.
 
-![Placeholder - Bootstrap log viewer](./docs/images/arm/bootstrap-log.png)
+![Placeholder - Bootstrap log viewer](./media/arm/bootstrap-log.png)
 
 ### Step 6. Wire up DNS and verify endpoints
 - Point your chosen hostname (e.g., `logs.contoso.com`) at the static public IP using an **A** record with a low TTL while testing.
