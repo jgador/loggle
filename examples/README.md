@@ -30,6 +30,10 @@
 - Each language folder keeps its own configuration (`config.json`, `.env`, or similar); adjust those files before running.
 - The runner restores per-language dependencies (pip/npm/dotnet) so you can focus on configs.
 
+## Testing against a cloud deployment
+- When you point these samples at a Loggle instance deployed to Azure, keep the OTLP endpoint on plain HTTP: `http://your-domain-or-ip:4318/v1/logs`. The collector on port 4318 only speaks HTTP, even though Kibana on the same hostname uses HTTPS.
+- Update the bearer token in each sample to match the value configured on the cloud collector.
+
 ## Shared bearer token
 - The collector (`examples/otel-collector-config.yaml`) expects the token `REPLACE_WITH_YOUR_OWN_SECRET`.
 - Ensure every example uses the same value in its config file (`.env`, `config.json`, or `appsettings.json`) before sending logs.
