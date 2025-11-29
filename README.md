@@ -7,8 +7,15 @@ Loggle is a self-hosted log monitoring solution that stitches together the best 
 If you're looking to take control of your logs without relying on third-party services, Loggle is for you. This is a fun project intended for experimentation and learning, and it is not recommended for production use.
 
 ## Table of Contents
-- [Local Development](#quick-start---local-development)
-- [Cloud Deployment](#cloud-deployment---azure-arm-templates)
+- [Quick Start - Local Development](#quick-start---local-development)
+- [Quick .NET Integration](#quick-net-integration)
+- [Multilingual logging samples](#multilingual-logging-samples)
+- [What It Does](#what-it-does)
+- [Data Flow](#data-flow)
+- [Cloud deployment - Azure (ARM templates)](#cloud-deployment---azure-arm-templates)
+- [Send Your Logs](#send-your-logs)
+- [Access Kibana](#access-kibana)
+- [Older versions](#for-older-versions-see)
 
 ## Quick Start - Local Development
 
