@@ -145,34 +145,37 @@ flowchart TB
 
 Configure your application to forward logs using the following steps:
 1. Add configuration to `appsettings.json`:
+
 ```json
-    {
-      "Logging": {
-        "OpenTelemetry": {
-          "IncludeFormattedMessage": true,
-          "IncludeScopes": true,
-          "ParseStateValues": true
-        },
-        "Loggle": {
-          "ServiceName": "Examples.Loggle.Console",
-          "ServiceVersion": "v0.99.5-rc.7",
-          "OtelCollector": {
-            "BearerToken": "REPLACE_WITH_YOUR_OWN_SECRET",
-            "LogsReceiverEndpoint": "http://your-domain-or-ip:4318/v1/logs"
-          }
-        }
+{
+  "Logging": {
+    "OpenTelemetry": {
+      "IncludeFormattedMessage": true,
+      "IncludeScopes": true,
+      "ParseStateValues": true
+    },
+    "Loggle": {
+      "ServiceName": "Examples.Loggle.Console",
+      "ServiceVersion": "v0.99.5-rc.7",
+      "OtelCollector": {
+        "BearerToken": "REPLACE_WITH_YOUR_OWN_SECRET",
+        "LogsReceiverEndpoint": "http://your-domain-or-ip:4318/v1/logs"
       }
     }
-    ```
-    2. Add the Loggle exporter in your `Program.cs`:
-    ```csharp
-    var builder = Host.CreateDefaultBuilder(args)
-      .ConfigureServices((hostContext, services) =>
-      {
-        // Register the loggle exporter
-        services.AddLoggleExporter();
-      });
-    ```
+  }
+}
+```
+
+2. Add the Loggle exporter in your `Program.cs`:
+
+```csharp
+var builder = Host.CreateDefaultBuilder(args)
+  .ConfigureServices((hostContext, services) =>
+  {
+    // Register the loggle exporter
+    services.AddLoggleExporter();
+  });
+```
 
 
 ## Access Kibana
