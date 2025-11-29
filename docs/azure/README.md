@@ -1,11 +1,16 @@
 # Loggle Azure Template
 
-The `azure/arm` folder holds the Bicep template (`loggle.bicep`) and its generated ARM JSON (`loggle.json`) that mirrors the Terraform stack under `terraform/azure`. The VM Custom Script extension clones this repository, stages the contents of `azure/vm-assets/` into `/var/cache/loggle-assets/`, downloads `install.sh` directly from GitHub based on the configured repository URL and branch, and drops a `loggle-bootstrap.service` unit that runs after `cloud-final.service` to execute the script. Operators can still inspect every asset on-disk before the installer runs.
+The `azure/arm` folder holds the Bicep template (`loggle.bicep`) and its generated ARM JSON (`loggle.json`) that mirrors the Terraform stack under `terraform/azure`. The VM Custom Script extension clones this repository, stages the contents of `azure/vm-assets/` into `/etc/loggle/assets`, downloads `install.sh` directly from GitHub based on the configured repository URL and branch, and drops a `loggle-bootstrap.service` unit that runs after `cloud-final.service` to execute the script. Operators can still inspect every asset on-disk before the installer runs.
 
-## 1. Azure Portal deployment workflow
+## Azure Portal deployment workflow
 
 **Resource-group scoped (`azure/arm/loggle.json`)**  
-This ARM template must be deployed at the resource-group level (via portal custom template or `az deployment group create`). It does not create or manage subscriptions or management groups—just the resources that live inside the target RG.
+This ARM template must be deployed at the resource-group level (via portal custom template or `az deployment group create`). It does not create or manage subscriptions or management groups-just the resources that live inside the target RG.
+
+> ⚠️ **Prerequisites before opening the template**
+> - **Resource group ready:** Create (or select) the resource group that will host Loggle plus its networking assets.
+> - **Static public IP allocated:** Provision a Standard *static* public IP inside that resource group. Certbot depends on this IP already existing because the template only attaches to it.
+> - **DNS A record in place:** Point your Loggle hostname (for example `logs.example.com`) to the public IP via an **A** record before you deploy. Certbot validation runs during provisioning and fails unless the DNS name already resolves to the VM’s IP.
 
 ### Portal custom template quickstart
 1. **Find the deployment blade.** In the Azure Portal search bar, type **template deployment** and open **Deploy a custom template**.
@@ -64,7 +69,7 @@ To confirm the install script finished successfully:
 
 The tail of the log should include `Loggle setup complete.` along with the container status summary printed by `install.sh`.
 
-## 2. Keep the VM assets in sync
+## Keep the VM assets in sync
 
 `azure/vm-assets/` is a straight copy of the root `remote/` directory (the same payload Terraform uploads with its `file` provisioner). Whenever you touch anything under `remote/`, refresh the Azure copy before committing:
 
@@ -76,7 +81,7 @@ Copy-Item -Path remote/* -Destination azure/vm-assets -Recurse -Force
 
 This keeps the Azure artifacts readable in-tree and guarantees the deployment bundle always matches the Terraform provisioning logic.
 
-## 3. Compile Bicep -> ARM JSON
+## Compile Bicep -> ARM JSON
 
 Install/refresh the bundled CLI through Azure CLI (`az bicep install`). Then build the ARM template with:
 
