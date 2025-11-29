@@ -34,33 +34,30 @@ This ARM template is deployed at the resource group level using the Azure Portal
 | Azure portal label | Description | Default |
 |--------------------|-------------|---------|
 | Resource group | Scope for every resource the template deploys. Select the group that already contains your static public IP. | *(choose in portal)* |
-| Name prefix | Short prefix applied to every resource (affects VM, NIC, NSG, etc.). | `loggle` |
+| Name Prefix | Short prefix applied to every resource (affects VM, NIC, NSG, etc.). | `loggle` |
 | VM size | VM SKU for the Loggle host. | `Standard_D2s_v3` |
 | Admin username | SSH admin user created on the VM. | `loggle` |
 | SSH public key source | Choose **Generate new key pair** if you want Azure to create one (download the private key before you leave the portal), or **Use existing public key** if you generated the key pair ahead of time with `ssh-keygen -t ed25519 -C "loggle" -f "$env:USERPROFILE\.ssh\loggle" -N ""`. | *(choose in portal)* |
 | SSH public key | If you chose **Use existing public key**, paste the Ed25519 `.pub` content you generated ahead of time. Leave blank when you select **Generate new key pair** because Azure supplies the value automatically. | *(none)* |
-| Domain Name | Public hostname clients use to reach Kibana with HTTPS. Certbot uses it to issue the Let's Encrypt TLS certificate, so create the DNS A record before deploying. | `kibana.example.co` |
-| Certificate Email | Let's Encrypt contact email for certificate lifecycle notifications. | `certbot@loggle.co` |
+| Domain Name | Public hostname clients use to reach Kibana with HTTPS. Certbot uses it to issue the Let's Encrypt TLS certificate, so create the DNS A record before deploying. | `kibana.example.com` |
+| Certificate Email | Let's Encrypt contact email for certificate lifecycle notifications. | `certbot@example.com` |
 | Let's Encrypt Environment | Choose `production` for real certs or `staging` when testing repeatedly (avoids rate limits with test certificates). | `production` |
 | Kibana allowed IPs | Array of CIDR ranges allowed through the NSG for HTTPS (443). | `["0.0.0.0/0"]` |
 | Key Vault name | Optional explicit Key Vault name; leave empty to use the prefix-based pattern. | `logglekv` |
 | Repository URL | Git repository that hosts the VM bootstrap assets. | `https://github.com/jgador/loggle.git` |
 | Repository branch | Git branch or tag pulled from the repository URL. | `master` |
-| Existing public IP name | **Required** name of the pre-created public IP that already exists in the target resource group. | *(none)* |
+| Public Ip Name | **Required** name of the pre-created public IP that already exists in the target resource group. | *(none)* |
 
-> Purge protection is disabled by default so the Key Vault can be deleted (and purged) during environment teardown. Toggle it manually if your compliance posture requires it.  
-> **Important:** The `Existing public IP name` you provide must reference an existing public IP resource inside the same resource group you deploy to; the template will fail if it cannot find that IP.  
+> **Important:** The `Public Ip Name` you provide must reference an existing public IP resource inside the same resource group you deploy to; the template will fail if it cannot find that IP.  
 > **Testing tip:** Switch the Let's Encrypt environment to `staging` while iterating, then back to `production` before go-live.
 
 Once the template loads:
 - Select your subscription, pick an existing resource group (or create one), and complete the parameters—fill in the SSH key fields according to the option you chose earlier.
 - Choose **Review + create**, confirm the summary, then submit the deployment.
 
-The deployment outputs the VM public IP, the managed identity client ID, and the Key Vault resource ID.
-
 ### Naming
 
-Every resource name is derived from the `namePrefix` parameter (e.g., `loggle-vnet`, `loggle-nsg`). If you set `namePrefix` to an empty string, the template falls back to simple names like `vnet` and `nsg`. For per-resource overrides you now need to fork or extend the template.
+Every resource name is derived from the `Name Prefix` parameter (e.g., `loggle-vnet`, `loggle-nsg`). If you set `namePrefix` to an empty string, the template falls back to simple names like `vnet` and `nsg`. For per-resource overrides you now need to fork or extend the template.
 
 ### Verifying the VM bootstrap
 
@@ -73,15 +70,7 @@ The tail of the log should include `Loggle setup complete.` along with the conta
 
 ## Keep the VM assets in sync
 
-`azure/vm-assets/` is a straight copy of the root `remote/` directory (the same payload Terraform uploads with its `file` provisioner). Whenever you touch anything under `remote/`, refresh the Azure copy before committing:
-
-```pwsh
-Remove-Item -Path azure/vm-assets -Recurse -Force -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Path azure/vm-assets | Out-Null
-Copy-Item -Path remote/* -Destination azure/vm-assets -Recurse -Force
-```
-
-This keeps the Azure artifacts readable in-tree and guarantees the deployment bundle always matches the Terraform provisioning logic.
+`azure/vm-assets/` holds the static payload that the VM downloads during provisioning (install scripts, docker-compose, collector configs, etc.). Update those files directly when you change the bootstrap logic so the ARM deployment always pulls the latest assets.
 
 ## Compile Bicep -> ARM JSON
 

@@ -38,14 +38,14 @@
     },
     "domainName": {
       "type": "string",
-      "defaultValue": "kibana.example.co",
+      "defaultValue": "kibana.example.com",
       "metadata": {
         "description": "Public hostname served by the stack (also used for TLS issuance)."
       }
     },
     "certificateEmail": {
       "type": "string",
-      "defaultValue": "certbot@loggle.co",
+      "defaultValue": "certbot@example.com",
       "metadata": {
         "description": "Contact email used for Let's Encrypt requests."
       }

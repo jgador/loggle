@@ -13,8 +13,8 @@ if [[ -f "$INFRA_ENV_PATH" ]]; then
 fi
 readonly LOGGLE_PATH="$LOGGLE_ROOT"
 readonly CERT_PATH="${LOGGLE_CERT_PATH:-$LOGGLE_PATH/certs}"
-readonly DOMAIN="${LOGGLE_DOMAIN:-kibana.example.co}"
-readonly EMAIL="${LOGGLE_CERT_EMAIL:-certbot@loggle.co}"
+readonly DOMAIN="${LOGGLE_DOMAIN:-kibana.example.com}"
+readonly EMAIL="${LOGGLE_CERT_EMAIL:-certbot@example.com}"
 readonly ASSET_REPO_URL="${LOGGLE_ASSET_REPO_URL:-https://github.com/jgador/loggle.git}"
 readonly ASSET_REPO_REF="${LOGGLE_ASSET_REPO_REF:-master}"
 readonly ASSET_PAYLOAD_PATH="azure/vm-assets"

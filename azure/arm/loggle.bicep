@@ -13,10 +13,10 @@ param adminUsername string = 'loggle'
 param sshPublicKey string
 
 @description('Public hostname served by the stack (also used for TLS issuance).')
-param domainName string = 'kibana.example.co'
+param domainName string = 'kibana.example.com'
 
 @description('Contact email used for Let\'s Encrypt requests.')
-param certificateEmail string = 'certbot@loggle.co'
+param certificateEmail string = 'certbot@example.com'
 
 @allowed([
   'production'

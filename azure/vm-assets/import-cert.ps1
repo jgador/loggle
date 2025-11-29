@@ -125,7 +125,7 @@ function Get-InfraEnvValue {
 if (-not $PSBoundParameters.ContainsKey('Domain') -or [string]::IsNullOrWhiteSpace($Domain)) {
     $Domain = Get-InfraEnvValue -Key "LOGGLE_DOMAIN" -Path $InfraEnvPath
     if ([string]::IsNullOrWhiteSpace($Domain)) {
-        $Domain = "kibana.example.co"
+        $Domain = "kibana.example.com"
     }
 }
 

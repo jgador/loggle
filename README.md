@@ -162,7 +162,7 @@ Loggle now ships an Azure Resource Manager template as the primary way to deploy
 - Azure CLI 2.61+ (optional if you use only the Portal) and the **Template deployment** blade enabled.
 - Ability to create a Standard static public IP in your chosen region.
 - SSH key pair (public key in OpenSSH format) dedicated to this VM.
-- DNS control for the hostname you will map to Loggle (`kibana.example.co` by default).
+- DNS control for the hostname you will map to Loggle (`kibana.example.com` by default).
 - Outbound access to `github.com` from the VM so it can fetch `install.sh` and the asset bundle.
 
 ### Step 1. Clone the repo and review template parameters
@@ -176,8 +176,8 @@ Open `azure/arm/loggle.json` and adjust any default values you want to bake in b
 |-----------|---------|---------|
 | `namePrefix` | Prefix applied to every Azure resource name. | `loggle` |
 | `sshPublicKey` | **Required** public key that unlocks SSH. | *(none)* |
-| `domainName` | FQDN served by the stack and used for TLS. | `kibana.example.co` |
-| `certificateEmail` | LetsEncrypt contact email. | `certbot@loggle.co` |
+| `domainName` | FQDN served by the stack and used for TLS. | `kibana.example.com` |
+| `certificateEmail` | LetsEncrypt contact email. | `certbot@example.com` |
 | `kibanaAllowedIps` | Array of IPv4 CIDR blocks allowed to reach Kibana (443). | `["0.0.0.0/0"]` |
 | `publicIpName` | **Required** name of the pre-created static public IP in your resource group. | *(none)* |
 | `letsEncryptEnvironment` | `production` for real certs, `staging` for repeated dry-runs. | `production` |
@@ -244,7 +244,7 @@ Need to customize or extend the deployment further? Modify `azure/arm/loggle.bic
 > **Prerequisite:**  
 > Ensure you have Terraform with Azure CLI working. For more information, refer to [this guide](https://learn.microsoft.com/en-us/azure/developer/terraform/get-started-windows-bash).
 
-> **Important Note:** The SSL certificate generation is currently hardcoded to use "kibana.example.co". Since you'll be using your own domain, you'll need to manually update the deployment scripts to reflect that. This will be made configurable in future updates.
+> **Important Note:** The SSL certificate generation is currently hardcoded to use "kibana.example.com". Since you'll be using your own domain, you'll need to manually update the deployment scripts to reflect that. This will be made configurable in future updates.
 
 1. **Generate an SSH Key:**  
    The SSH key will be used to authenticate your virtual machine.  
@@ -332,7 +332,7 @@ This replays package installs, certificate sync, and service configuration in an
 
 
 7. **Access Kibana:**  
-    Kibana is automatically set up as part of the deployment and exposed on standard HTTPS. Open your browser and navigate to `https://kibana.example.co` (replace with your domain) to view your logs. Remember: the OpenTelemetry Collector listens on port **4318** and Kibana is now published on port **443**.
+    Kibana is automatically set up as part of the deployment and exposed on standard HTTPS. Open your browser and navigate to `https://kibana.example.com` (replace with your domain) to view your logs. Remember: the OpenTelemetry Collector listens on port **4318** and Kibana is now published on port **443**.
 
 8. **Tear Down (Optional):**  
     A helper script keeps the resource group and static public IP while destroying everything else:
