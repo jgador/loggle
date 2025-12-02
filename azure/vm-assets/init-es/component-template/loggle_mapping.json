@@ -10,17 +10,25 @@
                 "@timestamp": {
                     "type": "date"
                 },
-                "serviceInstanceId": {
-                    "ignore_above": 256,
-                    "type": "keyword"
-                },
-                "serviceName": {
-                    "ignore_above": 256,
-                    "type": "keyword"
-                },
-                "serviceVersion": {
-                    "ignore_above": 256,
-                    "type": "keyword"
+                "service": {
+                    "properties": {
+                        "instance": {
+                            "properties": {
+                                "id": {
+                                    "ignore_above": 256,
+                                    "type": "keyword"
+                                }
+                            }
+                        },
+                        "name": {
+                            "ignore_above": 256,
+                            "type": "keyword"
+                        },
+                        "version": {
+                            "ignore_above": 256,
+                            "type": "keyword"
+                        }
+                    }
                 },
                 "attributes": {
                     "properties": {

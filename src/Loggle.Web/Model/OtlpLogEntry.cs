@@ -18,14 +18,8 @@ public class OtlpLogEntry
     [JsonPropertyName("attributes")]
     public List<NameValue> Attributes { get; }
 
-    [JsonPropertyName("serviceName")]
-    public string ServiceName { get; set; }
-
-    [JsonPropertyName("serviceInstanceId")]
-    public string ServiceInstanceId { get; set; }
-
-    [JsonPropertyName("serviceVersion")]
-    public string ServiceVersion { get; set; }
+    [JsonPropertyName("service")]
+    public ServiceDocument Service { get; }
 
     [JsonPropertyName("flags")]
     public uint Flags { get; }
@@ -74,9 +68,14 @@ public class OtlpLogEntry
             }
         });
 
-        ServiceName = application.ServiceName;
-        ServiceVersion = application.ServiceVersionNumber;
-        ServiceInstanceId = application.ServiceInstanceId;
+        Service = new ServiceDocument
+        {
+            Name = application.ServiceName,
+            Version = application.ServiceVersionNumber,
+            Instance = string.IsNullOrWhiteSpace(application.ServiceInstanceId)
+                ? null
+                : new ServiceInstanceDocument { Id = application.ServiceInstanceId }
+        };
 
         Attributes = attributes
             ?.Select(a => new NameValue { Name = a.Key, Value = a.Value })

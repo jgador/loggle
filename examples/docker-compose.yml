@@ -1,6 +1,9 @@
 services:
   loggle-web:
-    image: jessegador/loggle-web:latest
+    # image: jessegador/loggle-web:latest
+    build:
+      context: ..
+      dockerfile: local/Dockerfile
     container_name: loggle-web
     networks:
       - loggle
@@ -12,7 +15,7 @@ services:
       - elasticsearch
 
   otelcol:
-    image: otel/opentelemetry-collector-contrib:0.117.0
+    image: otel/opentelemetry-collector-contrib:0.140.0
     container_name: otelcol
     networks:
       - loggle
