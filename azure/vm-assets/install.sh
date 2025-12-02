@@ -15,6 +15,7 @@ readonly LOGGLE_PATH="$LOGGLE_ROOT"
 readonly CERT_PATH="${LOGGLE_CERT_PATH:-$LOGGLE_PATH/certs}"
 readonly DOMAIN="${LOGGLE_DOMAIN:-kibana.example.com}"
 readonly EMAIL="${LOGGLE_CERT_EMAIL:-certbot@example.com}"
+readonly KIBANA_INTERNAL_URL="${LOGGLE_KIBANA_INTERNAL_URL:-https://localhost}"
 readonly ASSET_REPO_URL="${LOGGLE_ASSET_REPO_URL:-https://github.com/jgador/loggle.git}"
 readonly ASSET_REPO_REF="${LOGGLE_ASSET_REPO_REF:-master}"
 readonly ASSET_PAYLOAD_PATH="azure/vm-assets"
@@ -329,6 +330,25 @@ wait_for_elasticsearch() {
     return 1
 }
 
+wait_for_kibana() {
+    local max_attempts=60
+    local attempt=1
+    local kibana_status_url="${KIBANA_INTERNAL_URL%/}/api/status"
+
+    while [[ $attempt -le $max_attempts ]]; do
+        if curl --output /dev/null --silent --fail -k "$kibana_status_url"; then
+            echo "Kibana is ready!"
+            return 0
+        fi
+        echo "Waiting for Kibana (attempt $attempt/$max_attempts)"
+        sleep 5
+        ((attempt++))
+    done
+    
+    echo "Max attempts reached waiting for Kibana"
+    return 1
+}
+
 log_container_status() {
     if ! command -v docker >/dev/null 2>&1; then
         echo "Docker CLI not available; skipping container status check."
@@ -430,6 +450,12 @@ main() {
     # Initialize Elasticsearch
     if wait_for_elasticsearch; then
         pwsh "$LOGGLE_PATH/init-es/init-es.ps1"
+    else
+        exit 1
+    fi
+
+    if wait_for_kibana; then
+        pwsh "$LOGGLE_PATH/init-es/kibana-dataview.ps1" -KibanaBaseUrl "$KIBANA_INTERNAL_URL"
     else
         exit 1
     fi

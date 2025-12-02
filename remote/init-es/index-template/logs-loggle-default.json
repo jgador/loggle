@@ -1,9 +1,0 @@
-{
-  "composed_of": [
-    "loggle_default_7d",
-    "loggle_mapping"
-  ],
-  "data_stream": {},
-  "index_patterns": ["logs-loggle-default"],
-  "priority": 201
-}

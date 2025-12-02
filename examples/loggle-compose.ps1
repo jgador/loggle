@@ -15,7 +15,9 @@ Param(
 )
 
 $composeFile = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "docker-compose.yml"))
-$initScript = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".." "remote" "init-es" "init-es.ps1"))
+$initScript = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".." "azure" "vm-assets" "init-es" "init-es.ps1"))
+$kibanaDataViewScript = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".." "azure" "vm-assets" "init-es" "kibana-dataview.ps1"))
+$kibanaBaseUrl = "http://localhost:5601"
 
 if (-not (Test-Path $composeFile)) {
     throw "docker-compose.yml not found at $composeFile"
@@ -42,6 +44,27 @@ function Wait-ForElasticsearch {
   }
 }
 
+function Wait-ForKibana {
+  $kibanaReady = $false
+  for ($i = 1; $i -le 60; $i++) {
+      try {
+          Invoke-WebRequest -Uri "$kibanaBaseUrl/api/status" -UseBasicParsing -ErrorAction Stop | Out-Null
+          $kibanaReady = $true
+          break
+      } catch {
+          Write-Host "Waiting for Kibana to be ready (attempt $i)..."
+          Start-Sleep -Seconds 5
+      }
+  }
+
+  if (-not $kibanaReady) {
+      Write-Host "Max attempts reached. Kibana did not become ready."
+      exit 1
+  } else {
+      Write-Host "Kibana is ready!"
+  }
+}
+
 if ($action -eq "stop") {
   Write-Host "Stopping Loggle Docker Compose..."
   docker compose -f $composeFile --project-name loggle down
@@ -58,5 +81,15 @@ if ($action -eq "stop") {
       & $initScript
   } else {
       Write-Host "Warning: init-es.ps1 not found."
+  }
+
+  # Ensure Kibana is ready before creating the data view.
+  Wait-ForKibana
+
+  if (Test-Path $kibanaDataViewScript) {
+      Write-Host "Ensuring default Kibana data view exists..."
+      & $kibanaDataViewScript -KibanaBaseUrl $kibanaBaseUrl
+  } else {
+      Write-Host "Warning: kibana-dataview.ps1 not found."
   }
 }

@@ -197,7 +197,7 @@ resource "azurerm_virtual_machine" "vm" {
     private_key = file("~/.ssh/loggle")
   }
   provisioner "file" {
-    source      = "../../remote/"
+    source      = "../../azure/vm-assets/"
     destination = "/tmp"
   }
   provisioner "remote-exec" {
