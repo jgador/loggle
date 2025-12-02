@@ -1,9 +1,9 @@
 services:
   loggle-web:
-    # image: jessegador/loggle-web:latest
-    build:
-      context: ..
-      dockerfile: local/Dockerfile
+    image: jessegador/loggle-web:1.0.0-rc1
+    # build:
+      # context: ..
+      # dockerfile: local/Dockerfile
     container_name: loggle-web
     networks:
       - loggle
