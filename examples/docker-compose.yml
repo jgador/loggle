@@ -33,22 +33,15 @@ services:
       - "9200:9200"
       - "9300:9300"
     environment:
-      - node.name=elasticsearch
-      - discovery.seed_hosts=elasticsearch
-      - cluster.initial_master_nodes=elasticsearch
-      - cluster.name=elasticsearch
-      - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
-      - xpack.monitoring.collection.enabled=true
-      - xpack.monitoring.exporters.my_local.type=local
-      - xpack.http.max_response_size=50MB
-      - xpack.security.enabled=false
-      - script.painless.regex.enabled=true
-      - network.host=0.0.0.0
+      # - xpack.monitoring.collection.enabled=true
+      # - xpack.monitoring.exporters.my_local.type=local
     ulimits:
       memlock:
         soft: -1
         hard: -1
+    volumes:
+      - ./elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
 
   kibana:
     image: kibana:8.17.0
