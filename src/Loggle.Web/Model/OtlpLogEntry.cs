@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
+using OpenTelemetry.Proto.Common.V1;
 using OpenTelemetry.Proto.Logs.V1;
 
 namespace Loggle.Web.Model;
@@ -20,6 +21,10 @@ public class OtlpLogEntry
 
     [JsonPropertyName("service")]
     public ServiceDocument Service { get; }
+
+    [JsonPropertyName("instrumentationScope")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public InstrumentationScopeDocument? InstrumentationScope { get; }
 
     [JsonPropertyName("flags")]
     public uint Flags { get; }
@@ -42,7 +47,7 @@ public class OtlpLogEntry
     [JsonPropertyName("originalFormat")]
     public string? OriginalFormat { get; }
 
-    public OtlpLogEntry(OtlpContext context, OtlpApplication application, LogRecord record)
+    public OtlpLogEntry(OtlpContext context, OtlpApplication application, LogRecord record, InstrumentationScope? scope)
     {
         TimeStamp = ResolveTimeStamp(record);
 
@@ -85,6 +90,8 @@ public class OtlpLogEntry
             ?.Properties
             ?.Select(p => new NameValue { Name = p.Key, Value = p.Value })
             ?.ToList() ?? [];
+
+        InstrumentationScope = CreateInstrumentationScopeDocument(context, scope);
 
         Flags = record.Flags;
         Severity = MapSeverity(record.SeverityNumber);
@@ -140,4 +147,23 @@ public class OtlpLogEntry
         SeverityNumber.Fatal4 => LogLevel.Critical,
         _ => LogLevel.None
     };
+
+    private static InstrumentationScopeDocument? CreateInstrumentationScopeDocument(OtlpContext context, InstrumentationScope? scope)
+    {
+        if (scope is null || (string.IsNullOrWhiteSpace(scope.Name) && string.IsNullOrWhiteSpace(scope.Version) && scope.Attributes.Count == 0))
+        {
+            return null;
+        }
+
+        var attributes = scope.Attributes.ToKeyValuePairs(context, static _ => true);
+
+        return new InstrumentationScopeDocument
+        {
+            Name = scope.Name,
+            Version = scope.Version,
+            Attributes = attributes.Length == 0
+                ? null
+                : [.. attributes.Select(a => new NameValue { Name = a.Key, Value = a.Value })]
+        };
+    }
 }

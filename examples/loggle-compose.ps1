@@ -70,7 +70,7 @@ if ($action -eq "stop") {
   docker compose -f $composeFile --project-name loggle down
 } else {
   Write-Host "Starting Loggle Docker Compose..."
-  docker compose -f $composeFile --project-name loggle up -d
+  docker compose -f $composeFile --project-name loggle up --build -d
 
   # Wait for Elasticsearch to be ready.
   Wait-ForElasticsearch

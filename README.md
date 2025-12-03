@@ -192,6 +192,8 @@ var builder = Host.CreateDefaultBuilder(args)
   });
 ```
 
+> Starting with OpenTelemetry .NET 1.8.0 the logger category (usually your class name) is exported as the instrumentation scope name. Loggle persists it under `instrumentationScope.name` in Elasticsearch, so you can query for specific classes without adding custom scope values.
+
 
 ## Access Kibana
 

@@ -30,6 +30,29 @@
                         }
                     }
                 },
+                "instrumentationScope": {
+                    "properties": {
+                        "attributes": {
+                            "properties": {
+                                "name": {
+                                    "type": "keyword"
+                                },
+                                "value": {
+                                    "type": "keyword"
+                                }
+                            },
+                            "type": "nested"
+                        },
+                        "name": {
+                            "ignore_above": 256,
+                            "type": "keyword"
+                        },
+                        "version": {
+                            "ignore_above": 256,
+                            "type": "keyword"
+                        }
+                    }
+                },
                 "attributes": {
                     "properties": {
                         "name": {

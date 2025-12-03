@@ -50,7 +50,7 @@ public sealed class LogIngestionService
                 var logs = new List<OtlpLogEntry>(sl.LogRecords.Count);
                 foreach (var record in sl.LogRecords)
                 {
-                    var logEntry = new OtlpLogEntry(context, application, record);
+                    var logEntry = new OtlpLogEntry(context, application, record, sl.Scope);
                     logs.Add(logEntry);
                 }
 
