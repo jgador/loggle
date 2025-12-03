@@ -30,7 +30,7 @@
                         }
                     }
                 },
-                "instrumentationScope": {
+                "scope": {
                     "properties": {
                         "attributes": {
                             "properties": {
@@ -48,6 +48,14 @@
                             "type": "keyword"
                         },
                         "version": {
+                            "ignore_above": 256,
+                            "type": "keyword"
+                        }
+                    }
+                },
+                "log": {
+                    "properties": {
+                        "category": {
                             "ignore_above": 256,
                             "type": "keyword"
                         }

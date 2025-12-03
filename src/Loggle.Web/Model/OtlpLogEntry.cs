@@ -22,9 +22,16 @@ public class OtlpLogEntry
     [JsonPropertyName("service")]
     public ServiceDocument Service { get; }
 
-    [JsonPropertyName("instrumentationScope")]
+    [JsonIgnore]
+    public OtlpScope Scope { get; }
+
+    [JsonPropertyName("scope")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public InstrumentationScopeDocument? InstrumentationScope { get; }
+    public ScopeDocument? ScopeDocument => _scopeDocument ??= CreateScopeDocument();
+
+    [JsonPropertyName("log")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Dictionary<string, string>? Log => _log ??= CreateLogFields();
 
     [JsonPropertyName("flags")]
     public uint Flags { get; }
@@ -46,6 +53,9 @@ public class OtlpLogEntry
 
     [JsonPropertyName("originalFormat")]
     public string? OriginalFormat { get; }
+
+    private ScopeDocument? _scopeDocument;
+    private Dictionary<string, string>? _log;
 
     public OtlpLogEntry(OtlpContext context, OtlpApplication application, LogRecord record, InstrumentationScope? scope)
     {
@@ -91,7 +101,7 @@ public class OtlpLogEntry
             ?.Select(p => new NameValue { Name = p.Key, Value = p.Value })
             ?.ToList() ?? [];
 
-        InstrumentationScope = CreateInstrumentationScopeDocument(context, scope);
+        Scope = scope is null ? OtlpScope.Empty : new OtlpScope(scope, context);
 
         Flags = record.Flags;
         Severity = MapSeverity(record.SeverityNumber);
@@ -148,22 +158,37 @@ public class OtlpLogEntry
         _ => LogLevel.None
     };
 
-    private static InstrumentationScopeDocument? CreateInstrumentationScopeDocument(OtlpContext context, InstrumentationScope? scope)
+    private ScopeDocument? CreateScopeDocument()
     {
-        if (scope is null || (string.IsNullOrWhiteSpace(scope.Name) && string.IsNullOrWhiteSpace(scope.Version) && scope.Attributes.Count == 0))
+        var name = string.IsNullOrWhiteSpace(Scope.Name) ? null : Scope.Name;
+        var version = string.IsNullOrWhiteSpace(Scope.Version) ? null : Scope.Version;
+        List<NameValue>? attributes = null;
+
+        if (Scope.Attributes.Length > 0)
+        {
+            attributes = new List<NameValue>(Scope.Attributes.Length);
+            foreach (var attribute in Scope.Attributes)
+            {
+                attributes.Add(new NameValue { Name = attribute.Key, Value = attribute.Value });
+            }
+        }
+
+        if (name is null && version is null && attributes is null)
         {
             return null;
         }
 
-        var attributes = scope.Attributes.ToKeyValuePairs(context, static _ => true);
-
-        return new InstrumentationScopeDocument
+        return new ScopeDocument
         {
-            Name = scope.Name,
-            Version = scope.Version,
-            Attributes = attributes.Length == 0
-                ? null
-                : [.. attributes.Select(a => new NameValue { Name = a.Key, Value = a.Value })]
+            Name = name,
+            Version = version,
+            Attributes = attributes
         };
+    }
+
+    private Dictionary<string, string>? CreateLogFields()
+    {
+        var category = string.IsNullOrWhiteSpace(Scope.Name) ? null : Scope.Name;
+        return category is null ? null : new Dictionary<string, string> { ["category"] = category };
     }
 }

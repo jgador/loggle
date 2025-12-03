@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Loggle.Web.Model;
 
-public class InstrumentationScopeDocument
+public class ScopeDocument
 {
     [JsonPropertyName("name")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -17,3 +17,4 @@ public class InstrumentationScopeDocument
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<NameValue>? Attributes { get; set; }
 }
+
